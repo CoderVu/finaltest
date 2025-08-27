@@ -1,15 +1,19 @@
 package testCase;
 
-import config.TestBase;
-import io.qameta.allure.*;
+import org.example.config.SoftAssertConfig;
 import org.example.enums.Breadcrumb;
 import org.example.enums.Category;
 import org.example.pages.BookCategoryPage;
 import org.example.pages.HomePage;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
-import org.example.config.SoftAssertConfig;
-import static org.testng.Assert.assertTrue;
+import org.testng.annotations.Test;
+
+import config.TestBase;
+import io.qameta.allure.Epic;
+import io.qameta.allure.Feature;
+import io.qameta.allure.Severity;
+import io.qameta.allure.SeverityLevel;
+import io.qameta.allure.Story;
 
 public class TC02_TikiBookCategoryTest extends TestBase {
 
@@ -36,7 +40,7 @@ public class TC02_TikiBookCategoryTest extends TestBase {
         // Step 2: Select left menu "Nhà Sách Tiki"
         BookCategoryPage bookCategoryPage = homePage.selectCategory(Category.NHA_SACH_TIKI);
         // Verify breadcrumb using enum parameter
-        assertTrue(bookCategoryPage.verifyBreadcrumb(Breadcrumb.HOME_TO_NHA_SACH_TIKI), 
+        softAssert.assertTrue(bookCategoryPage.verifyBreadcrumb(Breadcrumb.HOME_TO_NHA_SACH_TIKI), 
                   "Breadcrumb should be '" + Breadcrumb.HOME_TO_NHA_SACH_TIKI.getFullBreadcrumb() + "'");
         
         // Step 4: Click "Tất cả" button

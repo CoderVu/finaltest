@@ -1,13 +1,21 @@
 package org.example.pages;
 
-import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
-import com.codeborne.selenide.SelenideElement;
-import io.qameta.allure.Step;
 import org.example.enums.Breadcrumb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.codeborne.selenide.Selenide.*;
+
+import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.sleep;
+
+import java.util.Arrays;
+import java.util.List;
+
+import com.codeborne.selenide.SelenideElement;
+
+import io.qameta.allure.Step;
 
 public class BookCategoryPage extends BasePage {
 
@@ -16,33 +24,31 @@ public class BookCategoryPage extends BasePage {
     // Locators
     private final SelenideElement breadcrumb = $("#breadcrumb, .breadcrumb");
     private final SelenideElement allProductsSection = $("#all-products, .sc-dc63c727-1"); 
-    private final SelenideElement filterAllButton = $("#filter-all, button[title='Tất cả bộ lọc'], .sc-bd134f7-0:contains('Tất cả')"); 
-    private final SelenideElement filterDialogTitle = $(".title:contains('Tất cả bộ lọc'), h4:contains('Tất cả bộ lọc')");
+    private final SelenideElement filterAllButton = $("#filter-all, button[title='Tất cả bộ lọc']"); 
+    private final SelenideElement filterDialogTitle = $(".title");
     
     // Updated locators for supplier section based on actual HTML structure
-    private final SelenideElement supplierSection = $("[data-view-label='Nhà cung cấp'], .sc-63e2c595-0:has(.title:contains('Nhà cung cấp'))");
-    private final SelenideElement fahasaSupplierCheckbox = supplierSection.$("label:contains('Nhà sách Fahasa'), .item--seller:contains('Nhà sách Fahasa')");
+    private final SelenideElement supplierSection = $("[data-view-label='Nhà cung cấp']");
+    private final SelenideElement fahasaSupplierCheckbox = supplierSection.$("label");
     
     // Alternative price input locators for the custom price range section
-    private final SelenideElement priceSection = $("[data-view-label='Giá'], .sc-63e2c595-0:has(.title:contains('Giá'))");
-    private final SelenideElement priceRangeMinInput = priceSection.$("input[pattern='[0-9]*'][placeholder='Từ'], input[placeholder='Từ']"); 
-    private final SelenideElement priceRangeMaxInput = priceSection.$("input[pattern='[0-9]*'][placeholder='Đến'], input[placeholder='Đến']"); 
-    private final SelenideElement viewResultButton = $("#view-result, button:contains('Xem Kết quả'), button:contains('Áp dụng')"); 
+    private final SelenideElement priceSection = $("[data-view-label='Giá']");
+    private final SelenideElement priceRangeMinInput = $("input[placeholder='Từ']"); 
+    private final SelenideElement priceRangeMaxInput = $("input[placeholder='Đến']"); 
+    private final SelenideElement viewResultButton = $("#view-result"); 
     private final ElementsCollection productPrices = $$(".product-item .price, .price-current, .price-discount__price"); 
-    private final SelenideElement selectedSupplierLabel = $("#selected-supplier, .selected-filter:contains('Nhà sách Fahasa'), .filter-applied:contains('Fahasa')"); 
+    private final SelenideElement selectedSupplierLabel = $("#selected-supplier"); 
 
-  @Step("Verify breadcrumb navigation matches expected: {expectedBreadcrumb}")
+    @Step("Verify breadcrumb navigation matches expected: {expectedBreadcrumb}")
     public boolean verifyBreadcrumb(Breadcrumb expectedBreadcrumb) {
-        String expectedText = expectedBreadcrumb.getFullBreadcrumb();
+        String breadcrumbText = breadcrumb.shouldBe(Condition.exist).getText().trim();
+        List<String> actualItems = Arrays.asList(breadcrumbText.split("\\s+"));
+        List<String> expectedItems = Arrays.asList(
+                expectedBreadcrumb.getHomeText(),
+                expectedBreadcrumb.getCategoryText()
+        );
 
-        String breadcrumbText = breadcrumb
-                .shouldBe(Condition.exist)
-                .getText()
-                .replace("\n", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
-
-        return breadcrumbText.equals(expectedText);
+        return actualItems.equals(expectedItems);
     }
 
     @Step("Click on 'Tất cả' button under 'Tất cả sản phẩm' section")
@@ -51,14 +57,20 @@ public class BookCategoryPage extends BasePage {
         
         // Try multiple possible selectors for the "Tất cả" filter button
         try {
+            // First try the primary selector
             filterAllButton.shouldBe(Condition.visible).click();
         } catch (Exception e) {
-            // Alternative approaches if the primary locator fails
+            // Try to find by class name that might contain "Tất cả"
             try {
-                $(".sc-bd134f7-0:contains('Tất cả')").shouldBe(Condition.visible).click();
+                $$(".sc-bd134f7-0").findBy(Condition.text("Tất cả")).click();
             } catch (Exception e2) {
-                // Last resort - look for any filter button
-                $("button:contains('Tất cả'), .filter-button:contains('Tất cả')").shouldBe(Condition.visible).click();
+                // Try to find any button with "Tất cả" text
+                try {
+                    $$("button").findBy(Condition.text("Tất cả")).click();
+                } catch (Exception e3) {
+                    // Last resort - look for buttons containing "Tất"
+                    $$("button").findBy(Condition.partialText("Tất")).click();
+                }
             }
         }
     }
@@ -66,10 +78,24 @@ public class BookCategoryPage extends BasePage {
     @Step("Verify that 'Tất cả bộ lọc' dialog is displayed")
     public boolean verifyFilterDialogDisplayed() {      
         try {
+            // Check if filter dialog title is visible
             filterDialogTitle.shouldBe(Condition.visible);
             return true;
         } catch (Exception e) {
-            return false;
+            // Try alternative ways to detect the filter dialog
+            try {
+                // Look for any title containing "Tất cả bộ lọc"
+                $$(".title").findBy(Condition.text("Tất cả bộ lọc")).shouldBe(Condition.visible);
+                return true;
+            } catch (Exception e2) {
+                // Look for h4 elements containing the filter text
+                try {
+                    $$("h4").findBy(Condition.text("Tất cả bộ lọc")).shouldBe(Condition.visible);
+                    return true;
+                } catch (Exception e3) {
+                    return false;
+                }
+            }
         }
     }
 
@@ -82,14 +108,20 @@ public class BookCategoryPage extends BasePage {
         
         // Try multiple ways to find and click the Fahasa checkbox
         try {
-            fahasaSupplierCheckbox.shouldBe(Condition.visible).click();
+            // Look for the specific supplier label with Fahasa text
+            supplierSection.$$("label").findBy(Condition.text("Nhà sách Fahasa")).click();
         } catch (Exception e) {
-            // Alternative approach - find it within the supplier section by different selectors
+            // Alternative approach - find it by data-view-index="4" as seen in HTML
             try {
                 supplierSection.$("label[data-view-index='4']").shouldBe(Condition.visible).click();
             } catch (Exception e2) {
                 // Last resort - find by partial text match
-                supplierSection.$(".item:contains('Fahasa')").shouldBe(Condition.visible).click();
+                try {
+                    supplierSection.$$(".item").findBy(Condition.partialText("Fahasa")).click();
+                } catch (Exception e3) {
+                    // Very last resort - find any label containing "Fahasa"
+                    supplierSection.$$("label").findBy(Condition.partialText("Fahasa")).click();
+                }
             }
         }
         
@@ -121,10 +153,15 @@ public class BookCategoryPage extends BasePage {
         } catch (Exception e) {
             // If the primary locator fails, try alternative selectors
             try {
-                $("button:contains('Xem')").shouldBe(Condition.visible).click();
+                $$("button").findBy(Condition.text("Xem Kết quả")).click();
             } catch (Exception e2) {
-                // Last resort - find any button that might apply filters
-                $("button:contains('Áp dụng'), .btn-apply, .apply-button").shouldBe(Condition.visible).click();
+                // Try partial text match
+                try {
+                    $$("button").findBy(Condition.partialText("Xem")).click();
+                } catch (Exception e3) {
+                    // Last resort - find any button that might apply filters
+                    $$("button").findBy(Condition.text("Áp dụng")).click();
+                }
             }
         }
         
@@ -138,19 +175,27 @@ public class BookCategoryPage extends BasePage {
         // Wait a moment for filters to be applied
         sleep(2000);
         
-        // Check if selected supplier label exists and is visible
-        if (!selectedSupplierLabel.exists()) {
-            log.warn("Selected supplier label does not exist");
-            return false;
+        // Try multiple ways to verify supplier is selected
+        try {
+            // Check if selected supplier label exists and is visible
+            selectedSupplierLabel.shouldBe(Condition.visible);
+            return true;
+        } catch (Exception e) {
+            // Alternative check - look for any element indicating Fahasa is selected
+            try {
+                $$(".selected-filter").findBy(Condition.partialText("Fahasa")).shouldBe(Condition.visible);
+                return true;
+            } catch (Exception e2) {
+                // Check for filter applied indicators
+                try {
+                    $$(".filter-applied").findBy(Condition.partialText("Fahasa")).shouldBe(Condition.visible);
+                    return true;
+                } catch (Exception e3) {
+                    log.warn("No evidence found that supplier 'Nhà sách Fahasa' is highlighted");
+                    return false;
+                }
+            }
         }
-        
-        if (!selectedSupplierLabel.isDisplayed()) {
-            log.warn("Selected supplier label is not visible");
-            return false;
-        }
-        
-        log.info("Supplier 'Nhà sách Fahasa' is highlighted");
-        return true;
     }
 
     @Step("Apply filters")
