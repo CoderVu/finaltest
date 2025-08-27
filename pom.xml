@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.example</groupId>
+    <artifactId>VuNguyenFinalTestSele2</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <selenium.version>4.18.1</selenium.version>
+        <testng.version>7.9.0</testng.version>
+        <slf4j.version>2.0.11</slf4j.version>
+        <log4j.version>2.21.1</log4j.version>
+        <allure.version>2.24.0</allure.version>
+        <selenide.version>7.2.3</selenide.version>
+        <aspectjweaver.version>1.9.21</aspectjweaver.version>
+        <freemarker.version>2.3.32</freemarker.version>
+    </properties>
+
+    <dependencies>
+        <!-- Selenium WebDriver -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${selenium.version}</version>
+        </dependency>
+
+        <!-- TestNG -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+        </dependency>
+
+        <!-- Allure TestNG -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-testng</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+
+        <!-- SLF4J Implementation -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>${freemarker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>selenide</artifactId>
+            <version>${selenide.version}</version>
+        </dependency>
+        <!-- AspectJ Weaver for Allure step tracking and screenshot -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectjweaver.version}</version>
+        </dependency>
+        <!--selenide-full-screenshot-->
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>selenide-full-screenshot</artifactId>
+            <version>6.7.0</version>
+        </dependency>
+
+        <!--Lombok-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.28</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Yaml -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.3</version>
+                <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+                    </suiteXmlFiles>
+                    <includes>
+                        <include>**/testCase/*.java</include>
+                    </includes>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <useFile>false</useFile>
+                    <argLine>
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar" -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+                    </argLine>
+                    <systemPropertyVariables>
+                        <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                        <selenide.reportsEnabled>true</selenide.reportsEnabled>
+                        <selenide.screenshots>true</selenide.screenshots>
+                        <selenide.savePageSource>true</selenide.savePageSource>
+                        <selenide.fileDownload>HTTPGET</selenide.fileDownload>
+                        <org.slf4j.simpleLogger.defaultLogLevel>info</org.slf4j.simpleLogger.defaultLogLevel>
+                        <org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>
+                        <org.slf4j.simpleLogger.dateTimeFormat>yyyy-MM-dd HH:mm:ss.SSS</org.slf4j.simpleLogger.dateTimeFormat>
+                        <org.slf4j.simpleLogger.showThreadName>true</org.slf4j.simpleLogger.showThreadName>
+                        <org.slf4j.simpleLogger.showLogName>true</org.slf4j.simpleLogger.showLogName>
+                        <org.slf4j.simpleLogger.showShortLogName>true</org.slf4j.simpleLogger.showShortLogName>
+                        <org.slf4j.simpleLogger.log.org.example>debug</org.slf4j.simpleLogger.log.org.example>
+                        <org.slf4j.simpleLogger.log.org.openqa.selenium>warn</org.slf4j.simpleLogger.log.org.openqa.selenium>
+                        <org.slf4j.simpleLogger.log.com.codeborne.selenide>info</org.slf4j.simpleLogger.log.com.codeborne.selenide>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
+                <configuration>
+                    <reportVersion>${allure.version}</reportVersion>
+                    <reportDirectory>${project.build.directory}/allure-report</reportDirectory>
+                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
