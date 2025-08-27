@@ -24,7 +24,7 @@ public enum Category {
     PHU_KIEN_THOI_TRANG("Phụ kiện thời trang", "/phu-kien-thoi-trang/c27498"),
     NGON("NGON", "/ngon/c44792"),
     DONG_HO_VA_TRANG_SUC("Đồng hồ và Trang sức", "/dong-ho-va-trang-suc/c8371"),
-    BALO_VA_VALI("Baloo và Vali", "/balo-va-vali/c6000"),
+    BALO_VA_VALI("Balo và Vali", "/balo-va-vali/c6000"),
     VOUCHER_DICH_VU("Voucher - Dịch vụ", "/voucher-dich-vu/c11312"),
     TUI_THOI_TRANG_NU("Túi thời trang nữ", "/tui-vi-nu/c976"),
     TUI_THOI_TRANG_NAM("Túi thời trang nam", "/tui-thoi-trang-nam/c27616"),

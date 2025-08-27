@@ -3,7 +3,9 @@ package org.example.config;
 import com.codeborne.selenide.WebDriverRunner;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Attachment;
+import io.qameta.allure.listener.StepLifecycleListener;
 import io.qameta.allure.model.Status;
+import io.qameta.allure.model.StepResult;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -17,7 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import static org.example.utils.DateUtils.getCurrentDate;
 
-public class AllureConfig implements ITestListener, IConfigurationListener {
+    public class AllureConfig implements ITestListener, IConfigurationListener {
 
     @BeforeSuite
     public void setupAllureDir() {
@@ -27,38 +29,9 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
         }
     }
 
-    public static void attachScreenshot(String name) {
-        try {
-            WebDriver driver = WebDriverRunner.getWebDriver();
-            byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-            if (bytes != null && bytes.length > 0) {
-                Allure.addAttachment(name, "image/png", new ByteArrayInputStream(bytes), "png");
-            }
-        } catch (Throwable ignored) {
-
-        }
-    }
-
-    @Attachment(value = "Attachment", type = "image/png")
-    public static byte[] takeScreenshot() {
-        return attachScreenshotBytes();
-    }
-
-    @Attachment(value = "Attachment", type = "image/png")
-    public static byte[] attachScreenshotBytes() {
-        try {
-            WebDriver driver = WebDriverRunner.getWebDriver();
-            if (driver != null) {
-                return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-            }
-        } catch (Throwable ignored) {
-        }
-        return new byte[0];
-    }
-
     @Override
     public void onTestFailure(ITestResult result) {
-        attachScreenshot(getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + result.getName());
+       // ignore since already attached in SoftAssertConfig
     }
 
     @Override
@@ -105,5 +78,34 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
 
     @Override
     public void onFinish(ITestContext context) {
+    }
+
+    public static void attachScreenshot(String name) {
+        try {
+            WebDriver driver = WebDriverRunner.getWebDriver();
+            byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            if (bytes != null && bytes.length > 0) {
+                Allure.addAttachment(name, "image/png", new ByteArrayInputStream(bytes), "png");
+            }
+        } catch (Throwable ignored) {
+
+        }
+    }
+
+    @Attachment(value = "Attachment", type = "image/png")
+    public static byte[] takeScreenshot() {
+        return attachScreenshotBytes();
+    }
+
+    @Attachment(value = "Attachment", type = "image/png")
+    public static byte[] attachScreenshotBytes() {
+        try {
+            WebDriver driver = WebDriverRunner.getWebDriver();
+            if (driver != null) {
+                return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            }
+        } catch (Throwable ignored) {
+        }
+        return new byte[0];
     }
 }

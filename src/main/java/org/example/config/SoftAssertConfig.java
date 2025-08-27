@@ -86,6 +86,8 @@ public class SoftAssertConfig extends SoftAssert {
         });
 
         Allure.getLifecycle().stopStep(stepUuid);
+
+        super.onAssertFailure(assertCommand, ex);
     }
 
     private String normalizeMessage(String message) {
@@ -100,16 +102,10 @@ public class SoftAssertConfig extends SoftAssert {
         }
     }
 
-    
-
     public static void recordFailure(String message) {
         takeScreenshot();
         Allure.step("FAIL [" + getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + "]: " + message, Status.FAILED);
         get().fail(message);
-    }
-
-    public static void assertAllSoft() {
-        get().assertAll();
     }
 
     public static void reset() {

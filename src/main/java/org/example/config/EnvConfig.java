@@ -21,12 +21,23 @@ public class EnvConfig {
     }
 
     public static String get(String key) {
-        if (config == null) throw new IllegalStateException("YAML not loaded");
+        if (config == null) {
+            throw new IllegalStateException("YAML not loaded");
+        }
+
         String[] parts = key.split("\\.");
         Object value = config;
+
         for (String part : parts) {
-            value = ((Map<String, Object>) value).get(part);
+            if (value instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> map = (Map<String, Object>) value;
+                value = map.get(part);
+            } else {
+                return null;
+            }
         }
+
         return value != null ? value.toString() : null;
     }
-} 
+}

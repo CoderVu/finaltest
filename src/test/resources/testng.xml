@@ -6,7 +6,8 @@
     </listeners>
     <test name="Selenium Level 2 Final Test">
         <classes>
-            <class name="testCase.TC01"/>
+            <class name="testCase.TC001_VERIFY_USER_CAN_FILTER_SEARCH_CONDITION_FOR_PRODUCT"/>
+            <class name="testCase.TC002_VERIFY_VIEWED_ITEM_APPEARS_IN_VIEWED_SECTION"/>
 
         </classes>
     </test>
