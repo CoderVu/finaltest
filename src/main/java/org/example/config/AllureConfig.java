@@ -71,12 +71,11 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
         attachScreenshot(getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + result.getName());
     }
 
-    @Override
     public void onConfigurationFailure(ITestResult itr) {
-        attachScreenshot("config_failure_" + (itr.getMethod() != null ? itr.getMethod().getMethodName() : "config"));
+        attachScreenshot(getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + "config_failure_" + (itr.getMethod() != null ? itr.getMethod().getMethodName() : "config"));
         Throwable t = itr.getThrowable();
         if (t != null) {
-            Allure.step("CONFIG FAIL: " + t.getMessage(), Status.FAILED);
+            Allure.step(getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + "CONFIG FAIL: " + t.getMessage(), Status.FAILED);
         }
     }
 
