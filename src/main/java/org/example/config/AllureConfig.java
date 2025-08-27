@@ -1,9 +1,9 @@
 package org.example.config;
 
-import com.codeborne.selenide.WebDriverRunner;
-import io.qameta.allure.Allure;
-import io.qameta.allure.Attachment;
-import io.qameta.allure.model.Status;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+
+import static org.example.utils.DateUtils.getCurrentDate;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -13,9 +13,11 @@ import org.testng.ITestListener;
 import org.testng.ITestResult;
 import org.testng.annotations.BeforeSuite;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import static org.example.utils.DateUtils.getCurrentDate;
+import com.codeborne.selenide.WebDriverRunner;
+
+import io.qameta.allure.Allure;
+import io.qameta.allure.Attachment;
+import io.qameta.allure.model.Status;
 
 public class AllureConfig implements ITestListener, IConfigurationListener {
 
@@ -58,7 +60,7 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
 
     @Override
     public void onTestFailure(ITestResult result) {
-        attachScreenshot(getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + result.getName());
+        
     }
 
     @Override

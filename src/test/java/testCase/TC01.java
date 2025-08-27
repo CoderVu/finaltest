@@ -30,7 +30,6 @@ public class TC01 extends TestBase {
 
         homePage.selectCategory(Category.BALO_VA_VALI);
 
-        softAssert.assertTrue(false, "This is a sample failure for demonstration");
 
 
 
