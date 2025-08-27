@@ -6,7 +6,7 @@
     </listeners>
     <test name="Selenium Level 2 Final Test">
         <classes>
-            <class name="testCase.TC01"/>
+            <class name="testCase.TC02_TikiBookCategoryTest"/>
 
         </classes>
     </test>

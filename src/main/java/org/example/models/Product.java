@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class Product {
     private Long id;                 
     private String productName;
-    private String productPrice;
+    private Double productPrice;
     private String productImage;
     
 }
