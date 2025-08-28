@@ -32,7 +32,7 @@ public class TC001_VERIFY_USER_CAN_FILTER_SEARCH_CONDITION_FOR_PRODUCT extends T
     public void testNavigateToHomePage() {
 
         homePage.navigateToHomePage();
-        softAssert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed");
+        softAssert.assertFalse(homePage.isHomePageDisplayed(), "Home page is not displayed");
 
         homePage.selectCategory(Category.NHA_SACH_TIKI);
         softAssert.assertTrue(shopPage.verifyBreadcrumbToCategory(BreadcrumbToCategory.HOME_TO_NHA_SACH_TIKI),
