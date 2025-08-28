@@ -38,8 +38,9 @@ public class TC002_VERIFY_VIEWED_ITEM_APPEARS_IN_VIEWED_SECTION extends TestBase
 
         Product viewed = shopPage.selectAnyProductAndOpenDetails();
 
-        // homePage.backToHome();
+        homePage.backToHome();
         softAssert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed after back");
+     
         homePage.selectCategory(Category.NHA_SACH_TIKI);
 
         softAssert.assertTrue(shopPage.checkViewHistoryProduct(viewed),

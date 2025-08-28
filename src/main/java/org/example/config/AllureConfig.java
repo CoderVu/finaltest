@@ -105,10 +105,8 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
                 if (png != null && png.length > 0) {
                     String timestamp = getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS");
                     String testName = result.getName();
-                    String className = result.getTestClass().getName();
-                    
                     String attachmentName = String.format("%s Screenshot [%s] - %s in %s", 
-                        failureType, timestamp, testName, className);
+                        failureType, timestamp, testName);
                     
                     Allure.addAttachment(attachmentName, "image/png", new ByteArrayInputStream(png), "png");
                     

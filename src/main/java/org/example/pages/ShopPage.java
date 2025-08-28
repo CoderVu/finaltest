@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 import com.codeborne.selenide.SelenideElement;
 
+import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import org.example.enums.BreadcrumbToCategory;
 import org.example.models.Product;
@@ -140,7 +141,7 @@ public class ShopPage extends BasePage {
         return loadMoreButton.exists() && loadMoreButton.is(Condition.visible);
     }
 
-    @Step("Click 'Xem thêm' up to {maxClicks} times to load more products")
+        @Step("Click 'Xem thêm' up to {maxClicks} times to load more products")
     public void loadMoreProducts(int maxClicks) {
         int clicks = 0;
         int previousCount = productCards.size();
@@ -148,8 +149,9 @@ public class ShopPage extends BasePage {
             if (!isLoadMoreVisible()) {
                 break;
             }
-            loadMoreButton.scrollTo().click();
+            loadMoreButton.scrollTo().shouldBe(Condition.interactable).click();
             waitForSizeProductGreaterThan(previousCount);
+            productCards.first().shouldBe(Condition.visible);
             int newCount = productCards.size();
             if (newCount <= previousCount) {
                 break;
@@ -167,24 +169,73 @@ public class ShopPage extends BasePage {
     @Step("Detect product view type (grid vs list)")
     public ViewType getProductViewType() {
         if (productCards == null || productCards.isEmpty()) {
+            Allure.step("No product cards found - ViewType: UNKNOWN");
             return ViewType.UNKNOWN;
         }
-        int Size = Math.min(productCards.size(), 6); // = 6 cards is necessary
-        Map<Integer, Integer> rowCountByY = new HashMap<>();
+        int numberItems = productCards.size();
+        int Size = Math.min(productCards.size(), numberItems);
+        
+        for (int i = 0; i < Size; i++) {
+            productCards.get(i).shouldBe(Condition.visible);
+        }
+        
+        List<Integer> yPositions = new ArrayList<>();
+        
+
         for (int i = 0; i < Size; i++) {
             SelenideElement card = productCards.get(i);
-            int y = (int) Math.round(card.getLocation().getY() / 10.0) * 10;
-            rowCountByY.put(y, rowCountByY.getOrDefault(y, 0) + 1);
+            int y = card.getLocation().getY();
+            yPositions.add(y);
         }
-        int maxPerRow = rowCountByY.values().stream().max(Integer::compareTo).orElse(1);
-        if (maxPerRow > 1) return ViewType.GRID;
-        if (maxPerRow == 1 && Size >= 2) return ViewType.LIST;
-        return ViewType.UNKNOWN;
+        
+        Collections.sort(yPositions);
+        
+        List<List<Integer>> rowGroups = new ArrayList<>();
+        List<Integer> currentRow = new ArrayList<>();
+        int threshold = 20; 
+        
+        for (int y : yPositions) {
+            if (currentRow.isEmpty() || Math.abs(y - currentRow.get(currentRow.size() - 1)) <= threshold) {
+                currentRow.add(y);
+            } else {
+                rowGroups.add(new ArrayList<>(currentRow));
+                currentRow.clear();
+                currentRow.add(y);
+            }
+        }
+        if (!currentRow.isEmpty()) {
+            rowGroups.add(currentRow);
+        }
+        
+        int totalRows = rowGroups.size();
+        int maxPerRow = rowGroups.stream().mapToInt(List::size).max().orElse(1);
+        
+        ViewType viewType;
+        if (maxPerRow > 1) {
+            viewType = ViewType.GRID;
+        } else if (maxPerRow == 1 && Size >= 2) {
+            viewType = ViewType.LIST;
+        } else {
+            viewType = ViewType.UNKNOWN;
+        }
+        
+        StringBuilder rowDetails = new StringBuilder();
+        for (int i = 0; i < rowGroups.size(); i++) {
+            rowDetails.append(String.format("Row %d: %d items; ", i + 1, rowGroups.get(i).size()));
+        }
+        
+        Allure.step(String.format("Detected ViewType: %s - %d items per row (max), %d rows total. %s", 
+                                  viewType, maxPerRow, totalRows, rowDetails.toString()));
+        
+        return viewType;
     }
 
     @Step("Is product view grid")
     public boolean isGridView() {
-        return getProductViewType() == ViewType.GRID;
+        ViewType viewType = getProductViewType();
+        boolean isGrid = viewType == ViewType.GRID;
+        Allure.step(String.format("Product view is grid: %s", isGrid));
+        return isGrid;
     }
 
     @Step("Is product view list")
