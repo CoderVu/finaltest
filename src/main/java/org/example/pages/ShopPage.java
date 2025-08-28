@@ -15,6 +15,7 @@ import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import org.example.enums.BreadcrumbToCategory;
 import org.example.models.Product;
+import org.example.pages.ShopPage.ViewType;
 
 import static com.codeborne.selenide.Selenide.*;
 import static java.util.Collections.emptyList;
@@ -172,63 +173,48 @@ public class ShopPage extends BasePage {
             Allure.step("No product cards found - ViewType: UNKNOWN");
             return ViewType.UNKNOWN;
         }
-        int numberItems = productCards.size();
-        int Size = Math.min(productCards.size(), numberItems);
         
-        for (int i = 0; i < Size; i++) {
-            productCards.get(i).shouldBe(Condition.visible);
-        }
-        
-        List<Integer> yPositions = new ArrayList<>();
-        
+        productCards.forEach(card -> card.shouldBe(Condition.visible));
 
-        for (int i = 0; i < Size; i++) {
-            SelenideElement card = productCards.get(i);
+        int elementHeight = productCards.get(0).getSize().getHeight();
+        int threshold = elementHeight / 2;
+
+        Map<Integer, Integer> rowCountByY = new HashMap<>();
+        for (SelenideElement card : productCards) {
             int y = card.getLocation().getY();
-            yPositions.add(y);
+            Integer matchedY = rowCountByY.keySet().stream()
+                .filter(existingY -> Math.abs(existingY - y) <= threshold)
+                .findFirst()
+                .orElse(y);
+            rowCountByY.put(matchedY, rowCountByY.getOrDefault(matchedY, 0) + 1);
         }
-        
-        Collections.sort(yPositions);
-        
-        List<List<Integer>> rowGroups = new ArrayList<>();
-        List<Integer> currentRow = new ArrayList<>();
-        int threshold = 20; 
-        
-        for (int y : yPositions) {
-            if (currentRow.isEmpty() || Math.abs(y - currentRow.get(currentRow.size() - 1)) <= threshold) {
-                currentRow.add(y);
-            } else {
-                rowGroups.add(new ArrayList<>(currentRow));
-                currentRow.clear();
-                currentRow.add(y);
-            }
-        }
-        if (!currentRow.isEmpty()) {
-            rowGroups.add(currentRow);
-        }
-        
-        int totalRows = rowGroups.size();
-        int maxPerRow = rowGroups.stream().mapToInt(List::size).max().orElse(1);
-        
+
+        int totalRows = rowCountByY.size();
+        int maxPerRow = rowCountByY.values().stream().max(Integer::compareTo).orElse(1);
+
         ViewType viewType;
         if (maxPerRow > 1) {
             viewType = ViewType.GRID;
-        } else if (maxPerRow == 1 && Size >= 2) {
+        } else if (maxPerRow == 1 && productCards.size() >= 2) {
             viewType = ViewType.LIST;
         } else {
             viewType = ViewType.UNKNOWN;
         }
-        
+
         StringBuilder rowDetails = new StringBuilder();
-        for (int i = 0; i < rowGroups.size(); i++) {
-            rowDetails.append(String.format("Row %d: %d items; ", i + 1, rowGroups.get(i).size()));
+        int rowIndex = 1;
+        for (int count : rowCountByY.values()) {
+            rowDetails.append(String.format("Row %d: %d items; ", rowIndex++, count));
         }
-        
-        Allure.step(String.format("Detected ViewType: %s - %d items per row (max), %d rows total. %s", 
-                                  viewType, maxPerRow, totalRows, rowDetails.toString()));
-        
+
+        Allure.step(String.format(
+            "Detected ViewType: %s - %d items per row (max), %d rows total. %s",
+            viewType, maxPerRow, totalRows, rowDetails
+        ));
+
         return viewType;
     }
+
 
     @Step("Is product view grid")
     public boolean isGridView() {
