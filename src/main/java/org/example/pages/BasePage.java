@@ -31,6 +31,7 @@ public class BasePage {
         logo.shouldBe(Condition.visible).click();
         closePopupIfPresent();
     }
+
     protected void setText(SelenideElement element, String value) {
         element.clear();
         element.shouldBe(Condition.visible).setValue(value != null ? value : "");

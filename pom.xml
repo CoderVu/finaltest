@@ -9,8 +9,8 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <selenium.version>4.18.1</selenium.version>
         <testng.version>7.9.0</testng.version>
@@ -92,7 +92,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.32</version>
+            <version>1.18.28</version>
             <scope>provided</scope>
         </dependency>
         <!-- Yaml -->
@@ -103,6 +103,59 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <!-- Profile mặc định -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <browser>chrome</browser>
+                <user.profile>selenium-user-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Tiki test với user profile cụ thể -->
+        <profile>
+            <id>tiki-test</id>
+            <properties>
+                <browser>chrome</browser>
+                <user.profile>tiki-test-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Firefox -->
+        <profile>
+            <id>firefox</id>
+            <properties>
+                <browser>firefox</browser>
+                <user.profile>firefox-test-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Edge -->
+        <profile>
+            <id>edge</id>
+            <properties>
+                <browser>edge</browser>
+                <user.profile>edge-test-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -112,9 +165,6 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <arg>--enable-preview</arg>
-                    </compilerArgs>
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
                 </configuration>
             </plugin>
