@@ -4,13 +4,14 @@ import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import lombok.extern.slf4j.Slf4j;
-import org.example.constants.Constants;
+import org.example.common.Constants;
 import org.example.report.LogConfig;
+import org.example.core.browser.chrome.ChromeBrowserConfig;
+import org.example.core.browser.firefox.FirefoxBrowserConfig;
+import org.example.core.browser.edge.EdgeBrowserConfig;
 import org.openqa.selenium.WebDriver;
 
 import java.awt.*;
-import java.util.Arrays;
-import java.util.Map;
 
 
 @Slf4j
@@ -86,13 +87,16 @@ public class BrowserConfig {
         String browser = getBrowser().toLowerCase();
         switch (browser) {
             case "chrome":
-                configureChromeOptions();
+                ChromeBrowserConfig.configure();
+                log.info("Chrome options configured");
                 break;
             case "firefox":
-                configureFirefoxOptions();
+                FirefoxBrowserConfig.configure();
+                log.info("Firefox options configured");
                 break;
             case "edge":
-                configureEdgeOptions();
+                EdgeBrowserConfig.configure();
+                log.info("Edge options configured with enhanced settings");
                 break;
             default:
                 log.warn("Unsupported browser: " + browser + ". Using default configuration.");
@@ -100,66 +104,7 @@ public class BrowserConfig {
         }
     }
 
-    private static void configureChromeOptions() {
-        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
-        Configuration.browserCapabilities.setCapability("goog:chromeOptions",
-                Map.of(
-                        "args", Arrays.asList(
-                                "--start-maximized",
-                                "--remote-allow-origins=*",
-                                "--disable-web-security",
-                                "--disable-features=VizDisplayCompositor"
-                        ),
-                        "excludeSwitches", Arrays.asList("enable-automation"),
-                        "useAutomationExtension", false
-                )
-        );
-        log.info("Chrome options configured");
-    }
-
-    private static void configureFirefoxOptions() {
-        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
-        Configuration.browserCapabilities.setCapability("moz:firefoxOptions",
-                Map.of(
-                        "args", Arrays.asList(
-                                "--start-maximized",
-                                "--disable-web-security"
-                        ),
-                        "prefs", Map.of(
-                                "dom.webdriver.enabled", false,
-                                "useAutomationExtension", false
-                        )
-                )
-        );
-        log.info("Firefox options configured");
-    }
-
-    private static void configureEdgeOptions() {
-        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
-        Configuration.browserCapabilities.setCapability("ms:edgeOptions",
-                Map.of(
-                        "args", Arrays.asList(
-                                "--start-maximized",
-                                "--disable-web-security",
-                                "--disable-features=VizDisplayCompositor",
-                                "--disable-extensions",
-                                "--disable-plugins",
-                                "--disable-images",
-                                "--disable-javascript",
-                                "--no-sandbox",
-                                "--disable-dev-shm-usage",
-                                "--disable-gpu",
-                                "--remote-debugging-port=9222"
-                        ),
-                        "excludeSwitches", Arrays.asList("enable-automation", "enable-logging"),
-                        "useAutomationExtension", false,
-                        "detach", true
-                )
-        );
-        Configuration.browserCapabilities.setCapability("platformName", "windows");
-        Configuration.browserCapabilities.setCapability("ms:edgeChromium", true);
-        log.info("Edge options configured with enhanced settings");
-    }
+    // Per-browser configuration moved to core/browser/* configurators
 
     public static void setUp() {
         initialize();

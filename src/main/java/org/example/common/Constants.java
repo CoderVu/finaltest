@@ -1,4 +1,4 @@
-package org.example.constants;
+package org.example.common;
 
 import org.example.config.EnvConfig;
 

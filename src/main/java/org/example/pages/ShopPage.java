@@ -17,28 +17,34 @@ import io.qameta.allure.Step;
 import org.example.enums.BreadcrumbToCategory;
 import org.example.models.Product;
 import org.example.enums.ViewType;
-
 import static com.codeborne.selenide.Selenide.*;
+import static org.example.core.control.util.DriverUtils.getCurrentUrl;
 import static org.example.utils.FormatUtils.formatPrice;
-
 import org.example.enums.Category;
+import org.example.core.control.common.imp.Element;
+import org.example.core.control.factory.ElementFactory;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
-import static org.example.utils.WebDriverUtils.getCurrentUrl;
 
 @Slf4j
 public class ShopPage extends BasePage {
 
+    public ShopPage() { super(); }
+
+    public ShopPage(ElementFactory factory) { super(factory); }
+
     // Locators
     protected static final SelenideElement breadcrumb = $x("//div[contains(@class,'breadcrumb')]");
-    protected final SelenideElement allProductsSection = $(".sc-dc63c727-1");
-    protected final SelenideElement filterAllButton = $x("//button[.//div[normalize-space(text())='Tất cả']]");
+    protected final Element allProductsSection = ui.elementByCss(".sc-dc63c727-1");
+    protected final Element filterAllButton = ui.elementByXpath("//button[.//div[normalize-space(text())='Tất cả']]");
     protected final SelenideElement filterDialogTitle = $(".title");
 
-    protected final SelenideElement priceRangeMinInput = $("input[placeholder='Từ']");
-    protected final SelenideElement priceRangeMaxInput = $("input[placeholder='Đến']");
-    protected final SelenideElement viewResultButton = $("#view-result");
-    protected final ElementsCollection productCards = $$x("//a[contains(@class,'product-ditem')]");
-    protected final ElementsCollection productPrices = $$x("//a[contains(@class,'product-sitem')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
+    protected final Element priceRangeMinInput = ui.elementByCss("input[placeholder='Từ']");
+    protected final Element priceRangeMaxInput = ui.elementByCss("input[placeholder='Đến']");
+    protected final Element viewResultButton = ui.elementByCss("#view-result");
+    protected final Element productCards = ui.elementByXpath("//a[contains(@class,'product-item')]");
+    protected final Element productPrices = ui.elementByXpath("//a[contains(@class,'product-sitem')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
     protected final SelenideElement loadMoreButton = $x("//div[@data-view-id='category_infinity_view.more']");
     protected final SelenideElement selectedSupplierLabel = $("#selected-supplier");
     protected final ElementsCollection actualItemsXpath = $$x(".//a[contains(@class,'breadcrumb-item')]//span");
@@ -136,8 +142,8 @@ public class ShopPage extends BasePage {
 
     @Step("Click on 'Tất cả' button under 'Tất cả sản phẩm' section")
     public void clickAllFiltersButton() {
-        allProductsSection.shouldBe(Condition.visible);
-        filterAllButton.shouldBe(Condition.visible).click();
+        ui.element(By.cssSelector(".sc-dc63c727-1")).focus();
+        filterAllButton.click(2);
     }
 
     @Step("Select left menu category: {categoryName}")
@@ -161,7 +167,8 @@ public class ShopPage extends BasePage {
     public List<Product> getDisplayedProducts() {
         waitForSizeProductGreaterThan(0);
         List<Product> products = new ArrayList<>();
-        for (SelenideElement card : productCards) {
+        for (org.openqa.selenium.WebElement cardEl : productCards.getElements()) {
+            SelenideElement card = $(cardEl);
             String idStr = card.getAttribute("data-view-content");
             Long id = null;
             try {
@@ -189,8 +196,9 @@ public class ShopPage extends BasePage {
 
     @Step("Wait for product cards to appear")
     public void waitForSizeProductGreaterThan(Integer moreThanQuantity) {
-        productCards.shouldHave(CollectionCondition.sizeGreaterThan(moreThanQuantity), Duration.ofSeconds(10));
-        productCards.first().shouldBe(Condition.visible);
+        $$x("//a[contains(@class,'product-item')]").shouldHave(CollectionCondition.sizeGreaterThan(moreThanQuantity), Duration.ofSeconds(10));
+        org.openqa.selenium.WebElement first = productCards.getElements().isEmpty() ? null : productCards.getElements().get(0);
+        if (first != null) $(first).shouldBe(Condition.visible);
     }
 
     @Step("Is 'Xem thêm' button visible")
@@ -201,15 +209,16 @@ public class ShopPage extends BasePage {
     @Step("Click 'Xem thêm' up to {maxClicks} times to load more products")
     public void loadMoreProducts(int maxClicks) {
         int clicks = 0;
-        int previousCount = productCards.size();
+        int previousCount = productCards.getElements().size();
         while (clicks < maxClicks) {
             if (!isLoadMoreVisible()) {
                 break;
             }
             loadMoreButton.scrollTo().shouldBe(Condition.interactable).click();
             waitForSizeProductGreaterThan(previousCount);
-            productCards.first().shouldBe(Condition.visible);
-            int newCount = productCards.size();
+            org.openqa.selenium.WebElement firstCard = productCards.getElements().isEmpty() ? null : productCards.getElements().get(0);
+            if (firstCard != null) $(firstCard).shouldBe(Condition.visible);
+            int newCount = productCards.getElements().size();
             if (newCount <= previousCount) {
                 break;
             }
@@ -227,14 +236,14 @@ public class ShopPage extends BasePage {
         int previousCount = -1;
         while (safety-- > 0) {
             if (!isLoadMoreVisible()) break;
-            int before = productCards.size();
+            int before = productCards.getElements().size();
             try {
                 loadMoreButton.scrollTo().shouldBe(Condition.interactable).click();
             } catch (Throwable ignored) {
                 break;
             }
             waitForSizeProductGreaterThan(before);
-            int after = productCards.size();
+            int after = productCards.getElements().size();
             if (after <= before || after == previousCount) {
                 break;
             }
@@ -250,9 +259,10 @@ public class ShopPage extends BasePage {
             int size;
             String href = null;
             try {
-                size = productCards.size();
+                size = productCards.getElements().size();
                 if (size > 0) {
-                    href = productCards.first().getAttribute("href");
+                    WebElement firstEl = productCards.getElements().get(0);
+                    href = $(firstEl).getAttribute("href");
                 }
             } catch (Throwable ignored) {
                 size = -1;
@@ -363,18 +373,18 @@ public class ShopPage extends BasePage {
     @Step("Select any product and open details, return Product model")
     public Product selectAnyProductAndOpenDetails() {
         waitForSizeProductGreaterThan(0);
-        int size = productCards.size();
+        int size = productCards.getElements().size();
         int pick = Math.max(0, Math.min(size - 1, 10));
         SelenideElement card = null;
         for (int idx = pick; idx >= 0; idx--) {
             try {
-                card = productCards.get(idx).shouldBe(Condition.visible);
+                card = $(productCards.getElements().get(idx)).shouldBe(Condition.visible);
                 break;
             } catch (Throwable ignored) {
             }
         }
-        if (card == null) {
-            card = productCards.first().shouldBe(Condition.visible);
+        if (card == null && !productCards.getElements().isEmpty()) {
+            card = $(productCards.getElements().get(0)).shouldBe(Condition.visible);
         }
 
         // Parse id from data-view-content JSON if available
@@ -388,6 +398,15 @@ public class ShopPage extends BasePage {
         } catch (Exception ignored) {
         }
 
+        if (card == null) {
+            return Product.builder()
+                    .id(null)
+                    .productName("")
+                    .productPrice("")
+                    .productImage("")
+                    .rating(null)
+                    .build();
+        }
         String name = card.$x(productCardNameRel).exists() ? card.$x(productCardNameRel).getText() : "";
         String price = card.$x(productCardPriceRel).exists() ? card.$x(productCardPriceRel).getText() : "";
         String img = "";
@@ -460,8 +479,8 @@ public class ShopPage extends BasePage {
 
     @Step("Enter price range from {minPrice} to {maxPrice}")
     public void enterPriceRange(double minPrice, double maxPrice) {
-        setText(priceRangeMinInput, formatPrice(minPrice));
-        setText(priceRangeMaxInput, formatPrice(maxPrice));
+        ui.buttonByCss("input[placeholder='Từ']").setText(formatPrice(minPrice));
+        ui.buttonByCss("input[placeholder='Đến']").setText(formatPrice(maxPrice));
     }
 
 
@@ -610,6 +629,6 @@ public class ShopPage extends BasePage {
 
     @Step("Count visible products in grid")
     public int countVisibleProducts() {
-        return productCards.size();
+        return productCards.getElements().size();
     }
 }

@@ -4,7 +4,7 @@ import io.qameta.allure.Allure;
 import io.qameta.allure.model.Status;
 import io.qameta.allure.model.StepResult;
 import lombok.extern.slf4j.Slf4j;
-import org.example.utils.WebDriverUtils;
+import org.example.core.control.util.DriverUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.testng.asserts.IAssert;
@@ -33,7 +33,6 @@ public class SoftAssertConfig extends SoftAssert {
     }
 
     /**
-     * Purpose:
      * - Create a separate step in the Allure Report to log failure details without breaking the flow of other steps.
      * - Attach a screenshot to the FAILED step for easier debugging and analysis.
      * - Find parent step and update it to FAILED if sub-steps fail.
@@ -56,7 +55,7 @@ public class SoftAssertConfig extends SoftAssert {
         Allure.getLifecycle().startStep(stepUuid, stepResult);
 
         try {
-            Object driver = WebDriverUtils.getWebDriver();
+            Object driver = DriverUtils.getWebDriver();
             byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
             if (bytes != null && bytes.length > 0) {
                 Allure.getLifecycle().addAttachment("Attachment", "image/png", "png", new ByteArrayInputStream(bytes));

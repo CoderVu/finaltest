@@ -1,0 +1,147 @@
+package org.example.core.control.base.imp;
+
+import lombok.extern.slf4j.Slf4j;
+import org.example.core.control.base.IClickable;
+import org.example.core.control.util.DriverUtils;
+import org.openqa.selenium.By;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
+
+@Slf4j
+public class Clickable extends BaseControl implements IClickable {
+
+    public Clickable(String locator) {
+        super(locator);
+    }
+
+    public Clickable(By locator) {
+        super(locator);
+    }
+
+    public Clickable(String locator, Object... value) {
+        super(locator, value);
+    }
+
+    public Clickable(BaseControl parent, String locator) {
+        super(parent, locator);
+    }
+
+    public Clickable(BaseControl parent, By locator) {
+        super(parent, locator);
+    }
+
+    public Clickable(BaseControl parent, String locator, Object... value) {
+        super(parent, locator, value);
+    }
+
+    @Override
+    public void click() {
+        click(1);
+    }
+
+    @Override
+    public void click(int times) {
+        if (times > 0) {
+            try {
+                log.debug(String.format("Click on %s", getLocator().toString()));
+
+                if (!isVisible()) {
+                    waitForDisplay(DriverUtils.getTimeOut());
+                }
+                scrollElementToCenterScreen();
+                waitForElementClickable(DriverUtils.getTimeOut());
+
+                new Actions(getDriver()).moveToElement(getElement()).pause(Duration.ofMillis(100)).click().build().perform();
+                return;
+            } catch (Exception firstEx) {
+                String errorMsg = firstEx.getMessage() == null ? "" : firstEx.getMessage().split("\n")[0];
+                boolean intercepted = errorMsg.contains("Other element would receive the click")
+                        || errorMsg.contains("Element is not clickable at point")
+                        || errorMsg.contains("element click intercepted");
+
+                if (intercepted) {
+                    times--;
+                    if (times == 0) {
+                        log.error(String.format("Error occurred while clicking on control '%s':\n%s",
+                                getLocator().toString(), errorMsg));
+                        throw firstEx;
+                    }
+
+                    // Small delay, try native click again, then JS as last fallback
+                    DriverUtils.delay(1);
+                    try {
+                        scrollElementToCenterScreen();
+                        waitForElementClickable(DriverUtils.getTimeOut());
+                        getElement().click();
+                        return;
+                    } catch (Exception secondEx) {
+                        if (times == 1) {
+                            clickByJs();
+                            return;
+                        }
+                        click(times);
+                    }
+                } else {
+                    log.error(String.format("Error occurred while clicking on control '%s': %s",
+                            getLocator().toString(), errorMsg));
+                    throw firstEx;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void click(int x, int y) {
+        try {
+            log.debug(String.format("Click on %s", getLocator().toString()));
+            new Actions(getDriver()).moveToElement(getElement(), x, y).click().build().perform();
+        } catch (Exception e) {
+            log.error(String.format("Has error with control '%s': %s", getLocator().toString(), e.getMessage().split("\n")[0]));
+            throw e;
+        }
+    }
+
+    @Override
+    public void clickByJs() {
+        try {
+            log.debug(String.format("Click by js on %s", getLocator().toString()));
+            jsExecutor().executeScript("arguments[0].click();", getElement());
+        } catch (Exception e) {
+            log.error(String.format("Has error with control '%s': %s", getLocator().toString(), e.getMessage().split("\n")[0]));
+            throw e;
+        }
+    }
+
+    @Override
+    public void doubleClick() {
+        try {
+            log.debug(String.format("Double click on %s", getLocator().toString()));
+            new Actions(getDriver()).doubleClick(getElement()).build().perform();
+        } catch (Exception e) {
+            log.error(String.format("Has error with control '%s': %s", getLocator().toString(), e.getMessage().split("\n")[0]));
+            throw e;
+        }
+
+    }
+
+    @Override
+    public void waitForElementClickable() {
+        waitForElementClickable(DriverUtils.getTimeOut());
+    }
+
+    @Override
+    public void waitForElementClickable(int timeOutInSecond) {
+        try {
+            if (!isVisible())
+                waitForDisplay(timeOutInSecond);
+            log.info(String.format("Wait for element click able %s", getLocator().toString()));
+            WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(timeOutInSecond));
+            wait.until(ExpectedConditions.elementToBeClickable(getElement()));
+        } catch (Exception e) {
+            log.error(String.format("WaitForElementClickable: Has error with control '%s': %s",
+                    getLocator().toString(), e.getMessage().split("\n")[0]));
+        }
+    }
+}

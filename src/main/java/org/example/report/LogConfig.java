@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public class LogConfig implements ITestListener, IExecutionListener, WebDriverListener {
@@ -22,6 +24,27 @@ public class LogConfig implements ITestListener, IExecutionListener, WebDriverLi
 	private PrintStream originalErr;
 	private FileOutputStream logFileOut;
 	private File terminalLogFile;
+	private static final long DEDUP_WINDOW_MS = 300;
+	private final ThreadLocal<Map<String, Long>> lastLogTimes = ThreadLocal.withInitial(HashMap::new);
+
+	private boolean shouldLog(String messageKey) {
+		try {
+			Map<String, Long> map = lastLogTimes.get();
+			long now = System.currentTimeMillis();
+			Long last = map.get(messageKey);
+			if (last == null || now - last > DEDUP_WINDOW_MS) {
+				map.put(messageKey, now);
+				return true;
+			}
+			return false;
+		} catch (Throwable t) {
+			return true;
+		}
+	}
+
+	private boolean shouldLogLocator(String locatorKey) {
+		return shouldLog("locator:" + locatorKey);
+	}
 
 	@Override
 	public void onExecutionStart() {
@@ -58,6 +81,7 @@ public class LogConfig implements ITestListener, IExecutionListener, WebDriverLi
 				logFileOut.close();
 			}
 			log.info("Terminal logging finalized");
+			lastLogTimes.remove();
 		} catch (IOException ioEx) {
 			log.warn("Failed to finalize terminal log capture: {}", ioEx.getMessage());
 		}
@@ -65,16 +89,17 @@ public class LogConfig implements ITestListener, IExecutionListener, WebDriverLi
 
 	@Override
 	public void beforeFindElement(WebDriver driver, By locator) {
-		String msg = "Finding element: " + locator;
-		log.info("{}", msg);
-		try { Allure.step(msg); } catch (Throwable ignored) { }
+		// Suppress pre-find logs to avoid duplicates; we only log once after element is found
 	}
 
 	@Override
 	public void afterFindElement(WebDriver driver, By locator, WebElement result) {
-		String msg = "Found element: " + locator;
-		log.info("{}", msg);
-		try { Allure.step(msg); } catch (Throwable ignored) { }
+		String key = locator == null ? "null" : locator.toString();
+		if (shouldLogLocator(key)) {
+			String msg = "Found element: " + key;
+			log.info("{}", msg);
+			try { Allure.step(msg); } catch (Throwable ignored) { }
+		}
 	}
 
 	public static WebDriver decorate(WebDriver originalDriver) {

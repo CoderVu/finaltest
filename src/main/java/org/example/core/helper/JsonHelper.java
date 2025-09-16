@@ -7,19 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.log4j.Logger;
 import org.openqa.selenium.remote.DesiredCapabilities;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JsonHelper {
-
-	private static Logger log = Logger.getLogger(JsonHelper.class);
 
 	public static Map<String, String> convertJsonToMap(String json) {
 		try {
