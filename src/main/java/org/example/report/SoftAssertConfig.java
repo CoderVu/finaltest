@@ -1,41 +1,26 @@
-package org.example.config;
+package org.example.report;
 
 import io.qameta.allure.Allure;
 import io.qameta.allure.model.Status;
 import io.qameta.allure.model.StepResult;
+import lombok.extern.slf4j.Slf4j;
+import org.example.utils.WebDriverUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
 import org.testng.asserts.IAssert;
 import org.testng.asserts.SoftAssert;
-
 import java.io.ByteArrayInputStream;
- 
 import java.util.UUID;
 import static org.example.utils.DateUtils.getCurrentDate;
-import static org.example.config.AllureConfig.takeScreenshot;
 
 
-
+@Slf4j
 public class SoftAssertConfig extends SoftAssert {
 
     private static final ThreadLocal<SoftAssertConfig> SOFT = ThreadLocal.withInitial(SoftAssertConfig::new);
-    private int failureCount = 0;
 
     public static SoftAssertConfig get() {
         return SOFT.get();
-    }
-
-    public int getFailureCount() {
-        return failureCount;
-    }
-
-    public void resetFailureCount() {
-        failureCount = 0;
-    }
-
-    @Override
-    public void onBeforeAssert(IAssert<?> assertCommand) {
     }
 
     @Override
@@ -71,19 +56,17 @@ public class SoftAssertConfig extends SoftAssert {
         Allure.getLifecycle().startStep(stepUuid, stepResult);
 
         try {
-            WebDriver driver = com.codeborne.selenide.WebDriverRunner.getWebDriver();
-            if (driver != null) {
-                byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                if (bytes != null && bytes.length > 0) {
-                    Allure.getLifecycle().addAttachment("Attachment", "image/png", "png", new ByteArrayInputStream(bytes));
-                }
+            Object driver = WebDriverUtils.getWebDriver();
+            byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            if (bytes != null && bytes.length > 0) {
+                Allure.getLifecycle().addAttachment("Attachment", "image/png", "png", new ByteArrayInputStream(bytes));
             }
         } catch (Throwable ignored) {
 
         }
-        Allure.getLifecycle().updateStep(stepUuid, step -> {
-            step.setStatus(Status.FAILED);
-        });
+//        Allure.getLifecycle().updateStep(stepUuid, step -> {
+//            step.setStatus(Status.FAILED);
+//        });
 
         Allure.getLifecycle().stopStep(stepUuid);
 
@@ -100,12 +83,6 @@ public class SoftAssertConfig extends SoftAssert {
         } catch (Exception e) {
             return "";
         }
-    }
-
-    public static void recordFailure(String message) {
-        takeScreenshot();
-        Allure.step("FAIL [" + getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS") + "]: " + message, Status.FAILED);
-        get().fail(message);
     }
 
     public static void reset() {

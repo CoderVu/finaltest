@@ -37,12 +37,13 @@ public class ShopPage extends BasePage {
     protected final SelenideElement priceRangeMinInput = $("input[placeholder='Từ']");
     protected final SelenideElement priceRangeMaxInput = $("input[placeholder='Đến']");
     protected final SelenideElement viewResultButton = $("#view-result");
-    protected final ElementsCollection productCards = $$x("//a[contains(@class,'product-item')]");
-    protected final ElementsCollection productPrices = $$x("//a[contains(@class,'product-item')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
+    protected final ElementsCollection productCards = $$x("//a[contains(@class,'product-ditem')]");
+    protected final ElementsCollection productPrices = $$x("//a[contains(@class,'product-sitem')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
     protected final SelenideElement loadMoreButton = $x("//div[@data-view-id='category_infinity_view.more']");
     protected final SelenideElement selectedSupplierLabel = $("#selected-supplier");
     protected final ElementsCollection actualItemsXpath = $$x(".//a[contains(@class,'breadcrumb-item')]//span");
     protected static final SelenideElement filled = $x(".//div[@style and contains(@style,'width')]");
+    protected static final String h2ByExactText = "//h2[normalize-space(text())='%s']";
     // Rel/absolute xpaths as constants
     protected static final String togglerRel = ".//a[contains(@class,'toggler')]";
     protected static final String modalTogglerMoreRel = ".//a[contains(@class,'toggler') and normalize-space(text())='Xem thêm']";
@@ -62,6 +63,8 @@ public class ShopPage extends BasePage {
     protected static final String activePillAnywhereByInnerDiv = "//div[contains(@class,'sc-bd134f7-2') and normalize-space(text())='%s']";
     protected static final String inlineFilterChild2CheckedExact = "//div[contains(@class,'filter-child2')][.//span[contains(@class,'box') and contains(@class,'checked')]]//*[self::span or self::div][normalize-space(text())='%s']";
     protected static final String inlineFilterChild2CheckedContains = "//div[contains(@class,'filter-child2')][.//span[contains(@class,'box') and contains(@class,'checked')]]//*[self::span or self::div][contains(normalize-space(.), '%s')]";
+    protected static final String optionCheckboxCheckedRel = ".//span[contains(@class,'box') and contains(@class,'checked')]";
+    protected static final String optionIconCheckOnRel = ".//img[contains(@class,'icon-check-on')]";
 
     // Product card relative locators
     protected static final String productCardNameRel = ".//h3";
@@ -123,6 +126,12 @@ public class ShopPage extends BasePage {
                 expectedBreadcrumb.getCategoryText()
         );
         return actualItems.equals(expectedItems);
+    }
+
+    @Step("Verify H2 page title displayed: {title}")
+    public boolean isH2TitleDisplayed(String title) {
+        String xp = String.format(h2ByExactText, title);
+        return $x(xp).exists();
     }
 
     @Step("Click on 'Tất cả' button under 'Tất cả sản phẩm' section")
@@ -517,8 +526,8 @@ public class ShopPage extends BasePage {
         SelenideElement option = section.$x(optionXPath);
         if (!option.exists()) return false;
 
-        boolean classChecked = option.$x(".//span[contains(@class,'box') and contains(@class,'checked')]").exists();
-        boolean iconOn = option.$x(".//img[contains(@class,'icon-check-on')]").exists();
+        boolean classChecked = option.$x(optionCheckboxCheckedRel).exists();
+        boolean iconOn = option.$x(optionIconCheckOnRel).exists();
         return classChecked || iconOn;
     }
 

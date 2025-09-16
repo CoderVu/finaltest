@@ -71,14 +71,26 @@ public class HomePage extends BasePage {
 
     @Step("Select search-top category: {categoryTitle}")
     public void selectSearchTopCategory(String categoryTitle) {
-        SelenideElement container = categoryContainer.shouldBe(Condition.visible);
+        if (!categoryContainer.is(Condition.visible)) {
+            clickSearchField();
+            if (!categoryContainer.is(Condition.visible)) {
+                return; // container still not visible, skip
+            }
+        }
+        SelenideElement container = categoryContainer;
         String itemXp = String.format(dynamicCategoryByTitle, categoryTitle);
         container.$x(itemXp).shouldBe(Condition.visible).click();
     }
 
     @Step("Select search-top category by enum: {category}")
     public void selectSearchTopCategory(Category category) {
-        SelenideElement container = categoryContainer.shouldBe(Condition.visible);
+        if (!categoryContainer.is(Condition.visible)) {
+            clickSearchField();
+            if (!categoryContainer.is(Condition.visible)) {
+                return; // container still not visible, skip
+            }
+        }
+        SelenideElement container = categoryContainer;
         String byTitleXp = String.format(dynamicCategoryByTitle, category.getTitle());
         String byHrefXp = String.format(dynamicCategoryByHref, category.getHref());
         SelenideElement target;

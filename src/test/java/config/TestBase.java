@@ -1,7 +1,7 @@
 package config;
 
 import org.example.config.BrowserConfig;
-import org.example.config.SoftAssertConfig;
+import org.example.report.SoftAssertConfig;
 import org.example.pages.BasePage;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;

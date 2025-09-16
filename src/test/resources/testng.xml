@@ -2,7 +2,8 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Selenium Level 2 Test Suite">
     <listeners>
-        <listener class-name="org.example.config.AllureConfig"/>
+        <listener class-name="org.example.report.AllureConfig"/>
+        <listener class-name="org.example.report.LogConfig"/>
     </listeners>
     <test name="Selenium Level 2 Final Test">
         <classes>

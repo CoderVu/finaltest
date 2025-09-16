@@ -5,11 +5,9 @@ import org.example.config.EnvConfig;
 public class Constants {
 
     public static final String CONFIG_PROPERTIES_FILE = System.getProperty("env.file", "dev-env.yaml");
-
     private static volatile boolean initialized = false;
     private static volatile String baseUrl;
     private static volatile String defaultBrowser;
-
     public static final long DEFAULT_TIMEOUT = 20000;
     public static final long DEFAULT_PAGE_LOAD_TIMEOUT = 30000;
 

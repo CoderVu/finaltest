@@ -1,19 +1,13 @@
-package org.example.config;
+package org.example.report;
 
 import com.codeborne.selenide.WebDriverRunner;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Attachment;
-import io.qameta.allure.listener.StepLifecycleListener;
 import io.qameta.allure.model.Status;
-import io.qameta.allure.model.StepResult;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.ElementNotInteractableException;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.testng.IConfigurationListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
@@ -22,6 +16,7 @@ import org.testng.annotations.BeforeSuite;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+ 
 import static org.example.utils.DateUtils.getCurrentDate;
 
 @Slf4j
@@ -38,17 +33,17 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
 
     @Override
     public void onTestFailure(ITestResult result) {
-        captureScreenshotOnFailure(result, "Test Failure");
+        captureScreenshotOnFailure(result, "Failure");
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        captureScreenshotOnFailure(result, "Test Skipped");
+        captureScreenshotOnFailure(result, "Skipped");
     }
 
     @Override
     public void onTestFailedWithTimeout(ITestResult result) {
-        captureScreenshotOnFailure(result, "Test Timeout");
+        captureScreenshotOnFailure(result, "Timeout");
     }
 
     @Override
@@ -97,30 +92,47 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
         log.debug("Configuration skipped: {}", itr.getMethod() != null ? itr.getMethod().getMethodName() : "config");
     }
 
-    private void captureScreenshotOnFailure(ITestResult result, String failureType) {
-        try {
-            WebDriver driver = WebDriverRunner.getWebDriver();
-            if (driver != null) {
-                byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                if (png != null && png.length > 0) {
-                    String timestamp = getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS");
-                    String testName = result.getName();
-                    String attachmentName = String.format("%s Screenshot [%s] - %s in %s", 
-                        failureType, timestamp, testName);
-                    
-                    Allure.addAttachment(attachmentName, "image/png", new ByteArrayInputStream(png), "png");
-                    
-                    String errorMessage = getErrorMessage(result);
-                    Allure.step(String.format("%s: %s - %s", failureType, testName, errorMessage), 
-                        Status.FAILED);
-                    
-                    log.info("Screenshot captured and attached to Allure report for {}: {}", failureType, testName);
-                }
+//    private void captureScreenshotOnFailure(ITestResult result, String failureType) {
+//        try {
+//            WebDriver driver = WebDriverRunner.getWebDriver();
+//            if (driver != null) {
+//                byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+//                if (png != null && png.length > 0) {
+//                    String testName = result.getName();
+//
+//                    Allure.addAttachment("Attachment", "image/png", new ByteArrayInputStream(png), "png");
+//
+//                    String errorMessage = getErrorMessage(result);
+//                    Allure.step(String.format("%s: %s - %s", failureType, testName, errorMessage), Status.FAILED);
+//                }
+//            }
+//        } catch (Exception ignored) {
+//            log.warn("Failed to capture screenshot for {}: {}", failureType, ignored.getMessage());
+//        }
+//    }
+private void captureScreenshotOnFailure(ITestResult result, String failureType) {
+    try {
+        WebDriver driver = WebDriverRunner.getWebDriver();
+        if (driver != null) {
+            byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            if (png != null && png.length > 0) {
+                String testName = result.getName();
+
+                Allure.addAttachment(
+                        failureType + " - " + testName,
+                        "image/png",
+                        new ByteArrayInputStream(png),
+                        "png"
+                );
+
+                log.error("{}: {} - {}", failureType, testName, getErrorMessage(result));
             }
-        } catch (Exception ignored) {
-            log.warn("Failed to capture screenshot for {}: {}", failureType, ignored.getMessage());
         }
+    } catch (Exception ignored) {
+        log.warn("Failed to capture screenshot for {}: {}", failureType, ignored.getMessage());
     }
+}
+
 
     private String getErrorMessage(ITestResult result) {
         Throwable throwable = result.getThrowable();
@@ -132,53 +144,6 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
             return throwable.getClass().getSimpleName();
         }
         return "Unknown error";
-    }
-
-    public static boolean isElementRelatedError(Throwable t) {
-        if (t == null) return false;
-        
-        if (t instanceof NoSuchElementException || 
-            t instanceof TimeoutException ||
-            t instanceof ElementNotInteractableException ||
-            t instanceof StaleElementReferenceException) {
-            return true;
-        }
-        
-        String message = t.getMessage();
-        if (message != null) {
-            String lowerMessage = message.toLowerCase();
-            return lowerMessage.contains("no such element") ||
-                   lowerMessage.contains("element not found") ||
-                   lowerMessage.contains("timeout") ||
-                   lowerMessage.contains("element not interactable") ||
-                   lowerMessage.contains("stale element") ||
-                   lowerMessage.contains("element is not attached") ||
-                   lowerMessage.contains("element click intercepted");
-        }
-        
-        return false;
-    }
-
-    public static void captureElementErrorScreenshot(String context, String errorMessage) {
-        try {
-            WebDriver driver = WebDriverRunner.getWebDriver();
-            if (driver != null) {
-                byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                if (png != null && png.length > 0) {
-                    String timestamp = getCurrentDate("yyyy-MM-dd HH:mm:ss.SSS");
-                    String attachmentName = String.format("Element Error Screenshot [%s] - %s", 
-                        timestamp, context);
-                    
-                    Allure.addAttachment(attachmentName, "image/png", new ByteArrayInputStream(png), "png");
-                    Allure.step(String.format("Element Error: %s - %s", context, errorMessage), 
-                        Status.FAILED);
-                    
-                    log.info("Element error screenshot captured: {} - {}", context, errorMessage);
-                }
-            }
-        } catch (Exception ignored) {
-            log.warn("Failed to capture element error screenshot: {}", ignored.getMessage());
-        }
     }
 
     public static void attachScreenshot(String name) {

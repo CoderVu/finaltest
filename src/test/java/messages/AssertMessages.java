@@ -24,4 +24,8 @@ public final class AssertMessages {
 
     public static final String PRICE_RANGE_NOT_MATCH = "Product price range does not match the selected price range. min=%f, max=%f";
 
+    public static final String BREADCRUMB_SHOULD_BE = "Breadcrumb should be '%s'";
+
+    public static final String H2_TITLE_NOT_DISPLAYED = "Page title '%s' is not displayed";
+
 }

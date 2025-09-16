@@ -5,6 +5,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Constants;
+import org.example.report.LogConfig;
 import org.openqa.selenium.WebDriver;
 
 import java.awt.*;
@@ -163,6 +164,13 @@ public class BrowserConfig {
     public static void setUp() {
         initialize();
         Selenide.open(getBaseUrl());
+        try {
+            WebDriver current = WebDriverRunner.getWebDriver();
+            WebDriver decorated = LogConfig.decorate(current);
+            WebDriverRunner.setWebDriver(decorated);
+        } catch (Exception e) {
+            log.warn("Failed to register LogConfig WebDriver listener: {}", e.getMessage());
+        }
         maximizeWindow();
     }
 

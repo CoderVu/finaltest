@@ -5,7 +5,8 @@ import io.qameta.allure.Epic;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Story;
-import org.example.config.SoftAssertConfig;
+import messages.AssertMessages;
+import org.example.report.SoftAssertConfig;
 import org.example.enums.Category;
 import org.example.pages.HomePage;
 import org.example.pages.ShopPage;
@@ -16,11 +17,17 @@ public class TC002_VerifyUserCanSeeMoreItems extends TestBase {
 
     HomePage homePage = new HomePage();
     ShopPage shopPage = new ShopPage();
-    SoftAssertConfig softAssert = SoftAssertConfig.get();
+    SoftAssertConfig softAssert;
+
+    // Test data
+    private final Category mainCategory = Category.DIEN_TU_DIEN_LANH;
+    private final String mainCategoryName = "Tivi";
+    private final int loadMoreClicks = 2;
 
     @BeforeMethod
     public void setUp() {
         super.setUp();
+        softAssert = SoftAssertConfig.get();
     }
 
     @Test(description = "Verify 'Xem thêm' loads more products in Tivi category")
@@ -31,23 +38,31 @@ public class TC002_VerifyUserCanSeeMoreItems extends TestBase {
 
         // 1. Navigate to TIKI website
         homePage.navigateToHomePage();
-        softAssert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed");
+        softAssert.assertTrue(homePage.isHomePageDisplayed(), AssertMessages.HOME_NOT_DISPLAYED);
 
         // 2. Select left menu Điện Tử - Điện Lạnh and verify URL
-        homePage.selectCategory(Category.DIEN_TU_DIEN_LANH);
-        softAssert.assertTrue(shopPage.isLinkActiveCategoryNavigation(Category.DIEN_TU_DIEN_LANH),
-                "Should navigate to '" + Category.DIEN_TU_DIEN_LANH.getHref() + "'");
+        homePage.selectCategory(mainCategory);
+        softAssert.assertTrue(
+                shopPage.isLinkActiveCategoryNavigation(mainCategory),
+                String.format(AssertMessages.URL_SHOULD_NAVIGATE, mainCategory.getHref())
+        );
 
         // 3. Click Danh Mục "Tivi" and verify section / navigation
-        shopPage.openLeftMenuMainCategory("Tivi");
-        softAssert.assertTrue(shopPage.isLeftMenuSectionDisplayed("Tivi"), "'Tivi' section should be displayed");
+        shopPage.openLeftMenuMainCategory(mainCategoryName);
+        softAssert.assertTrue(
+                shopPage.isLeftMenuSectionDisplayed(mainCategoryName),
+                String.format(AssertMessages.SECTION_SHOULD_BE_DISPLAYED, mainCategoryName)
+        );
 
         // 4. Click on Xem thêm button to see more items
         shopPage.waitForSizeProductGreaterThan(0);
         int before = shopPage.countVisibleProducts();
-        shopPage.loadMoreProducts(2);
+        shopPage.loadMoreProducts(loadMoreClicks);
         int after = shopPage.countVisibleProducts();
-        softAssert.assertTrue(after > before, "Product count should increase after 'Xem thêm'. before=" + before + ", after=" + after);
+        softAssert.assertTrue(
+                after > before,
+                String.format(AssertMessages.PRODUCT_COUNT_INCREASED, before, after)
+        );
 
         softAssert.assertAll();
     }
