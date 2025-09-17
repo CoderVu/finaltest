@@ -1,9 +1,8 @@
 package org.example.pages;
 
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.SelenideElement;
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.control.factory.ElementFactory;
+import org.example.core.control.common.annotation.FindBy;
 import org.example.core.control.common.imp.Element;
 import org.openqa.selenium.By;
 
@@ -18,10 +17,12 @@ public class BasePage {
     public BasePage() {
         PageFactory.initElements(this);
     }
-
     //controls
-    protected final Element closePopupButton = new Element("css=picture.webpimg-container img[alt='close-icon']");
-    protected final Element logo = new Element("css=a.tiki-logo[data-view-id='header_main_logo']");
+    @FindBy(css = "picture.webpimg-container img[alt='close-icon']")
+    protected Element closePopupButton;
+
+    @FindBy(css = "a.tiki-logo[data-view-id='header_main_logo']")
+    protected Element logo;
 
     //method
     public void closePopupIfPresent() {

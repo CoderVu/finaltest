@@ -1,6 +1,8 @@
 package org.example.common;
 
 import org.example.config.EnvConfig;
+import java.util.Arrays;
+import java.util.List;
 
 public class Constants {
 
@@ -8,6 +10,7 @@ public class Constants {
     private static volatile boolean initialized = false;
     private static volatile String baseUrl;
     private static volatile String defaultBrowser;
+    private static volatile List<String> browsers;
     public static final long DEFAULT_TIMEOUT = 20000;
     public static final long DEFAULT_PAGE_LOAD_TIMEOUT = 30000;
 
@@ -21,6 +24,11 @@ public class Constants {
         return defaultBrowser;
     }
 
+    public static List<String> getBrowsers() {
+        ensureInitialized();
+        return browsers;
+    }
+
     public static void reload() {
         reload(CONFIG_PROPERTIES_FILE);
     }
@@ -30,7 +38,20 @@ public class Constants {
             try {
                 EnvConfig.load(envFilePath);
                 baseUrl = EnvConfig.get("base_url");
-                defaultBrowser = EnvConfig.get("browser");
+                
+                // Try to get browsers list first, fallback to single browser
+                String browsersStr = EnvConfig.get("browsers");
+                if (browsersStr != null && !browsersStr.trim().isEmpty()) {
+                    // Parse browsers list from YAML
+                    browsersStr = browsersStr.replaceAll("\\[|\\]", "").trim();
+                    browsers = Arrays.asList(browsersStr.split("\\s*,\\s*"));
+                    defaultBrowser = browsers.get(0); // First browser as default
+                } else {
+                    // Fallback to single browser
+                    defaultBrowser = EnvConfig.get("browser");
+                    browsers = Arrays.asList(defaultBrowser != null ? defaultBrowser : "chrome");
+                }
+                
                 initialized = true;
             } catch (Exception e) {
                 initialized = false;

@@ -12,7 +12,6 @@ import org.example.enums.Category;
 import org.example.enums.ViewType;
 import org.example.pages.ShopPage;
 import org.example.pages.HomePage;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
@@ -37,10 +36,6 @@ public class TC001_VerifyUserCanFilterSearchConditionForProduct extends TestBase
     private final int maxPrice = 5500000;
     private final ViewType viewType = ViewType.GRID;
 
-    @BeforeMethod
-    public void setUp() {
-        super.setUp();
-    }
 
     @Test(description = "Navigate to TIKI website and apply coffee machine filters")
     @Epic("Tiki E-commerce")

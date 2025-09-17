@@ -24,17 +24,12 @@ public class TC002_VerifyUserCanSeeMoreItems extends TestBase {
     private final String mainCategoryName = "Tivi";
     private final int loadMoreClicks = 2;
 
-    @BeforeMethod
-    public void setUp() {
-        super.setUp();
-        softAssert = SoftAssertConfig.get();
-    }
-
     @Test(description = "Verify 'Xem thêm' loads more products in Tivi category")
     @Epic("Tiki E-commerce")
     @Story("'Xem thêm' button loads more products")
     @Severity(SeverityLevel.NORMAL)
     public void testSeeMoreLoadsMoreProducts() {
+        softAssert = SoftAssertConfig.get();
 
         // 1. Navigate to TIKI website
         homePage.navigateToHomePage();

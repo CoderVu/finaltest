@@ -92,12 +92,6 @@
             <artifactId>ashot</artifactId>
             <version>1.5.4</version>
         </dependency>
-        <!-- ini4j for INI parsing -->
-        <dependency>
-            <groupId>org.ini4j</groupId>
-            <artifactId>ini4j</artifactId>
-            <version>0.5.4</version>
-        </dependency>
         <!-- AspectJ Weaver for Allure step tracking and screenshot -->
         <dependency>
             <groupId>org.aspectj</groupId>
@@ -132,6 +126,8 @@
                 <headless>false</headless>
                 <timeout>10000</timeout>
                 <page.load.timeout>30000</page.load.timeout>
+                <env.file>dev-env.yaml</env.file>
+                <base.url></base.url>
             </properties>
         </profile>
         
@@ -168,6 +164,50 @@
                 <headless>false</headless>
                 <timeout>10000</timeout>
                 <page.load.timeout>30000</page.load.timeout>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Remote Grid Testing -->
+        <profile>
+            <id>remote-grid</id>
+            <properties>
+                <user.profile>remote-grid-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+                <remote.enabled>true</remote.enabled>
+                <remote.url>http://localhost:4444/wd/hub</remote.url>
+                <w3c.enabled>true</w3c.enabled>
+                <grid.enabled>true</grid.enabled>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Grid với VNC -->
+        <profile>
+            <id>grid-vnc</id>
+            <properties>
+                <user.profile>grid-vnc-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+                <remote.enabled>true</remote.enabled>
+                <remote.url>http://localhost:4444/wd/hub</remote.url>
+                <w3c.enabled>true</w3c.enabled>
+                <grid.enabled>true</grid.enabled>
+            </properties>
+        </profile>
+        
+        <!-- Profile cho Local W3C Testing -->
+        <profile>
+            <id>local-w3c</id>
+            <properties>
+                <user.profile>local-w3c-profile</user.profile>
+                <headless>false</headless>
+                <timeout>10000</timeout>
+                <page.load.timeout>30000</page.load.timeout>
+                <remote.enabled>false</remote.enabled>
+                <w3c.enabled>true</w3c.enabled>
+                <grid.enabled>false</grid.enabled>
             </properties>
         </profile>
     </profiles>
@@ -215,6 +255,17 @@
                         <org.slf4j.simpleLogger.log.org.example>debug</org.slf4j.simpleLogger.log.org.example>
                         <org.slf4j.simpleLogger.log.org.openqa.selenium>warn</org.slf4j.simpleLogger.log.org.openqa.selenium>
                         <org.slf4j.simpleLogger.log.com.codeborne.selenide>info</org.slf4j.simpleLogger.log.com.codeborne.selenide>
+                        <!-- Pass profile properties to JVM -->
+                        <browser>${browser}</browser>
+                        <headless>${headless}</headless>
+                        <timeout>${timeout}</timeout>
+                        <page.load.timeout>${page.load.timeout}</page.load.timeout>
+                        <remote.enabled>${remote.enabled}</remote.enabled>
+                        <remote.url>${remote.url}</remote.url>
+                        <w3c.enabled>${w3c.enabled}</w3c.enabled>
+                        <grid.enabled>${grid.enabled}</grid.enabled>
+                        <base.url>${base.url}</base.url>
+                        <env.file>${env.file}</env.file>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

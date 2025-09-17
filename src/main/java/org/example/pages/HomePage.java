@@ -1,16 +1,18 @@
 package org.example.pages;
 
-import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selenide;
-import com.codeborne.selenide.SelenideElement;
 import io.qameta.allure.Step;
 import org.example.common.Constants;
 import org.example.enums.Category;
 import org.example.core.control.common.annotation.FindBy;
 import org.example.core.control.common.imp.Element;
-import org.example.core.control.factory.ElementFactory;
 import org.openqa.selenium.By;
-import static com.codeborne.selenide.Selenide.*;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
+import org.example.core.control.util.DriverUtils;
+
 import static org.example.core.control.util.DriverUtils.getCurrentUrl;
 
 public class HomePage extends BasePage {
@@ -18,10 +20,10 @@ public class HomePage extends BasePage {
     public HomePage() { super(); }
 
     @FindBy(css = "input[data-view-id='main_search_form_input'][placeholder='Freeship đơn từ 45k']")
-    private Element searchField;
+    protected Element searchField;
 
     @FindBy(xpath = "//div[@data-view-id='search_top.category_product_container']")
-    private Element categoryContainer;
+    protected Element categoryContainer;
     
     // Dynamic locators
     protected static final String dynamicCategoryByTitle = ".//a[@data-view-id='search_top.category_product_item' and .//span[@class='title' and normalize-space(text())='%s']]";
@@ -48,66 +50,67 @@ public class HomePage extends BasePage {
 
     @Step("Click on search field")
     public void clickSearchField() {
-        $(By.cssSelector("input[data-view-id='main_search_form_input'][placeholder='Freeship đơn từ 45k']")).shouldBe(Condition.visible);
         searchField.click();
     }
 
 
     @Step("Enter search text: {text}")
     public void setSearchText(String text) {
-        $(By.cssSelector("input[data-view-id='main_search_form_input'][placeholder='Freeship đơn từ 45k']")).shouldBe(Condition.visible);
+        searchField.waitForDisplay();
         searchField.setValue(text);
     }
 
     @Step("Select category: {categoryName}")
     public void selectCategory(Category categoryName) {
         By[] locators = new By[]{categoryName.byTitle(), categoryName.byHref()};
-        SelenideElement el = null;
+        WebElement target = null;
         for (By by : locators) {
             try {
-                el = Selenide.$(by).shouldBe(Condition.visible);
-                break;
+                WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(DriverUtils.getTimeOut()));
+                target = wait.until(ExpectedConditions.presenceOfElementLocated(by));
+                if (target != null) break;
             } catch (Throwable ignored) {
-
             }
         }
-        if (el == null) {
-            el = Selenide.$(categoryName.byHref()).shouldBe(Condition.visible);
+        if (target == null) {
+            try {
+                WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(DriverUtils.getTimeOut()));
+                target = wait.until(ExpectedConditions.presenceOfElementLocated(categoryName.byHref()));
+            } catch (Throwable ignored) {
+            }
         }
-        el.scrollIntoView(true).click();
+        if (target != null) {
+            target.click();
+        }
     }
 
     @Step("Select search-top category: {categoryTitle}")
     public void selectSearchTopCategory(String categoryTitle) {
-        if (!$(By.xpath("//div[@data-view-id='search_top.category_product_container']")).is(Condition.visible)) {
+        if (!categoryContainer.isVisible()) {
             clickSearchField();
-            if (!$(By.xpath("//div[@data-view-id='search_top.category_product_container']")).is(Condition.visible)) {
-                return; // container still not visible, skip
-            }
         }
-        SelenideElement container = $(By.xpath("//div[@data-view-id='search_top.category_product_container']"));
         String itemXp = String.format(dynamicCategoryByTitle, categoryTitle);
-        container.$x(itemXp).shouldBe(Condition.visible).click();
+        categoryContainer.getChildElement(itemXp).click();
     }
 
     @Step("Select search-top category by enum: {category}")
     public void selectSearchTopCategory(Category category) {
-        if (!$(By.xpath("//div[@data-view-id='search_top.category_product_container']")).is(Condition.visible)) {
+        if (!categoryContainer.isVisible()) {
             clickSearchField();
-            if (!$(By.xpath("//div[@data-view-id='search_top.category_product_container']")).is(Condition.visible)) {
-                return; // container still not visible, skip
+            if (!categoryContainer.isVisible()) {
+                return;
             }
         }
-        SelenideElement container = $(By.xpath("//div[@data-view-id='search_top.category_product_container']"));
         String byTitleXp = String.format(dynamicCategoryByTitle, category.getTitle());
         String byHrefXp = String.format(dynamicCategoryByHref, category.getHref());
-        SelenideElement target;
-        try {
-            target = container.$x(byTitleXp).shouldBe(Condition.visible);
-        } catch (Throwable ignored) {
-            target = container.$x(byHrefXp).shouldBe(Condition.visible);
+        categoryContainer.waitForDisplay();
+        WebElement target = categoryContainer.getChildElement(byTitleXp);
+        if (target == null) {
+            target = categoryContainer.getChildElement(byHrefXp);
         }
-        target.click();
+        if (target != null) {
+            target.click();
+        }
     }
 }
 

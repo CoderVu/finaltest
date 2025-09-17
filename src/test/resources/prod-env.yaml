@@ -1,2 +1,2 @@
 base_url: https://tiki.vn
-browser: firefox
+browsers: [chrome, firefox, edge]

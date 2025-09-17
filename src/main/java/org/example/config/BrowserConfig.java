@@ -26,9 +26,43 @@ public class BrowserConfig {
     private static final String TIMEOUT_PROPERTY = "timeout";
     private static final String PAGE_LOAD_TIMEOUT_PROPERTY = "page.load.timeout";
     private static final String ENV_FILE_PROPERTY = "env.file";
+    private static final String REMOTE_ENABLED_PROPERTY = "remote.enabled";
+    private static final String REMOTE_URL_PROPERTY = "remote.url";
+    private static final String W3C_ENABLED_PROPERTY = "w3c.enabled";
+    private static final String GRID_ENABLED_PROPERTY = "grid.enabled";
 
     public static String getBrowser() {
-        return System.getProperty(BROWSER_PROPERTY, Constants.getDefaultBrowser());
+        // Ưu tiên browser từ TestNG parameter (cho parallel execution)
+        try {
+            if (org.testng.Reporter.getCurrentTestResult() != null
+                    && org.testng.Reporter.getCurrentTestResult().getTestContext() != null
+                    && org.testng.Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest() != null) {
+                String param = org.testng.Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest().getParameter("browser");
+                if (param != null && !param.trim().isEmpty()) {
+                    System.out.println("BrowserConfig: Using TestNG parameter browser: " + param);
+                    return param.trim().toLowerCase();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        
+        // Fallback về command line parameter
+        String browserFromCmd = System.getProperty(BROWSER_PROPERTY);
+        if (browserFromCmd != null && !browserFromCmd.trim().isEmpty()) {
+            System.out.println("BrowserConfig: Using command line browser: " + browserFromCmd);
+            return browserFromCmd.trim().toLowerCase();
+        }
+        
+        // Fallback về default browser từ Constants
+        String defaultBrowser = Constants.getDefaultBrowser();
+        if (defaultBrowser != null && !defaultBrowser.trim().isEmpty()) {
+            System.out.println("BrowserConfig: Using default browser: " + defaultBrowser);
+            return defaultBrowser.trim().toLowerCase();
+        }
+        
+        // Cuối cùng là Chrome mặc định
+        System.out.println("BrowserConfig: Using fallback browser: chrome");
+        return "chrome";
     }
 
     public static String getBaseUrl() {
@@ -51,7 +85,46 @@ public class BrowserConfig {
     }
 
     public static String getEnvFile() {
-        return System.getProperty(ENV_FILE_PROPERTY, "dev-env.yaml");
+        String file = System.getProperty(ENV_FILE_PROPERTY, "dev-env.yaml");
+        if (file == null || file.trim().isEmpty()) {
+            return "dev-env.yaml";
+        }
+        return file;
+    }
+
+    private static String resolveBaseUrl() {
+        String raw = getBaseUrl();
+        if (raw == null || raw.trim().isEmpty()) {
+            raw = "https://tiki.vn";
+        }
+        String url = raw.trim();
+        if (isRemoteEnabled()) {
+            if (url.startsWith("http://localhost")) {
+                url = url.replaceFirst("http://localhost", "http://host.docker.internal");
+            } else if (url.startsWith("http://127.0.0.1")) {
+                url = url.replaceFirst("http://127.0.0.1", "http://host.docker.internal");
+            }
+        }
+        return url;
+    }
+
+    public static boolean isRemoteEnabled() {
+        String enabled = System.getProperty(REMOTE_ENABLED_PROPERTY, "false");
+        return Boolean.parseBoolean(enabled);
+    }
+
+    public static String getRemoteUrl() {
+        return System.getProperty(REMOTE_URL_PROPERTY, "");
+    }
+
+    public static boolean isW3CEnabled() {
+        String enabled = System.getProperty(W3C_ENABLED_PROPERTY, "true");
+        return Boolean.parseBoolean(enabled);
+    }
+
+    public static boolean isGridEnabled() {
+        String enabled = System.getProperty(GRID_ENABLED_PROPERTY, "false");
+        return Boolean.parseBoolean(enabled);
     }
 
     public static void initialize() {
@@ -63,23 +136,45 @@ public class BrowserConfig {
         }
         log.info("Environment file: " + getEnvFile());
         log.info("Browser: " + getBrowser());
+        log.info("Available browsers: " + Constants.getBrowsers());
         log.info("Base URL: " + getBaseUrl());
         log.info("Headless: " + isHeadless());
+        log.info("Remote enabled: " + isRemoteEnabled());
+        log.info("W3C enabled: " + isW3CEnabled());
+        log.info("Grid enabled: " + isGridEnabled());
+        if (isRemoteEnabled()) {
+            log.info("Remote URL: " + getRemoteUrl());
+        }
         log.info("Timeout: " + getTimeout() + "ms");
         log.info("Page Load Timeout: " + getPageLoadTimeout() + "ms");
         initializeSelenide();
     }
 
     private static void initializeSelenide() {
-        Configuration.browser = getBrowser();
+        // Use custom WebDriverProvider so each parallel thread can resolve its own browser
+        Configuration.browser = org.example.config.GridWDPConfig.class.getName();
         Configuration.headless = isHeadless();
         Configuration.timeout = getTimeout();
         Configuration.pageLoadTimeout = getPageLoadTimeout();
+        // Keep baseUrl consistent with what we open
+        Configuration.baseUrl = resolveBaseUrl();
         Configuration.screenshots = false;
         Configuration.savePageSource = false;
         Configuration.fileDownload = com.codeborne.selenide.FileDownloadMode.HTTPGET;
         Configuration.reportsFolder = "target/selenide-reports";
-        configureBrowserOptions();
+        // When using a custom provider, options/capabilities are configured inside the provider
+        // Keep legacy path only if not using provider (backward compatibility)
+        if (!Configuration.browser.equals(org.example.config.GridWDPConfig.class.getName())) {
+            configureBrowserOptions();
+            if (isRemoteEnabled()) {
+                String remote = getRemoteUrl();
+                if (remote == null || remote.trim().isEmpty()) {
+                    throw new IllegalStateException("remote.enabled=true but remote.url is empty");
+                }
+                Configuration.remote = remote.trim();
+                configureRemoteBrowserCapabilities();
+            }
+        }
         log.info("Selenide configuration initialized successfully");
     }
 
@@ -104,11 +199,29 @@ public class BrowserConfig {
         }
     }
 
-    // Per-browser configuration moved to core/browser/* configurators
+    private static void configureRemoteBrowserCapabilities() {
+        String browser = getBrowser().toLowerCase();
+        switch (browser) {
+            case "chrome":
+                Configuration.browserCapabilities.setCapability("browserName", "chrome");
+                break;
+            case "firefox":
+                Configuration.browserCapabilities.setCapability("browserName", "firefox");
+                break;
+            case "edge":
+                Configuration.browserCapabilities.setCapability("browserName", "MicrosoftEdge");
+                break;
+            default:
+                log.warn("Unsupported browser for remote execution: " + browser);
+                break;
+        }
+    }
 
     public static void setUp() {
         initialize();
-        Selenide.open(getBaseUrl());
+        String startUrl = resolveBaseUrl();
+        log.info("Opening base URL: " + startUrl);
+        Selenide.open(startUrl);
         try {
             WebDriver current = WebDriverRunner.getWebDriver();
             WebDriver decorated = LogConfig.decorate(current);
