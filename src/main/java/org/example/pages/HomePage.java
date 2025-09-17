@@ -6,6 +6,7 @@ import com.codeborne.selenide.SelenideElement;
 import io.qameta.allure.Step;
 import org.example.common.Constants;
 import org.example.enums.Category;
+import org.example.core.control.common.annotation.FindBy;
 import org.example.core.control.common.imp.Element;
 import org.example.core.control.factory.ElementFactory;
 import org.openqa.selenium.By;
@@ -16,11 +17,12 @@ public class HomePage extends BasePage {
 
     public HomePage() { super(); }
 
-    public HomePage(ElementFactory factory) { super(factory); }
+    @FindBy(css = "input[data-view-id='main_search_form_input'][placeholder='Freeship đơn từ 45k']")
+    private Element searchField;
 
-    // Controls
-    protected final Element searchField = ui.elementByCss("input[data-view-id='main_search_form_input'][placeholder='Freeship đơn từ 45k']");
-    protected final Element categoryContainer = ui.elementByXpath("//div[@data-view-id='search_top.category_product_container']");
+    @FindBy(xpath = "//div[@data-view-id='search_top.category_product_container']")
+    private Element categoryContainer;
+    
     // Dynamic locators
     protected static final String dynamicCategoryByTitle = ".//a[@data-view-id='search_top.category_product_item' and .//span[@class='title' and normalize-space(text())='%s']]";
     protected static final String dynamicCategoryByHref = ".//a[@data-view-id='search_top.category_product_item' and contains(@href,'%s')]";

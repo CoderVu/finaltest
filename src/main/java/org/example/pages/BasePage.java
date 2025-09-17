@@ -14,14 +14,9 @@ import static com.codeborne.selenide.Selenide.$;
 @Slf4j
 public class BasePage {
 
-    protected final ElementFactory ui;
 
     public BasePage() {
-        this.ui = new ElementFactory();
-    }
-
-    public BasePage(ElementFactory factory) {
-        this.ui = factory == null ? new ElementFactory() : factory;
+        PageFactory.initElements(this);
     }
 
     //controls

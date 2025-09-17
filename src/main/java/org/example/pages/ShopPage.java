@@ -25,6 +25,7 @@ import org.example.core.control.common.imp.Element;
 import org.example.core.control.factory.ElementFactory;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
 
 
 @Slf4j
@@ -36,20 +37,23 @@ public class ShopPage extends BasePage {
 
     // Locators
     protected static final SelenideElement breadcrumb = $x("//div[contains(@class,'breadcrumb')]");
-    protected final Element allProductsSection = ui.elementByCss(".sc-dc63c727-1");
-    protected final Element filterAllButton = ui.elementByXpath("//button[.//div[normalize-space(text())='Tất cả']]");
+    protected final Element allProductsSection = el.elementByCss(".sc-dc63c727-1");
+    protected final Element filterAllButton = new Element(By.xpath("//button[.//div[normalize-space(text())='Tất cả']]"));
+
+    
     protected final SelenideElement filterDialogTitle = $(".title");
 
-    protected final Element priceRangeMinInput = ui.elementByCss("input[placeholder='Từ']");
-    protected final Element priceRangeMaxInput = ui.elementByCss("input[placeholder='Đến']");
-    protected final Element viewResultButton = ui.elementByCss("#view-result");
-    protected final Element productCards = ui.elementByXpath("//a[contains(@class,'product-item')]");
-    protected final Element productPrices = ui.elementByXpath("//a[contains(@class,'product-sitem')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
+    protected final Element priceRangeMinInput = el.elementByCss("input[placeholder='Từ']");
+    protected final Element priceRangeMaxInput = el.elementByCss("input[placeholder='Đến']");
+    protected final Element viewResultButton = el.elementByCss("#view-result");
+    protected final Element productCards = el.elementByXpath("//a[contains(@class,'product-item')]");
+    protected final Element productPrices = el.elementByXpath("//a[contains(@class,'product-sitem')]//*[self::div or self::span][contains(@class,'price-discount__price') or contains(@class,'price-current')][1]");
     protected final SelenideElement loadMoreButton = $x("//div[@data-view-id='category_infinity_view.more']");
     protected final SelenideElement selectedSupplierLabel = $("#selected-supplier");
     protected final ElementsCollection actualItemsXpath = $$x(".//a[contains(@class,'breadcrumb-item')]//span");
     protected static final SelenideElement filled = $x(".//div[@style and contains(@style,'width')]");
     protected static final String h2ByExactText = "//h2[normalize-space(text())='%s']";
+
     // Rel/absolute xpaths as constants
     protected static final String togglerRel = ".//a[contains(@class,'toggler')]";
     protected static final String modalTogglerMoreRel = ".//a[contains(@class,'toggler') and normalize-space(text())='Xem thêm']";
@@ -142,7 +146,7 @@ public class ShopPage extends BasePage {
 
     @Step("Click on 'Tất cả' button under 'Tất cả sản phẩm' section")
     public void clickAllFiltersButton() {
-        ui.element(By.cssSelector(".sc-dc63c727-1")).focus();
+        el.element(By.cssSelector(".sc-dc63c727-1")).focus();
         filterAllButton.click(2);
     }
 
@@ -479,8 +483,8 @@ public class ShopPage extends BasePage {
 
     @Step("Enter price range from {minPrice} to {maxPrice}")
     public void enterPriceRange(double minPrice, double maxPrice) {
-        ui.buttonByCss("input[placeholder='Từ']").setText(formatPrice(minPrice));
-        ui.buttonByCss("input[placeholder='Đến']").setText(formatPrice(maxPrice));
+        el.buttonByCss("input[placeholder='Từ']").setText(formatPrice(minPrice));
+        el.buttonByCss("input[placeholder='Đến']").setText(formatPrice(maxPrice));
     }
 
 
