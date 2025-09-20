@@ -30,11 +30,20 @@
             <version>${selenium.version}</version>
         </dependency>
 
+        <!-- WebDriverManager -->
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
-            <version>5.9.2</version>
+            <version>5.7.0</version>
         </dependency>
+
+        <!-- Gson for JSON handling -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
         <!-- TestNG -->
         <dependency>
             <groupId>org.testng</groupId>
@@ -60,6 +69,14 @@
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+        
+        <!-- Logback Classic (includes Logger class) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -80,29 +97,18 @@
             <artifactId>selenide</artifactId>
             <version>${selenide.version}</version>
         </dependency>
-        <!-- Commons IO for file operations -->
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.15.1</version>
-        </dependency>
-        <!-- AShot for full-page screenshots -->
-        <dependency>
-            <groupId>ru.yandex.qatools.ashot</groupId>
-            <artifactId>ashot</artifactId>
-            <version>1.5.4</version>
-        </dependency>
         <!-- AspectJ Weaver for Allure step tracking and screenshot -->
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
             <version>${aspectjweaver.version}</version>
         </dependency>
+
         <!--Lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.28</version>
+            <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
         <!-- Yaml -->
@@ -112,107 +118,7 @@
             <version>2.2</version>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <!-- Profile mặc định -->
-        <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <browser>chrome</browser>
-                <user.profile>selenium-user-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-                <env.file>dev-env.yaml</env.file>
-                <base.url></base.url>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Tiki test với user profile cụ thể -->
-        <profile>
-            <id>tiki-test</id>
-            <properties>
-                <browser>chrome</browser>
-                <user.profile>tiki-test-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Firefox -->
-        <profile>
-            <id>firefox</id>
-            <properties>
-                <browser>firefox</browser>
-                <user.profile>firefox-test-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Edge -->
-        <profile>
-            <id>edge</id>
-            <properties>
-                <browser>edge</browser>
-                <user.profile>edge-test-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Remote Grid Testing -->
-        <profile>
-            <id>remote-grid</id>
-            <properties>
-                <user.profile>remote-grid-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-                <remote.enabled>true</remote.enabled>
-                <remote.url>http://localhost:4444/wd/hub</remote.url>
-                <w3c.enabled>true</w3c.enabled>
-                <grid.enabled>true</grid.enabled>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Grid với VNC -->
-        <profile>
-            <id>grid-vnc</id>
-            <properties>
-                <user.profile>grid-vnc-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-                <remote.enabled>true</remote.enabled>
-                <remote.url>http://localhost:4444/wd/hub</remote.url>
-                <w3c.enabled>true</w3c.enabled>
-                <grid.enabled>true</grid.enabled>
-            </properties>
-        </profile>
-        
-        <!-- Profile cho Local W3C Testing -->
-        <profile>
-            <id>local-w3c</id>
-            <properties>
-                <user.profile>local-w3c-profile</user.profile>
-                <headless>false</headless>
-                <timeout>10000</timeout>
-                <page.load.timeout>30000</page.load.timeout>
-                <remote.enabled>false</remote.enabled>
-                <w3c.enabled>true</w3c.enabled>
-                <grid.enabled>false</grid.enabled>
-            </properties>
-        </profile>
-    </profiles>
-
-    <build>
+ <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -221,13 +127,12 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.3</version>
+                <version>3.2.5</version>
                 <configuration>
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
@@ -255,17 +160,6 @@
                         <org.slf4j.simpleLogger.log.org.example>debug</org.slf4j.simpleLogger.log.org.example>
                         <org.slf4j.simpleLogger.log.org.openqa.selenium>warn</org.slf4j.simpleLogger.log.org.openqa.selenium>
                         <org.slf4j.simpleLogger.log.com.codeborne.selenide>info</org.slf4j.simpleLogger.log.com.codeborne.selenide>
-                        <!-- Pass profile properties to JVM -->
-                        <browser>${browser}</browser>
-                        <headless>${headless}</headless>
-                        <timeout>${timeout}</timeout>
-                        <page.load.timeout>${page.load.timeout}</page.load.timeout>
-                        <remote.enabled>${remote.enabled}</remote.enabled>
-                        <remote.url>${remote.url}</remote.url>
-                        <w3c.enabled>${w3c.enabled}</w3c.enabled>
-                        <grid.enabled>${grid.enabled}</grid.enabled>
-                        <base.url>${base.url}</base.url>
-                        <env.file>${env.file}</env.file>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

@@ -1,7 +1,8 @@
 package org.example.report;
 
 import io.qameta.allure.Allure;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -17,9 +18,9 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 public class LogConfig implements ITestListener, IExecutionListener, WebDriverListener {
-
+	
+	private static final Logger log = LoggerFactory.getLogger(LogConfig.class);
 	private PrintStream originalOut;
 	private PrintStream originalErr;
 	private FileOutputStream logFileOut;
@@ -102,6 +103,56 @@ public class LogConfig implements ITestListener, IExecutionListener, WebDriverLi
 		}
 	}
 
+	public void beforeClick(WebDriver driver, WebElement element) {
+		String locatorInfo = getElementInfo(element);
+		if (shouldLog("click:" + locatorInfo)) {
+			String msg = "Clicking element: " + locatorInfo;
+			log.info("{}", msg);
+			try { Allure.step(msg); } catch (Throwable ignored) { }
+		}
+	}
+
+	public void beforeSendKeys(WebDriver driver, WebElement element, CharSequence... keysToSend) {
+		String locatorInfo = getElementInfo(element);
+		String keys = keysToSend != null && keysToSend.length > 0 ? String.valueOf(keysToSend[0]) : "";
+		if (shouldLog("sendkeys:" + locatorInfo)) {
+			String msg = "Typing into element: " + locatorInfo + " -> '" + 
+				(keys.length() > 50 ? keys.substring(0, 50) + "..." : keys) + "'";
+			log.info("{}", msg);
+			try { Allure.step(msg); } catch (Throwable ignored) { }
+		}
+	}
+
+	public void beforeClear(WebDriver driver, WebElement element) {
+		String locatorInfo = getElementInfo(element);
+		if (shouldLog("clear:" + locatorInfo)) {
+			String msg = "Clearing element: " + locatorInfo;
+			log.info("{}", msg);
+			try { Allure.step(msg); } catch (Throwable ignored) { }
+		}
+	}
+
+	private String getElementInfo(WebElement element) {
+		try {
+			String tagName = element.getTagName();
+			String id = element.getAttribute("id");
+			String className = element.getAttribute("class");
+			String name = element.getAttribute("name");
+			
+			StringBuilder info = new StringBuilder(tagName);
+			if (id != null && !id.isEmpty()) {
+				info.append("[id='").append(id).append("']");
+			} else if (name != null && !name.isEmpty()) {
+				info.append("[name='").append(name).append("']");
+			} else if (className != null && !className.isEmpty()) {
+				info.append("[class='").append(className.split(" ")[0]).append("']");
+			}
+			return info.toString();
+		} catch (Exception e) {
+			return "unknown-element";
+		}
+	}
+
 	public static WebDriver decorate(WebDriver originalDriver) {
 		EventFiringDecorator<WebDriver> decorator = new EventFiringDecorator<>(new LogConfig());
 		return decorator.decorate(originalDriver);
@@ -146,5 +197,3 @@ public class LogConfig implements ITestListener, IExecutionListener, WebDriverLi
 		}
 	}
 }
-
-

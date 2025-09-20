@@ -1,35 +1,37 @@
 package config;
 
+import com.codeborne.selenide.WebDriverRunner;
 import org.example.config.BrowserConfig;
 import org.example.report.SoftAssertConfig;
-import org.example.pages.BasePage;
-import org.testng.ITestContext;
 import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Parameters;
+import org.testng.SkipException;
+import org.testng.annotations.*;
 
 public class TestBase {
 
-    @Parameters("browser")
-    @BeforeTest(alwaysRun = true)
-    public void setBrowser(String browser, ITestContext context) {
-        // Không set browser property để TestNG parameters có thể hoạt động
-        // Browser sẽ được resolve từ TestNG parameter trong BrowserConfig.getBrowser()
-        System.out.println("TestBase: TestNG parameter browser: " + browser);
-        System.out.println("TestBase: Current system browser: " + System.getProperty("browser"));
+    @BeforeClass(alwaysRun = true)
+    public void setUpClass() {
+        if (!WebDriverRunner.hasWebDriverStarted()) {
+            BrowserConfig.setUp();
+        }
     }
 
     @BeforeMethod(alwaysRun = true)
-    public void setUp() {
-        BrowserConfig.setUp();
-        new BasePage().closePopupIfPresent();
+    public void setUpMethod() {
+        if (BrowserConfig.shouldSkipBrowser()) {
+            throw new SkipException("Skipping test - browser not selected in single browser mode");
+        }
         SoftAssertConfig.reset();
+      
     }
 
-    @AfterMethod
-    public void tearDown(ITestResult result) {
+    @AfterMethod(alwaysRun = true)
+    public void tearDownMethod(ITestResult result) {
+       
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void tearDownClass() {
         BrowserConfig.tearDown();
     }
 }

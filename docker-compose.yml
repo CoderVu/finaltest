@@ -1,28 +1,35 @@
 version: '3.8'
 
 services:
-  # Selenium Hub
+  # Selenium Hub - Central coordinator that receives test requests
   selenium-hub:
     image: selenium/hub:4.18.0
     container_name: selenium-hub
     ports:
-      - "4444:4444"
-      - "4442:4442"
-      - "4443:4443"
+      - "4444:4444"  # Main Hub port for test connections (/wd/hub) and UI (/ui#/)
+      - "4442:4442"  # Event Bus publish port
+      - "4443:4443"  # Event Bus subscribe port
     environment:
       - GRID_MAX_SESSION=16
       - GRID_BROWSER_TIMEOUT=300
       - GRID_TIMEOUT=300
     networks:
       - selenium-grid
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
-  # Chrome Node
+  # Chrome Node - Worker that runs Chrome browser sessions
   chrome-node:
     image: selenium/node-chrome:4.18.0
     container_name: chrome-node
     shm_size: 2gb
     depends_on:
-      - selenium-hub
+      selenium-hub:
+        condition: service_healthy
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
@@ -32,20 +39,21 @@ services:
       - SE_EVENT_BUS_PUBLISH_PORT=4442
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
     ports:
-      - "5900:5900"  # VNC
-      - "7900:7900"  # noVNC (http)
+      - "5900:5900"  # VNC port for remote desktop access
+      - "7900:7900"  # noVNC web-based VNC viewer
     volumes:
       - /dev/shm:/dev/shm
     networks:
       - selenium-grid
 
-  # Firefox Node
+  # Firefox Node - Worker that runs Firefox browser sessions  
   firefox-node:
     image: selenium/node-firefox:4.18.0
     container_name: firefox-node
     shm_size: 2gb
     depends_on:
-      - selenium-hub
+      selenium-hub:
+        condition: service_healthy
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
@@ -55,20 +63,21 @@ services:
       - SE_EVENT_BUS_PUBLISH_PORT=4442
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
     ports:
-      - "5901:5900"  # VNC
-      - "7901:7900"  # noVNC (http)
+      - "5901:5900"  # VNC port for remote desktop access
+      - "7901:7900"  # noVNC web-based VNC viewer
     volumes:
       - /dev/shm:/dev/shm
     networks:
       - selenium-grid
 
-  # Edge Node
+  # Edge Node - Worker that runs Edge browser sessions
   edge-node:
     image: selenium/node-edge:4.18.0
     container_name: edge-node
     shm_size: 2gb
     depends_on:
-      - selenium-hub
+      selenium-hub:
+        condition: service_healthy
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
@@ -78,8 +87,8 @@ services:
       - SE_EVENT_BUS_PUBLISH_PORT=4442
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
     ports:
-      - "5902:5900"  # VNC
-      - "7902:7900"  # noVNC (http)
+      - "5902:5900"  # VNC port for remote desktop access
+      - "7902:7900"  # noVNC web-based VNC viewer
     volumes:
       - /dev/shm:/dev/shm
     networks:

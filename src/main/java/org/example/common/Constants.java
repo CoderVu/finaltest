@@ -11,7 +11,7 @@ public class Constants {
     private static volatile String baseUrl;
     private static volatile String defaultBrowser;
     private static volatile List<String> browsers;
-    public static final long DEFAULT_TIMEOUT = 20000;
+    public static final long DEFAULT_TIMEOUT = 30000;
     public static final long DEFAULT_PAGE_LOAD_TIMEOUT = 30000;
 
     public static String getBaseUrl() {
@@ -39,6 +39,11 @@ public class Constants {
                 EnvConfig.load(envFilePath);
                 baseUrl = EnvConfig.get("base_url");
                 
+                // Validate that base_url is configured
+                if (baseUrl == null || baseUrl.trim().isEmpty()) {
+                    throw new IllegalStateException("base_url is not configured in environment file: " + envFilePath);
+                }
+                
                 // Try to get browsers list first, fallback to single browser
                 String browsersStr = EnvConfig.get("browsers");
                 if (browsersStr != null && !browsersStr.trim().isEmpty()) {
@@ -49,7 +54,10 @@ public class Constants {
                 } else {
                     // Fallback to single browser
                     defaultBrowser = EnvConfig.get("browser");
-                    browsers = Arrays.asList(defaultBrowser != null ? defaultBrowser : "chrome");
+                    if (defaultBrowser == null || defaultBrowser.trim().isEmpty()) {
+                        throw new IllegalStateException("Neither 'browsers' nor 'browser' is configured in environment file: " + envFilePath);
+                    }
+                    browsers = Arrays.asList(defaultBrowser);
                 }
                 
                 initialized = true;

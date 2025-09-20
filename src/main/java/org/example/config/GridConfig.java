@@ -2,6 +2,7 @@ package org.example.config;
 
 import com.codeborne.selenide.WebDriverProvider;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -14,7 +15,8 @@ import javax.annotation.Nonnull;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class GridWDPConfig implements WebDriverProvider {
+@Slf4j
+public class GridConfig implements WebDriverProvider {
 
     @Override
     @Nonnull
@@ -40,7 +42,7 @@ public class GridWDPConfig implements WebDriverProvider {
                 try {
                     WebDriverManager.firefoxdriver().setup();
                 } catch (Exception ex) {
-                    System.out.println("WDM failed for geckodriver, fallback to Selenium Manager: " + ex.getMessage());
+                    log.warn("WDM failed for geckodriver, fallback to Selenium Manager: {}", ex.getMessage());
                 }
                 return new org.openqa.selenium.firefox.FirefoxDriver(ff);
 
@@ -52,7 +54,7 @@ public class GridWDPConfig implements WebDriverProvider {
                 try {
                     WebDriverManager.edgedriver().setup();
                 } catch (Exception ex) {
-                    System.out.println("WDM failed for msedgedriver, fallback to Selenium Manager: " + ex.getMessage());
+                    log.warn("WDM failed for msedgedriver, fallback to Selenium Manager: {}", ex.getMessage());
                 }
                 return new org.openqa.selenium.edge.EdgeDriver(edge);
 
@@ -65,7 +67,7 @@ public class GridWDPConfig implements WebDriverProvider {
                 try {
                     WebDriverManager.chromedriver().setup();
                 } catch (Exception ex) {
-                    System.out.println("WDM failed for chromedriver, fallback to Selenium Manager: " + ex.getMessage());
+                    log.warn("WDM failed for chromedriver, fallback to Selenium Manager: {}", ex.getMessage());
                 }
                 return new org.openqa.selenium.chrome.ChromeDriver(ch);
         }
@@ -123,7 +125,7 @@ public class GridWDPConfig implements WebDriverProvider {
                     && Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest() != null) {
                 String param = Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest().getParameter("browser");
                 if (param != null && !param.trim().isEmpty()) {
-                    System.out.println("Using TestNG parameter browser: " + param);
+                    log.info("GridConfig: Using TestNG parameter browser: {}", param);
                     return param.trim().toLowerCase();
                 }
             }
@@ -131,17 +133,17 @@ public class GridWDPConfig implements WebDriverProvider {
 
         String sys = System.getProperty("browser");
         if (sys != null && !sys.trim().isEmpty()) {
-            System.out.println("Using system property browser: " + sys);
+            log.info("GridConfig: Using system property browser: {}", sys);
             return sys.trim().toLowerCase();
         }
 
         String defaultBrowser = org.example.common.Constants.getDefaultBrowser();
         if (defaultBrowser != null && !defaultBrowser.trim().isEmpty()) {
-            System.out.println("Using default browser: " + defaultBrowser);
+            log.info("GridConfig: Using default browser: {}", defaultBrowser);
             return defaultBrowser.trim().toLowerCase();
         }
 
-        System.out.println("Using fallback browser: chrome");
+        log.info("GridConfig: Using fallback browser: chrome");
         return "chrome";
     }
 
@@ -153,7 +155,7 @@ public class GridWDPConfig implements WebDriverProvider {
                     && Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest() != null) {
                 String param = Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest().getParameter("browserVersion");
                 if (param != null && !param.trim().isEmpty()) {
-                    System.out.println("Using TestNG parameter browserVersion: " + param);
+                    log.info("GridConfig: Using TestNG parameter browserVersion: {}", param);
                     return param.trim();
                 }
             }
@@ -161,7 +163,7 @@ public class GridWDPConfig implements WebDriverProvider {
 
         String sys = System.getProperty("browser.version");
         if (sys != null && !sys.trim().isEmpty()) {
-            System.out.println("Using system property browser.version: " + sys);
+            log.info("GridConfig: Using system property browser.version: {}", sys);
             return sys.trim();
         }
 

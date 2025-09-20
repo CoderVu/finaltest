@@ -6,7 +6,6 @@ import org.example.core.control.common.IButton;
 import org.openqa.selenium.By;
 
 public class Button extends Clickable implements IButton {
-
 	public Button(String locator) {
 		super(locator);
 	}

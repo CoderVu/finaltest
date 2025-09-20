@@ -2,42 +2,39 @@ package org.example.pages;
 
 import com.codeborne.selenide.Condition;
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.control.common.annotation.FindBy;
 import org.example.core.control.common.imp.Element;
+import org.example.core.control.util.DriverUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
 import java.time.Duration;
+import java.util.List;
 
 import static com.codeborne.selenide.Selenide.$;
 
 @Slf4j
 public class BasePage {
 
-
-    public BasePage() {
-        PageFactory.initElements(this);
-    }
-    //controls
-    @FindBy(css = "picture.webpimg-container img[alt='close-icon']")
-    protected Element closePopupButton;
-
-    @FindBy(css = "a.tiki-logo[data-view-id='header_main_logo']")
-    protected Element logo;
-
-    //method
-    public void closePopupIfPresent() {
-        try {
-            $(By.cssSelector("picture.webpimg-container img[alt='close-icon']")).shouldBe(Condition.visible, Duration.ofSeconds(10));
-            closePopupButton.click();
-            log.info("Closed popup successfully.");
-        } catch (Exception e) {
-            log.info("No popup appeared within 10 seconds, continuing...");
-        }
+    protected WebElement findElement(By locator) {
+        return DriverUtils.getWebDriver().findElement(locator);
     }
 
-    protected void backToHomePage() {
-        $("a.tiki-logo[data-view-id='header_main_logo']").shouldBe(Condition.visible);
-        logo.click();
-        closePopupIfPresent();
+    protected List<WebElement> findElements(By locator) {
+        return DriverUtils.getWebDriver().findElements(locator);
+    }
+
+    protected void waitForElementVisible(Element element) {
+        element.waitForDisplay();
+    }
+
+    protected void clickElement(Element element) {
+        element.waitForDisplay();
+        element.click();
+    }
+
+    protected void enterText(Element element, String text) {
+        element.waitForDisplay();
+        element.clear();
+        element.setText(text);
     }
 }

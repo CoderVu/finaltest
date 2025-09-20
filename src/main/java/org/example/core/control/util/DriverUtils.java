@@ -3,7 +3,6 @@ package org.example.core.control.util;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.WebDriverRunner;
 import org.openqa.selenium.*;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -22,8 +21,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public final class DriverUtils {
 
+
+ 
     private DriverUtils() {}
 
     public static WebDriver getWebDriver() {
@@ -45,9 +49,16 @@ public final class DriverUtils {
     public static String getAppiumCapability(String key) {
         return ((RemoteWebDriver) getDriver()).getCapabilities().getCapability(key).toString();
     }
+    public static void executeJavaScript(String arguments0click, WebElement element) {
+        ((JavascriptExecutor) getDriver()).executeScript(arguments0click, element);
+    }
 
     public static String getCurrentUrl() {
         return getDriver().getCurrentUrl();
+    }
+    public static void waitForUrlContains(String expectedUrlPart, int timeoutInSeconds) {
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(timeoutInSeconds));
+        wait.until(driver -> driver.getCurrentUrl().contains(expectedUrlPart));
     }
 
     public static void openNewTab() {
@@ -212,10 +223,15 @@ public final class DriverUtils {
     public static int getTimeOut() {
         long ms = Configuration.timeout;
         int seconds = (int) Math.max(1, ms / 1000);
+        log.info("Current timeout is settt to {} seconds", seconds);
         return seconds;
     }
 
     public static void waitForAutoScrollingStopped() {
         delay(1);
+    }
+
+    public static void navigateTo(String url) {
+        getDriver().get(url);
     }
 }

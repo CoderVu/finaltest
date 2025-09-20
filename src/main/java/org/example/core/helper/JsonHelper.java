@@ -220,4 +220,58 @@ public class JsonHelper {
 		}
 		return el;
 	}
+
+	public static String getStringValue(JsonObject jsonObject, String path) {
+        try {
+            String[] keys = path.split("\\.");
+            JsonElement element = jsonObject;
+            
+            for (String key : keys) {
+                if (element.isJsonObject()) {
+                    element = element.getAsJsonObject().get(key);
+                }
+            }
+            
+            return element != null ? element.getAsString() : null;
+        } catch (Exception e) {
+            log.error("Error getting string value for path {}: {}", path, e.getMessage());
+            return null;
+        }
+    }
+
+    public static int getIntValue(JsonObject jsonObject, String path) {
+        try {
+            String[] keys = path.split("\\.");
+            JsonElement element = jsonObject;
+            
+            for (String key : keys) {
+                if (element.isJsonObject()) {
+                    element = element.getAsJsonObject().get(key);
+                }
+            }
+            
+            return element != null ? element.getAsInt() : 0;
+        } catch (Exception e) {
+            log.error("Error getting int value for path {}: {}", path, e.getMessage());
+            return 0;
+        }
+    }
+
+    public static JsonObject getNestedObject(JsonObject jsonObject, String path) {
+        try {
+            String[] keys = path.split("\\.");
+            JsonElement element = jsonObject;
+            
+            for (String key : keys) {
+                if (element.isJsonObject()) {
+                    element = element.getAsJsonObject().get(key);
+                }
+            }
+            
+            return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+        } catch (Exception e) {
+            log.error("Error getting nested object for path {}: {}", path, e.getMessage());
+            return null;
+        }
+    }
 }
