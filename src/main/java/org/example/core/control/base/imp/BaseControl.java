@@ -372,6 +372,7 @@ public class BaseControl implements IBaseControl {
         DriverUtils.waitForAutoScrollingStopped();
         String js = "Element.prototype.documentOffsetTop=function(){return this.offsetTop+(this.offsetParent?this.offsetParent.documentOffsetTop():0)};var top=arguments[0].documentOffsetTop()-window.innerHeight/2;window.scrollTo(0,top);";
         DriverUtils.execJavaScript(js, getElement());
+        log.info("Scroll element {} to center of screen", getLocator().toString());
     }
 
     @Override

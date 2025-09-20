@@ -1,199 +1,91 @@
 package org.example.report;
 
-import io.qameta.allure.Allure;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.events.EventFiringDecorator;
-import org.openqa.selenium.support.events.WebDriverListener;
-import org.testng.IExecutionListener;
-import org.testng.ITestListener;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
 
-public class LogConfig implements ITestListener, IExecutionListener, WebDriverListener {
+public class LogConfig {
 	
-	private static final Logger log = LoggerFactory.getLogger(LogConfig.class);
-	private PrintStream originalOut;
-	private PrintStream originalErr;
-	private FileOutputStream logFileOut;
-	private File terminalLogFile;
-	private static final long DEDUP_WINDOW_MS = 300;
-	private final ThreadLocal<Map<String, Long>> lastLogTimes = ThreadLocal.withInitial(HashMap::new);
+    private PrintStream originalOut;
+    private PrintStream originalErr;
+    private FileOutputStream logFileOut;
+    private File terminalLogFile;
 
-	private boolean shouldLog(String messageKey) {
-		try {
-			Map<String, Long> map = lastLogTimes.get();
-			long now = System.currentTimeMillis();
-			Long last = map.get(messageKey);
-			if (last == null || now - last > DEDUP_WINDOW_MS) {
-				map.put(messageKey, now);
-				return true;
-			}
-			return false;
-		} catch (Throwable t) {
-			return true;
-		}
+    public void startTerminalLog() {
+        try {
+            terminalLogFile = new File("target/allure-results/terminal.log");
+            if (terminalLogFile.exists() && !terminalLogFile.delete()) {
+                System.out.println("Could not delete existing terminal.log; appending to it");
+            }
+            if (!terminalLogFile.exists()) {
+                File parent = terminalLogFile.getParentFile();
+                if (parent != null) parent.mkdirs();
+                terminalLogFile.createNewFile();
+            }
+            logFileOut = new FileOutputStream(terminalLogFile, true);
+            originalOut = System.out;
+            originalErr = System.err;
+            PrintStream teeOut = new PrintStream(new TeeOutputStream(originalOut, logFileOut), true);
+            PrintStream teeErr = new PrintStream(new TeeOutputStream(originalErr, logFileOut), true);
+            System.setOut(teeOut);
+            System.setErr(teeErr);
+            System.out.println("Terminal logging initialized: " + terminalLogFile.getAbsolutePath());
+        } catch (IOException ioEx) {
+            System.out.println("Failed to initialize terminal log capture: " + ioEx.getMessage());
+        }
+    }
+
+    public void stopTerminalLog() {
+        try {
+            if (originalOut != null) System.setOut(originalOut);
+            if (originalErr != null) System.setErr(originalErr);
+            if (logFileOut != null) {
+                logFileOut.flush();
+                logFileOut.close();
+            }
+            System.out.println("Terminal logging finalized");
+        } catch (IOException ioEx) {
+            System.out.println("Failed to finalize terminal log capture: " + ioEx.getMessage());
+        }
 	}
 
-	private boolean shouldLogLocator(String locatorKey) {
-		return shouldLog("locator:" + locatorKey);
-	}
+    static class TeeOutputStream extends java.io.OutputStream {
+        private final java.io.OutputStream first;
+        private final java.io.OutputStream second;
 
-	@Override
-	public void onExecutionStart() {
-		try {
-			terminalLogFile = new File("target/allure-results/terminal.log");
-			if (terminalLogFile.exists() && !terminalLogFile.delete()) {
-				log.warn("Could not delete existing terminal.log; appending to it");
-			}
-			if (!terminalLogFile.exists()) {
-				File parent = terminalLogFile.getParentFile();
-				if (parent != null) parent.mkdirs();
-				terminalLogFile.createNewFile();
-			}
-			logFileOut = new FileOutputStream(terminalLogFile, true);
-			originalOut = System.out;
-			originalErr = System.err;
-			PrintStream teeOut = new PrintStream(new TeeOutputStream(originalOut, logFileOut), true);
-			PrintStream teeErr = new PrintStream(new TeeOutputStream(originalErr, logFileOut), true);
-			System.setOut(teeOut);
-			System.setErr(teeErr);
-			log.info("Terminal logging initialized: {}", terminalLogFile.getAbsolutePath());
-		} catch (IOException ioEx) {
-			log.warn("Failed to initialize terminal log capture: {}", ioEx.getMessage());
-		}
-	}
+        TeeOutputStream(java.io.OutputStream first, java.io.OutputStream second) {
+            this.first = first;
+            this.second = second;
+        }
 
-	@Override
-	public void onExecutionFinish() {
-		try {
-			if (originalOut != null) System.setOut(originalOut);
-			if (originalErr != null) System.setErr(originalErr);
-			if (logFileOut != null) {
-				logFileOut.flush();
-				logFileOut.close();
-			}
-			log.info("Terminal logging finalized");
-			lastLogTimes.remove();
-		} catch (IOException ioEx) {
-			log.warn("Failed to finalize terminal log capture: {}", ioEx.getMessage());
-		}
-	}
+        @Override
+        public void write(int b) throws IOException {
+            first.write(b);
+            second.write(b);
+        }
 
-	@Override
-	public void beforeFindElement(WebDriver driver, By locator) {
-		// Suppress pre-find logs to avoid duplicates; we only log once after element is found
-	}
+        @Override
+        public void write(byte[] b) throws IOException {
+            first.write(b);
+            second.write(b);
+        }
 
-	@Override
-	public void afterFindElement(WebDriver driver, By locator, WebElement result) {
-		String key = locator == null ? "null" : locator.toString();
-		if (shouldLogLocator(key)) {
-			String msg = "Found element: " + key;
-			log.info("{}", msg);
-			try { Allure.step(msg); } catch (Throwable ignored) { }
-		}
-	}
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            first.write(b, off, len);
+            second.write(b, off, len);
+        }
 
-	public void beforeClick(WebDriver driver, WebElement element) {
-		String locatorInfo = getElementInfo(element);
-		if (shouldLog("click:" + locatorInfo)) {
-			String msg = "Clicking element: " + locatorInfo;
-			log.info("{}", msg);
-			try { Allure.step(msg); } catch (Throwable ignored) { }
-		}
-	}
+        @Override
+        public void flush() throws IOException {
+            first.flush();
+            second.flush();
+        }
 
-	public void beforeSendKeys(WebDriver driver, WebElement element, CharSequence... keysToSend) {
-		String locatorInfo = getElementInfo(element);
-		String keys = keysToSend != null && keysToSend.length > 0 ? String.valueOf(keysToSend[0]) : "";
-		if (shouldLog("sendkeys:" + locatorInfo)) {
-			String msg = "Typing into element: " + locatorInfo + " -> '" + 
-				(keys.length() > 50 ? keys.substring(0, 50) + "..." : keys) + "'";
-			log.info("{}", msg);
-			try { Allure.step(msg); } catch (Throwable ignored) { }
-		}
-	}
-
-	public void beforeClear(WebDriver driver, WebElement element) {
-		String locatorInfo = getElementInfo(element);
-		if (shouldLog("clear:" + locatorInfo)) {
-			String msg = "Clearing element: " + locatorInfo;
-			log.info("{}", msg);
-			try { Allure.step(msg); } catch (Throwable ignored) { }
-		}
-	}
-
-	private String getElementInfo(WebElement element) {
-		try {
-			String tagName = element.getTagName();
-			String id = element.getAttribute("id");
-			String className = element.getAttribute("class");
-			String name = element.getAttribute("name");
-			
-			StringBuilder info = new StringBuilder(tagName);
-			if (id != null && !id.isEmpty()) {
-				info.append("[id='").append(id).append("']");
-			} else if (name != null && !name.isEmpty()) {
-				info.append("[name='").append(name).append("']");
-			} else if (className != null && !className.isEmpty()) {
-				info.append("[class='").append(className.split(" ")[0]).append("']");
-			}
-			return info.toString();
-		} catch (Exception e) {
-			return "unknown-element";
-		}
-	}
-
-	public static WebDriver decorate(WebDriver originalDriver) {
-		EventFiringDecorator<WebDriver> decorator = new EventFiringDecorator<>(new LogConfig());
-		return decorator.decorate(originalDriver);
-	}
-
-	static class TeeOutputStream extends java.io.OutputStream {
-		private final java.io.OutputStream first;
-		private final java.io.OutputStream second;
-
-		TeeOutputStream(java.io.OutputStream first, java.io.OutputStream second) {
-			this.first = first;
-			this.second = second;
-		}
-
-		@Override
-		public void write(int b) throws IOException {
-			first.write(b);
-			second.write(b);
-		}
-
-		@Override
-		public void write(byte[] b) throws IOException {
-			first.write(b);
-			second.write(b);
-		}
-
-		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
-			first.write(b, off, len);
-			second.write(b, off, len);
-		}
-
-		@Override
-		public void flush() throws IOException {
-			first.flush();
-			second.flush();
-		}
-
-		@Override
-		public void close() throws IOException {
-			try { first.close(); } finally { second.close(); }
-		}
-	}
+        @Override
+        public void close() throws IOException {
+            try { first.close(); } finally { second.close(); }
+        }
+    }
 }

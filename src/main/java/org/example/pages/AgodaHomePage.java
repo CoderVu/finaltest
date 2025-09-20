@@ -6,6 +6,7 @@ import org.example.core.control.util.DriverUtils;
 import io.qameta.allure.Step;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -82,31 +83,100 @@ public class AgodaHomePage extends BasePage {
         selectCheckOutDate(checkOutDate);
     }
 
+    // @Step("Select check-in date: {checkInDate}")
+    // public void selectCheckInDate(String checkInDate) {
+    //     // 1. Open calendar if not already open
+    //     checkInBox.waitForElementClickable();
+    //     checkInBox.scrollElementToCenterScreen();
+    //     for (int i = 0; i < 3; i++) {
+    //         checkInBox.click();
+    //         try {
+    //             calendarContainer.waitForVisibility();
+    //             break;
+    //         } catch (Exception e) {
+    //             log.warn("Calendar not visible after attempt {}", i + 1);
+    //         }
+    //     }
+    //     // 2. Select check-in date with retry if element not yet rendered
+    //     Element checkInDateElement = new Element(
+    //             String.format("//span[@data-selenium-date='%s']", checkInDate));
+    //     for (int i = 0; i < 3; i++) {
+    //         try {
+    //             checkInDateElement.waitForElementClickable();
+    //             checkInDateElement.clickByJs();
+    //             log.info("Selected check-in date: {}", checkInDate);
+    //             break;
+    //         } catch (Exception e) {
+    //             log.warn("Failed to select check-in date, retry {}", i + 1);
+    //             checkInBox.click();
+    //             try {
+    //                 calendarContainer.waitForVisibility();
+    //             } catch (Exception ex) {
+    //                 log.warn("Calendar not visible during retry");
+    //             }
+    //         }
+    //     }
+    //    // 3. Close calendar by clicking outside
+    //     if (calendarContainer.isVisible()) {
+    //         WebElement outsideArea = findElement(
+    //                 By.xpath("//body")
+    //         );
+    //         outsideArea.click();
+    //         calendarContainer.waitForInvisibility();
+    //         log.info("Closed calendar after selecting check-in date");
+    //     }
+    // }
     @Step("Select check-in date: {checkInDate}")
     public void selectCheckInDate(String checkInDate) {
-        // 1. Open calendar if not already open
-        checkInBox.waitForElementClickable();
-        if (!calendarContainer.isVisible()) {
-            checkInBox.click();
-            calendarContainer.waitForVisibility();
+        // 1. Mở calendar chắc chắn
+        int openAttempts = 0;
+        while (!calendarContainer.isVisible() && openAttempts < 5) {
+            checkInBox.scrollElementToCenterScreen();
+
+
+            checkInBox.clickByJs();
+            try {
+                calendarContainer.waitForVisibility();
+            } catch (Exception e) {
+                log.warn("Calendar not visible after attempt {}", openAttempts + 1);
+            }
+            openAttempts++;
         }
 
-        // 2. Select check-in date
+        if (!calendarContainer.isVisible()) {
+            throw new RuntimeException("Calendar not visible after multiple attempts");
+        }
+
+        // 2. Select check-in date with retry if element not yet rendered
         Element checkInDateElement = new Element(
                 String.format("//span[@data-selenium-date='%s']", checkInDate));
-        checkInDateElement.waitForElementClickable();
-        checkInDateElement.click();
-        log.info("Selected check-in date: {}", checkInDate);
+        for (int i = 0; i < 3; i++) {
+            try {
+                checkInDateElement.waitForElementClickable();
+                checkInDateElement.clickByJs();
+                log.info("Selected check-in date: {}", checkInDate);
+                break;
+            } catch (Exception e) {
+                log.warn("Failed to select check-in date, retry {}", i + 1);
+                checkInBox.click();
+                try {
+                    calendarContainer.waitForVisibility();
+                } catch (Exception ex) {
+                    log.warn("Calendar not visible during retry");
+                }
+            }
+        }
 
-        // 3. Close calendar by clicking outside
+        // 3. Đóng calendar
         if (calendarContainer.isVisible()) {
-            WebElement outsideArea = findElement(
-                    By.xpath("//body")
-            );
-            outsideArea.click();
-
-            calendarContainer.waitForInvisibility();
-            log.info("Closed calendar after selecting check-in date");
+            WebElement outsideArea = findElement(By.cssSelector("body"));
+            ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea);
+            try {
+                calendarContainer.waitForInvisibility();
+                log.info("Closed calendar after selecting check-in date");
+            } catch (Exception e) {
+                log.warn("Calendar không tự tắt sau khi click ngoài");
+            }
         }
     }
 
@@ -158,6 +228,7 @@ public class AgodaHomePage extends BasePage {
         searchButton.waitForElementClickable();
         searchButton.click();
     }
+
     @Step("Calculate and select dates: 3 days from next Friday")
     public void selectDatesFromNextFriday() {
         LocalDate today = LocalDate.now();
@@ -185,12 +256,11 @@ public class AgodaHomePage extends BasePage {
         selectDates(checkInDateStr, checkOutDateStr);
     }
 
-
     @Step("Configure occupancy: {rooms} rooms, {adults} adults, {children} children")
     public void configureOccupancy(int rooms, int adults, int children) {
         // Check if occupancy popup is already open (it might auto-open after date selection)
         Element occupancyPopup = new Element(occupancyPopupXpathString);
-        
+
         try {
             // Wait a short time to see if popup is already visible
             occupancyPopup.waitForVisibility();
@@ -231,7 +301,6 @@ public class AgodaHomePage extends BasePage {
             roomsPlusButton.waitForElementClickable();
             roomsPlusButton.click();
             currentRooms++;
-            sleep(500);
             log.info("Increased rooms to: {}", currentRooms);
         }
 
@@ -243,7 +312,6 @@ public class AgodaHomePage extends BasePage {
             roomsMinusButton.waitForElementClickable();
             roomsMinusButton.click();
             currentRooms--;
-            sleep(500);
             log.info("Decreased rooms to: {}", currentRooms);
         }
     }
@@ -263,7 +331,6 @@ public class AgodaHomePage extends BasePage {
             adultsPlusButton.waitForElementClickable();
             adultsPlusButton.click();
             currentAdults++;
-            sleep(500);
             log.info("Increased adults to: {}", currentAdults);
         }
 
@@ -275,7 +342,6 @@ public class AgodaHomePage extends BasePage {
             adultsMinusButton.waitForElementClickable();
             adultsMinusButton.click();
             currentAdults--;
-            sleep(500);
             log.info("Decreased adults to: {}", currentAdults);
         }
     }
@@ -295,7 +361,6 @@ public class AgodaHomePage extends BasePage {
             childrenPlusButton.waitForElementClickable();
             childrenPlusButton.click();
             currentChildren++;
-            sleep(500);
             log.info("Increased children to: {}", currentChildren);
         }
 
@@ -307,7 +372,6 @@ public class AgodaHomePage extends BasePage {
             childrenMinusButton.waitForElementClickable();
             childrenMinusButton.click();
             currentChildren--;
-            sleep(500);
             log.info("Decreased children to: {}", currentChildren);
         }
     }
@@ -428,7 +492,7 @@ public class AgodaHomePage extends BasePage {
     private Hotel extractHotelInfo(WebElement card, int index) {
         try {
             Hotel.HotelBuilder hotelBuilder = Hotel.builder();
-            
+
             // Extract hotel name
             try {
                 WebElement nameElement = card.findElement(By.xpath(hotelNameXpath));
@@ -437,7 +501,7 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Could not find hotel name for card {}", index);
                 return null; // Skip if no name found
             }
-            
+
             // Extract rating
             try {
                 WebElement ratingElement = card.findElement(By.xpath(ratingXpath));
@@ -450,7 +514,7 @@ public class AgodaHomePage extends BasePage {
             } catch (Exception e) {
                 log.debug("Could not find rating for card {}", index);
             }
-            
+
             // Extract location and distance
             try {
                 WebElement locationElement = card.findElement(By.xpath(locationXpath));
@@ -465,7 +529,7 @@ public class AgodaHomePage extends BasePage {
             } catch (Exception e) {
                 log.debug("Could not find location for card {}", index);
             }
-            
+
             // Extract cashback reward
             try {
                 WebElement cashbackElement = card.findElement(By.xpath(cashbackXpath));
@@ -473,7 +537,7 @@ public class AgodaHomePage extends BasePage {
             } catch (Exception e) {
                 log.debug("Could not find cashback for card {}", index);
             }
-            
+
             // Extract amenities
             try {
                 List<WebElement> amenityElements = card.findElements(By.xpath(amenityXpath));
@@ -485,7 +549,7 @@ public class AgodaHomePage extends BasePage {
             } catch (Exception e) {
                 log.debug("Could not find amenities for card {}", index);
             }
-            
+
             // Extract badges
             try {
                 List<WebElement> badgeElements = card.findElements(By.xpath(badgeXpath));
@@ -497,9 +561,9 @@ public class AgodaHomePage extends BasePage {
             } catch (Exception e) {
                 log.debug("Could not find badges for card {}", index);
             }
-            
+
             return hotelBuilder.build();
-            
+
         } catch (Exception e) {
             log.error("Error extracting hotel info for card {}: {}", index, e.getMessage());
             return null;
@@ -511,9 +575,9 @@ public class AgodaHomePage extends BasePage {
         try {
             List<Hotel> hotels = getHotelInformation();
             int actualCount = hotels.size();
-            
+
             log.info("Found {} hotels in search results", actualCount);
-            
+
             // Check if we have at least the expected number of hotels
             if (actualCount < expectedCount) {
                 log.error("Expected at least {} hotels, but found only {}", expectedCount, actualCount);
@@ -560,10 +624,10 @@ public class AgodaHomePage extends BasePage {
                     .filter(hotel -> hotel.getName() != null && !hotel.getName().isEmpty())
                     .map(Hotel::getName)
                     .collect(Collectors.toList());
-            
+
             log.info("Retrieved {} hotel names from search results", hotelNames.size());
             return hotelNames;
-            
+
         } catch (Exception e) {
             log.error("Error getting hotel names: {}", e.getMessage());
             return new ArrayList<>();
@@ -574,10 +638,10 @@ public class AgodaHomePage extends BasePage {
     public void switchToSearchResultsTab() {
         // Wait for new window to open (expecting 2 windows total)
         DriverUtils.waitForNewWindowOpened(2);
-        
+
         // Switch to the new window (index 1, since original is index 0)
         DriverUtils.switchToWindow(1);
-        
+
         // Wait for search results URL to load
         DriverUtils.waitForUrlContains("search", DriverUtils.getTimeOut());
     }
@@ -588,7 +652,7 @@ public class AgodaHomePage extends BasePage {
             // Wait for at least one property card to be visible
             Element firstPropertyCard = new Element(propertyCardXpath + "[1]");
             firstPropertyCard.waitForVisibility(10);
-            
+
             log.info("Search results have loaded successfully");
         } catch (Exception e) {
             log.error("Failed to wait for search results: {}", e.getMessage());
@@ -598,13 +662,12 @@ public class AgodaHomePage extends BasePage {
     @Step("Get and display hotel names in Allure report")
     public List<String> getAndDisplayHotelNames() {
         List<String> hotelNames = getHotelNames();
-        
+
         // Log each hotel name for Allure report
         for (int i = 0; i < hotelNames.size(); i++) {
             log.info("Hotel {}: {}", i + 1, hotelNames.get(i));
         }
-        
+
         return hotelNames;
     }
 }
-

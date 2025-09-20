@@ -330,13 +330,6 @@ public class BrowserConfig {
         String startUrl = resolveBaseUrl();
         log.info("Opening base URL: " + startUrl);
         Selenide.open(startUrl);
-        try {
-            WebDriver current = WebDriverRunner.getWebDriver();
-            WebDriver decorated = LogConfig.decorate(current);
-            WebDriverRunner.setWebDriver(decorated);
-        } catch (Exception e) {
-            log.warn("Failed to register LogConfig WebDriver listener: {}", e.getMessage());
-        }
         maximizeWindow();
     }
 

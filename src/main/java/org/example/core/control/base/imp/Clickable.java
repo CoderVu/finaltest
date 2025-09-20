@@ -65,6 +65,7 @@ public class Clickable extends BaseControl implements IClickable {
                     times--;
                     if (times == 0) {
                         log.error("Click intercepted on '{}': {}", getLocator().toString(), errorMsg);
+                        System.out.println("[CLICK-BY-JS] " + getLocator().toString());
                         clickByJs(); // Use JS as fallback
                         return;
                     }
@@ -72,10 +73,12 @@ public class Clickable extends BaseControl implements IClickable {
                     DriverUtils.delay(0.5); // Reduce delay
                     try {
                         scrollElementToCenterScreen();
+                        System.out.println("[CLICK-RETRY] " + getLocator().toString());
                         getElement().click();
                         return;
                     } catch (Exception secondEx) {
                         if (times == 1) {
+                            System.out.println("[CLICK-BY-JS] " + getLocator().toString());
                             clickByJs();
                             return;
                         }
@@ -85,6 +88,7 @@ public class Clickable extends BaseControl implements IClickable {
                     log.error("Click error on '{}': {}", getLocator().toString(), errorMsg);
                     // Try JS click as last resort
                     try {
+                        System.out.println("[CLICK-BY-JS] " + getLocator().toString());
                         clickByJs();
                     } catch (Exception jsEx) {
                         throw firstEx;
@@ -152,4 +156,4 @@ public class Clickable extends BaseControl implements IClickable {
         }
     }
 
-}   
+}

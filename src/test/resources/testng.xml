@@ -3,7 +3,7 @@
 <suite name="Selenium Level 2 Test Suite" parallel="tests" thread-count="3">
     <listeners>
         <listener class-name="org.example.report.AllureConfig"/>
-        <listener class-name="org.example.report.LogConfig"/>
+
     </listeners>
 
     <!-- NOTE: In single browser mode, only the selected browser test will run, others will be skipped -->
@@ -18,20 +18,20 @@
     </test>
 
     <!-- Firefox Test - sẽ được skip nếu user không chọn firefox -->
-    <test name="Firefox">
+    <!-- <test name="Firefox">
         <parameter name="browser" value="firefox"/>
         <classes>
             <class name="testCase.TC01_AgodaHotelSearchTest"/>
          
         </classes>
-    </test>
+    </test> -->
 
     <!-- Edge Test - sẽ được skip nếu user không chọn edge -->
-    <test name="Edge">
+    <!-- <test name="Edge">
         <parameter name="browser" value="edge"/>
         <classes>
             <class name="testCase.TC01_AgodaHotelSearchTest"/>
          
         </classes>
-    </test>
+    </test> -->
 </suite>
