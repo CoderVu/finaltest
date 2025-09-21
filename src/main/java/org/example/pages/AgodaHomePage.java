@@ -25,7 +25,10 @@ import static com.codeborne.selenide.Selenide.sleep;
 @Slf4j
 public class AgodaHomePage extends BasePage {
 
+    // TextBox
     protected TextBox destinationSearchInput = new TextBox("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
+
+    // Elements
     protected Element autocompletePanel = new Element("//div[@data-selenium='autocompletePanel']");
     protected Element checkInBox = new Element("//div[@data-element-name='check-in-box']");
     protected Element checkOutBox = new Element("//div[@data-element-name='check-out-box']");
@@ -33,9 +36,12 @@ public class AgodaHomePage extends BasePage {
     protected Element nextMonthButton = new Element("//button[@data-selenium='calendar-next-month-button']");
     protected Element occupancyBox = new Element("//div[@data-element-name='occupancy-box']");
     protected Element hotelListContainer = new Element("//ol[contains(@class,'hotel-list-container')]");
-    protected Button searchButton = new Button("//button[@data-selenium='searchButton']");
 
-    // XPath Locators for occupancy configuration
+    // Buttons
+    protected Button searchButton = new Button("//button[@data-selenium='searchButton']");
+    protected Button sortPriceButton = new Button("//button[@data-element-name='search-sort-price']");
+
+    // XPath 
     protected String occupancyPopupXpathString = "//div[@class='OccupancySelector OccupancySelector--travelWithKids']";
     protected String roomValueXpath = "//div[@data-component='desktop-occ-room-value']//p";
     protected String adultValueXpath = "//div[@data-component='desktop-occ-adult-value']//p";
@@ -47,9 +53,7 @@ public class AgodaHomePage extends BasePage {
     protected String childrenPlusButtonXpath = "//div[@data-selenium='occupancyChildren']//button[@data-selenium='plus']";
     protected String childrenMinusButtonXpath = "//div[@data-selenium='occupancyChildren']//button[@data-selenium='minus']";
     protected String alternativeApplyButtonXpath = "//button[contains(@class, 'occupancy') and contains(text(), 'Apply')]";
-
-    // Updated XPath Locators for new search results structure
-    protected static String propertyCardXpath = "//div[contains(@class, 'PropertyCard__Section--propertyInfo')]";
+    protected static String propertyCardXpath = "//div[@data-element-name='PropertyCardBaseJacket']";
     protected static String hotelNameXpath = ".//h3[@data-selenium='hotel-name']";
     protected static String starsXpath = ".//svg[@role='img']";
     protected static String ratingXpath = ".//div[@data-testid='rating-container']";
@@ -57,6 +61,7 @@ public class AgodaHomePage extends BasePage {
     protected static String cashbackXpath = ".//div[@data-selenium='cashback-badge']//span";
     protected static String amenityXpath = ".//div[@data-element-name='pill-each-item']//span";
     protected static String badgeXpath = ".//div[contains(@data-badge-id, 'pct')]//span";
+    protected static String priceXpath = ".//span[@data-selenium='display-price']";
 
     @Step("Navigate to home page")
     public void navigateToHomePage() {
@@ -91,7 +96,6 @@ public class AgodaHomePage extends BasePage {
         int openAttempts = 0;
         while (!calendarContainer.isVisible() && openAttempts < 5) {
             checkInBox.scrollElementToCenterScreen();
-
 
             checkInBox.clickByJs();
             try {
@@ -336,13 +340,13 @@ public class AgodaHomePage extends BasePage {
     }
 
     @Step("Get hotel information from search results")
-    public List<Hotel> getAllHotelsFromListViewSearch() {
+    public List<Hotel> getAllHotelsFromListViewSearch(int expectedHotelCount) {
         List<Hotel> hotels = new ArrayList<>();
         try {
             List<Element> hotelCards = hotelListContainer.getListElements(Element.class, propertyCardXpath);
             log.info("Found {} hotel cards in search results", hotelCards.size());
 
-            for (int i = 0; i < hotelCards.size(); i++) {
+            for (int i = 0; i < hotelCards.size() && i < expectedHotelCount; i++) {
                 try {
                     Element cardElement = hotelCards.get(i);
                     cardElement.scrollToView();
@@ -434,6 +438,14 @@ public class AgodaHomePage extends BasePage {
                 log.debug("Could not find badges");
             }
 
+            // Extract price (try both possible locations)
+            try {
+                Element priceElement = new Element(card, priceXpath);
+                log.info("Found price: {}", priceElement.getText().trim());
+                hotelBuilder.price(priceElement.getText().trim());
+            } catch (Exception e) {
+                log.debug("Could not find price");
+            }
             return hotelBuilder.build();
 
         } catch (Exception e) {
@@ -445,7 +457,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Verify search results are displayed correctly with at least {expectedCount} hotels")
     public boolean verifySearchResultsDisplayed(int expectedCount) {
         try {
-            List<Hotel> hotels = getAllHotelsFromListViewSearch();
+            List<Hotel> hotels = getAllHotelsFromListViewSearch(expectedCount);
             int actualCount = hotels.size();
 
             log.info("Found {} hotels in search results", actualCount);
@@ -477,7 +489,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Get total hotels count from list")
     public int getTotalHotelsCount(List<Hotel> hotels) {
-        return hotels.size(); 
+        return hotels.size();
     }
 
     @Step("Switch to search results tab")
@@ -504,4 +516,61 @@ public class AgodaHomePage extends BasePage {
             log.error("Failed to wait for search results: {}", e.getMessage());
         }
     }
+
+    @Step("Sort hotels by lowest price")
+    public void sortByLowestPrice() {
+        sortPriceButton.waitForElementClickable();
+        sortPriceButton.click();
+        sleep(2000); // Wait for sorting to take effect
+    }
+
+
+    @Step("Verify first 5 hotels are sorted by lowest price")
+    public boolean verifyHotelsSortedByLowestPrice(List<Hotel> hotels) {
+        List<Integer> prices = new ArrayList<>();
+        for (int i = 0; i < Math.min(5, hotels.size()); i++) {
+            String priceStr = hotels.get(i).getPrice();
+            if (priceStr == null || priceStr.isEmpty()) {
+                continue;
+            }
+
+            String digits = priceStr.replaceAll("[^\\d]", "");
+            if (!digits.isEmpty()) {
+                prices.add(Integer.parseInt(digits));
+            }
+        }
+
+        if (prices.isEmpty()) {
+            log.warn("No valid prices found for first 5 hotels");
+            return false;
+        }
+
+        // Copy and sort
+        List<Integer> sorted = new ArrayList<>(prices);
+        sorted.sort(Integer::compareTo);
+
+        if (!prices.equals(sorted)) {
+            log.error("Hotels not sorted by lowest price. Actual: {}, Expected: {}", prices, sorted);
+            return false;
+        }
+
+        log.info("First {} hotels are sorted by lowest price: {}", prices.size(), prices);
+        return true;
+    }
+
+    @Step("Verify first 5 hotels have correct destination: {expectedDestination}")
+    public boolean verifyHotelsDestination(List<Hotel> hotels, String expectedDestination) {
+        for (int i = 0; i < Math.min(5, hotels.size()); i++) {
+            Hotel hotel = hotels.get(i);
+            String location = hotel.getLocation();
+            if (location == null || !location.toLowerCase().contains(expectedDestination.toLowerCase())) {
+                log.error("Hotel {} destination mismatch. Actual: {}, Expected to contain: {}",
+                        i + 1, location, expectedDestination);
+                return false;
+            }
+        }
+        log.info("First 5 hotels have correct destination: {}", expectedDestination);
+        return true;
+    }
+
 }

@@ -5,8 +5,6 @@
         <listener class-name="org.example.report.AllureConfig"/>
 
     </listeners>
-
-    <!-- NOTE: In single browser mode, only the selected browser test will run, others will be skipped -->
     
     <!-- Chrome Test-->
     <test name="Chrome">

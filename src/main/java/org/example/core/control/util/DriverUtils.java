@@ -223,7 +223,6 @@ public final class DriverUtils {
     public static int getTimeOut() {
         long ms = Configuration.timeout;
         int seconds = (int) Math.max(1, ms / 1000);
-        log.info("Current timeout is settt to {} seconds", seconds);
         return seconds;
     }
 
