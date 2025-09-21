@@ -3,11 +3,14 @@ package testCase;
 import config.TestBase;
 import io.qameta.allure.*;
 import lombok.extern.slf4j.Slf4j;
+
 import org.example.pages.AgodaHomePage;
 import org.example.report.SoftAssertConfig;
 import org.testng.annotations.*;
 
 import java.util.List;
+
+import org.example.model.Hotel;
 
 @Slf4j
 @Epic("Hotel Booking")
@@ -40,7 +43,7 @@ public class TC01_AgodaHotelSearchTest extends TestBase {
         homePage.selectDatesFromNextFriday();
         
         // Step 4: Configure occupancy (2 rooms, 4 adults)
-        homePage.configureOccupancy(ROOMS, ADULTS, CHILDREN);
+        homePage.SelectOccupancy(ROOMS, ADULTS, CHILDREN);
         
         // Step 5: Search
         homePage.clickSearchButton();
@@ -48,13 +51,12 @@ public class TC01_AgodaHotelSearchTest extends TestBase {
         // Step 6: Switch to search results tab (Agoda opens results in new tab)
         homePage.switchToSearchResultsTab();
         homePage.waitForSearchResultsToLoad();
-        
-        List<String> hotelNames = homePage.getAndDisplayHotelNames();
-        
+
         // Step 7: Verify search results
-        softAssert.assertTrue(homePage.verifySearchResultsDisplayed(EXPECTED_HOTEL_COUNT), 
-            String.format("Verify at least %d hotels are displayed. Found hotels: %s", 
-                EXPECTED_HOTEL_COUNT, String.join(", ", hotelNames.subList(0, Math.min(EXPECTED_HOTEL_COUNT, hotelNames.size())))));
+        List<Hotel> hotels = homePage.getAllHotelsFromListViewSearch();
+        softAssert.assertTrue(homePage.verifySearchResultsDisplayed(EXPECTED_HOTEL_COUNT),
+            String.format("Verify at least %d hotels are displayed. Found hotels: %d",
+                EXPECTED_HOTEL_COUNT, homePage.getTotalHotelsCount(hotels)));
 
         softAssert.assertAll();
     }

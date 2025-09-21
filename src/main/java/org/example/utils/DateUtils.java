@@ -66,7 +66,12 @@ public class DateUtils {
      */
     public static String getCurrentDate(String format) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-        return LocalDate.now().format(formatter);
+        // Use LocalDateTime for formats with time, LocalDate for date only
+        if (format.contains("H") || format.contains("m") || format.contains("s")) {
+            return java.time.LocalDateTime.now().format(formatter);
+        } else {
+            return java.time.LocalDate.now().format(formatter);
+        }
     }
     
     /**

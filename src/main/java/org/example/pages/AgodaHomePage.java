@@ -32,6 +32,7 @@ public class AgodaHomePage extends BasePage {
     protected Element calendarContainer = new Element("//div[@id='DatePicker__AccessibleV2']");
     protected Element nextMonthButton = new Element("//button[@data-selenium='calendar-next-month-button']");
     protected Element occupancyBox = new Element("//div[@data-element-name='occupancy-box']");
+    protected Element hotelListContainer = new Element("//ol[contains(@class,'hotel-list-container')]");
     protected Button searchButton = new Button("//button[@data-selenium='searchButton']");
 
     // XPath Locators for occupancy configuration
@@ -48,21 +49,22 @@ public class AgodaHomePage extends BasePage {
     protected String alternativeApplyButtonXpath = "//button[contains(@class, 'occupancy') and contains(text(), 'Apply')]";
 
     // Updated XPath Locators for new search results structure
-    protected String propertyCardXpath = "//div[contains(@class, 'PropertyCard__Section--propertyInfo')]";
-    protected String hotelNameXpath = ".//h3[@data-selenium='hotel-name']";
-    protected String ratingXpath = ".//div[@data-testid='rating-container']";
-    protected String locationXpath = ".//button[@data-selenium='area-city-text']//span";
-    protected String cashbackXpath = ".//div[@data-selenium='cashback-badge']//span";
-    protected String amenityXpath = ".//div[@data-element-name='pill-each-item']//span";
-    protected String badgeXpath = ".//div[contains(@data-badge-id, 'pct')]//span";
+    protected static String propertyCardXpath = "//div[contains(@class, 'PropertyCard__Section--propertyInfo')]";
+    protected static String hotelNameXpath = ".//h3[@data-selenium='hotel-name']";
+    protected static String starsXpath = ".//svg[@role='img']";
+    protected static String ratingXpath = ".//div[@data-testid='rating-container']";
+    protected static String locationXpath = ".//button[@data-selenium='area-city-text']//span";
+    protected static String cashbackXpath = ".//div[@data-selenium='cashback-badge']//span";
+    protected static String amenityXpath = ".//div[@data-element-name='pill-each-item']//span";
+    protected static String badgeXpath = ".//div[contains(@data-badge-id, 'pct')]//span";
 
     @Step("Navigate to home page")
     public void navigateToHomePage() {
-        // String current = getCurrentUrl();
-        // String base = Constants.getBaseUrl();
-        // if (current == null || !current.startsWith(base)) {
-        //     DriverUtils.navigateTo(base);
-        // }
+        String current = getCurrentUrl();
+        String base = Constants.getBaseUrl();
+        if (current == null || !current.startsWith(base)) {
+            DriverUtils.navigateTo(base);
+        }
     }
 
     @Step("Enter destination: {destination}")
@@ -83,49 +85,6 @@ public class AgodaHomePage extends BasePage {
         selectCheckOutDate(checkOutDate);
     }
 
-    // @Step("Select check-in date: {checkInDate}")
-    // public void selectCheckInDate(String checkInDate) {
-    //     // 1. Open calendar if not already open
-    //     checkInBox.waitForElementClickable();
-    //     checkInBox.scrollElementToCenterScreen();
-    //     for (int i = 0; i < 3; i++) {
-    //         checkInBox.click();
-    //         try {
-    //             calendarContainer.waitForVisibility();
-    //             break;
-    //         } catch (Exception e) {
-    //             log.warn("Calendar not visible after attempt {}", i + 1);
-    //         }
-    //     }
-    //     // 2. Select check-in date with retry if element not yet rendered
-    //     Element checkInDateElement = new Element(
-    //             String.format("//span[@data-selenium-date='%s']", checkInDate));
-    //     for (int i = 0; i < 3; i++) {
-    //         try {
-    //             checkInDateElement.waitForElementClickable();
-    //             checkInDateElement.clickByJs();
-    //             log.info("Selected check-in date: {}", checkInDate);
-    //             break;
-    //         } catch (Exception e) {
-    //             log.warn("Failed to select check-in date, retry {}", i + 1);
-    //             checkInBox.click();
-    //             try {
-    //                 calendarContainer.waitForVisibility();
-    //             } catch (Exception ex) {
-    //                 log.warn("Calendar not visible during retry");
-    //             }
-    //         }
-    //     }
-    //    // 3. Close calendar by clicking outside
-    //     if (calendarContainer.isVisible()) {
-    //         WebElement outsideArea = findElement(
-    //                 By.xpath("//body")
-    //         );
-    //         outsideArea.click();
-    //         calendarContainer.waitForInvisibility();
-    //         log.info("Closed calendar after selecting check-in date");
-    //     }
-    // }
     @Step("Select check-in date: {checkInDate}")
     public void selectCheckInDate(String checkInDate) {
         // 1. Mở calendar chắc chắn
@@ -245,8 +204,8 @@ public class AgodaHomePage extends BasePage {
         LocalDate checkOutDate = checkInDate.plusDays(3);
 
         // Format as yyyy-MM-dd (Agoda expects this format for data-selenium-date)
-        String checkInDateStr = checkInDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
-        String checkOutDateStr = checkOutDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+        String checkInDateStr = checkInDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String checkOutDateStr = checkOutDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         log.info("Next Friday: {}", nextFriday);
         log.info("Check-in date (starting on next Friday): {}", checkInDateStr);
@@ -256,8 +215,8 @@ public class AgodaHomePage extends BasePage {
         selectDates(checkInDateStr, checkOutDateStr);
     }
 
-    @Step("Configure occupancy: {rooms} rooms, {adults} adults, {children} children")
-    public void configureOccupancy(int rooms, int adults, int children) {
+    @Step("Select occupancy: {rooms} rooms, {adults} adults, {children} children")
+    public void SelectOccupancy(int rooms, int adults, int children) {
         // Check if occupancy popup is already open (it might auto-open after date selection)
         Element occupancyPopup = new Element(occupancyPopupXpathString);
 
@@ -277,17 +236,17 @@ public class AgodaHomePage extends BasePage {
         log.info("Configuring occupancy: {} rooms, {} adults, {} children", rooms, adults, children);
 
         // Configure rooms
-        configureRooms(rooms);
+        selectRooms(rooms);
 
-        // Configure adults  
-        configureAdults(adults);
+        // Select adults
+        selectAdults(adults);
 
-        // Configure children
-        configureChildren(children);
+        // Select children
+        selectChildren(children);
     }
 
-    @Step("Configure rooms to: {targetRooms}")
-    private void configureRooms(int targetRooms) {
+    @Step("Select rooms to: {targetRooms}")
+    private void selectRooms(int targetRooms) {
         Element roomValueElement = new Element(roomValueXpath);
         roomValueElement.waitForVisibility();
 
@@ -316,8 +275,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Configure adults to: {targetAdults}")
-    private void configureAdults(int targetAdults) {
+    @Step("Select adults to: {targetAdults}")
+    private void selectAdults(int targetAdults) {
         Element adultValueElement = new Element(adultValueXpath);
         adultValueElement.waitForVisibility();
 
@@ -346,8 +305,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Configure children to: {targetChildren}")
-    private void configureChildren(int targetChildren) {
+    @Step("Select children to: {targetChildren}")
+    private void selectChildren(int targetChildren) {
         Element childrenValueElement = new Element(childrenValueXpath);
         childrenValueElement.waitForVisibility();
 
@@ -377,21 +336,17 @@ public class AgodaHomePage extends BasePage {
     }
 
     @Step("Get hotel information from search results")
-    public List<Hotel> getHotelInformation() {
+    public List<Hotel> getAllHotelsFromListViewSearch() {
         List<Hotel> hotels = new ArrayList<>();
         try {
-            Element propertyCardsContainer = new Element(By.xpath("//body"));
-            List<Element> propertyCardElements = propertyCardsContainer.getListElements(Element.class, propertyCardXpath);
+            List<Element> hotelCards = hotelListContainer.getListElements(Element.class, propertyCardXpath);
+            log.info("Found {} hotel cards in search results", hotelCards.size());
 
-            log.info("Found {} property cards in search results", propertyCardElements.size());
-
-            for (int i = 0; i < propertyCardElements.size(); i++) {
+            for (int i = 0; i < hotelCards.size(); i++) {
                 try {
-                    Element cardElement = propertyCardElements.get(i);
+                    Element cardElement = hotelCards.get(i);
                     cardElement.scrollToView();
-                    sleep(300); // Give time for lazy loading
-                    WebElement card = cardElement.getElement();
-                    Hotel hotel = getAllHotels(card, i);
+                    Hotel hotel = extractHotelFromCard(cardElement);
                     if (hotel != null) {
                         hotels.add(hotel);
                         log.info("Hotel {}: {}", i + 1, hotel.toString());
@@ -410,114 +365,31 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    private Hotel getAllHotels(WebElement card, int index) {
-        try {
-            Hotel.HotelBuilder hotelBuilder = Hotel.builder();
-
-            // Extract hotel name using card WebElement
-            try {
-                WebElement nameElement = card.findElement(By.xpath(hotelNameXpath));
-                hotelBuilder.name(nameElement.getText().trim());
-            } catch (Exception e) {
-                log.warn("Could not find hotel name for card {}", index);
-                return null; // Skip if no name found
-            }
-
-            // Extract rating using card WebElement
-            try {
-                List<WebElement> ratingContainers = card.findElements(By.xpath(ratingXpath));
-                if (!ratingContainers.isEmpty()) {
-                    List<WebElement> stars = ratingContainers.get(0).findElements(By.xpath(".//svg[@role='img']"));
-                    hotelBuilder.rating(stars.size() + " stars");
-                }
-            } catch (Exception e) {
-                log.debug("Could not find rating for card {}", index);
-            }
-
-            // Extract location and distance using card WebElement
-            try {
-                WebElement locationElement = card.findElement(By.xpath(locationXpath));
-                String locationText = locationElement.getText().trim();
-                String[] locationParts = locationText.split(" - ");
-                if (locationParts.length >= 2) {
-                    hotelBuilder.location(locationParts[0]);
-                    hotelBuilder.distanceToCenter(locationParts[1]);
-                } else {
-                    hotelBuilder.location(locationText);
-                }
-            } catch (Exception e) {
-                log.debug("Could not find location for card {}", index);
-            }
-
-            // Extract cashback reward using card WebElement
-            try {
-                WebElement cashbackElement = card.findElement(By.xpath(cashbackXpath));
-                hotelBuilder.cashbackReward(cashbackElement.getText().trim());
-            } catch (Exception e) {
-                log.debug("Could not find cashback for card {}", index);
-            }
-
-            // Extract amenities using card WebElement
-            try {
-                List<WebElement> amenityElements = card.findElements(By.xpath(amenityXpath));
-                String[] amenities = amenityElements.stream()
-                        .map(element -> element.getText().trim())
-                        .filter(text -> !text.isEmpty() && !text.startsWith("+"))
-                        .toArray(String[]::new);
-                hotelBuilder.amenities(amenities);
-            } catch (Exception e) {
-                log.debug("Could not find amenities for card {}", index);
-            }
-
-            // Extract badges using card WebElement
-            try {
-                List<WebElement> badgeElements = card.findElements(By.xpath(badgeXpath));
-                String[] badges = badgeElements.stream()
-                        .map(element -> element.getText().trim())
-                        .filter(text -> !text.isEmpty())
-                        .toArray(String[]::new);
-                hotelBuilder.badges(badges);
-            } catch (Exception e) {
-                log.debug("Could not find badges for card {}", index);
-            }
-
-            return hotelBuilder.build();
-
-        } catch (Exception e) {
-            log.error("Error extracting hotel info for card {}: {}", index, e.getMessage());
-            return null;
-        }
-    }
-
-    private Hotel extractHotelInfo(WebElement card, int index) {
+    private Hotel extractHotelFromCard(Element card) {
         try {
             Hotel.HotelBuilder hotelBuilder = Hotel.builder();
 
             // Extract hotel name
             try {
-                WebElement nameElement = card.findElement(By.xpath(hotelNameXpath));
+                Element nameElement = new Element(card, hotelNameXpath);
                 hotelBuilder.name(nameElement.getText().trim());
             } catch (Exception e) {
-                log.warn("Could not find hotel name for card {}", index);
-                return null; // Skip if no name found
+                log.warn("Could not find hotel name");
+                return null;
             }
 
             // Extract rating
             try {
-                WebElement ratingElement = card.findElement(By.xpath(ratingXpath));
-                String ariaLabel = ratingElement.getAttribute("aria-describedby");
-                if (ariaLabel != null) {
-                    // Count star SVG elements for rating
-                    List<WebElement> stars = ratingElement.findElements(By.xpath(".//svg[@role='img']"));
-                    hotelBuilder.rating(stars.size() + " stars");
-                }
+                Element ratingContainer = new Element(card, ratingXpath);
+                List<WebElement> stars = ratingContainer.getChildElements(starsXpath);
+                hotelBuilder.rating(stars.size() + " stars");
             } catch (Exception e) {
-                log.debug("Could not find rating for card {}", index);
+                log.debug("Could not find rating");
             }
 
             // Extract location and distance
             try {
-                WebElement locationElement = card.findElement(By.xpath(locationXpath));
+                Element locationElement = new Element(card, locationXpath);
                 String locationText = locationElement.getText().trim();
                 String[] locationParts = locationText.split(" - ");
                 if (locationParts.length >= 2) {
@@ -527,45 +399,45 @@ public class AgodaHomePage extends BasePage {
                     hotelBuilder.location(locationText);
                 }
             } catch (Exception e) {
-                log.debug("Could not find location for card {}", index);
+                log.debug("Could not find location");
             }
 
             // Extract cashback reward
             try {
-                WebElement cashbackElement = card.findElement(By.xpath(cashbackXpath));
+                Element cashbackElement = new Element(card, cashbackXpath);
                 hotelBuilder.cashbackReward(cashbackElement.getText().trim());
             } catch (Exception e) {
-                log.debug("Could not find cashback for card {}", index);
+                log.debug("Could not find cashback");
             }
 
             // Extract amenities
             try {
-                List<WebElement> amenityElements = card.findElements(By.xpath(amenityXpath));
+                List<WebElement> amenityElements = card.getChildElements(amenityXpath);
                 String[] amenities = amenityElements.stream()
                         .map(element -> element.getText().trim())
                         .filter(text -> !text.isEmpty() && !text.startsWith("+"))
                         .toArray(String[]::new);
                 hotelBuilder.amenities(amenities);
             } catch (Exception e) {
-                log.debug("Could not find amenities for card {}", index);
+                log.debug("Could not find amenities");
             }
 
             // Extract badges
             try {
-                List<WebElement> badgeElements = card.findElements(By.xpath(badgeXpath));
+                List<WebElement> badgeElements = card.getChildElements(badgeXpath);
                 String[] badges = badgeElements.stream()
                         .map(element -> element.getText().trim())
                         .filter(text -> !text.isEmpty())
                         .toArray(String[]::new);
                 hotelBuilder.badges(badges);
             } catch (Exception e) {
-                log.debug("Could not find badges for card {}", index);
+                log.debug("Could not find badges");
             }
 
             return hotelBuilder.build();
 
         } catch (Exception e) {
-            log.error("Error extracting hotel info for card {}: {}", index, e.getMessage());
+            log.error("Error extracting hotel info: {}", e.getMessage());
             return null;
         }
     }
@@ -573,7 +445,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Verify search results are displayed correctly with at least {expectedCount} hotels")
     public boolean verifySearchResultsDisplayed(int expectedCount) {
         try {
-            List<Hotel> hotels = getHotelInformation();
+            List<Hotel> hotels = getAllHotelsFromListViewSearch();
             int actualCount = hotels.size();
 
             log.info("Found {} hotels in search results", actualCount);
@@ -603,35 +475,9 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Get total number of hotels in search results")
-    public int getTotalHotelsCount() {
-        try {
-            List<Hotel> hotels = getHotelInformation();
-            int count = hotels.size();
-            log.info("Total hotels found in search results: {}", count);
-            return count;
-        } catch (Exception e) {
-            log.error("Error getting hotels count: {}", e.getMessage());
-            return 0;
-        }
-    }
-
-    @Step("Get hotel names from search results")
-    public List<String> getHotelNames() {
-        try {
-            List<Hotel> hotels = getHotelInformation();
-            List<String> hotelNames = hotels.stream()
-                    .filter(hotel -> hotel.getName() != null && !hotel.getName().isEmpty())
-                    .map(Hotel::getName)
-                    .collect(Collectors.toList());
-
-            log.info("Retrieved {} hotel names from search results", hotelNames.size());
-            return hotelNames;
-
-        } catch (Exception e) {
-            log.error("Error getting hotel names: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+    @Step("Get total hotels count from list")
+    public int getTotalHotelsCount(List<Hotel> hotels) {
+        return hotels.size(); 
     }
 
     @Step("Switch to search results tab")
@@ -657,17 +503,5 @@ public class AgodaHomePage extends BasePage {
         } catch (Exception e) {
             log.error("Failed to wait for search results: {}", e.getMessage());
         }
-    }
-
-    @Step("Get and display hotel names in Allure report")
-    public List<String> getAndDisplayHotelNames() {
-        List<String> hotelNames = getHotelNames();
-
-        // Log each hotel name for Allure report
-        for (int i = 0; i < hotelNames.size(); i++) {
-            log.info("Hotel {}: {}", i + 1, hotelNames.get(i));
-        }
-
-        return hotelNames;
     }
 }
