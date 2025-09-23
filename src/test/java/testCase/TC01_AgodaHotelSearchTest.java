@@ -61,7 +61,10 @@ public class TC01_AgodaHotelSearchTest extends TestBase {
         softAssert.assertTrue(homePage.verifySearchResultsDisplayed(EXPECTED_HOTEL_COUNT),
             String.format("Verify at least %d hotels are displayed. Found hotels: %d",
                 EXPECTED_HOTEL_COUNT, homePage.getTotalHotelsCount(hotels)));
+        
+        int beforeSortCount = homePage.getHotelListSize();
         homePage.sortByLowestPrice();
+        homePage.waitForPropertyCardCountChange(beforeSortCount);
         softAssert.assertTrue(homePage.verifyHotelsSortedByLowestPrice(hotels));
         softAssert.assertTrue(homePage.verifyHotelsDestination(hotels, DESTINATION));
         
