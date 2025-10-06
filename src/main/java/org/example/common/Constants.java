@@ -26,6 +26,7 @@ public class Constants {
 
     public static List<String> getBrowsers() {
         ensureInitialized();
+        
         return browsers;
     }
 
