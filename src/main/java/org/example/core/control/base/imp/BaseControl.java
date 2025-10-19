@@ -16,7 +16,6 @@ import java.util.List;
 
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Condition.*;
-
 @Slf4j
 public class BaseControl implements IBaseControl {
 
