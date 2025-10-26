@@ -64,31 +64,30 @@ public class Clickable extends BaseControl implements IClickable {
                 if (intercepted && times > 0) {
                     times--;
                     if (times == 0) {
-                        log.error("Click intercepted on '{}': {}", getLocator().toString(), errorMsg);
-                        System.out.println("[CLICK-BY-JS] " + getLocator().toString());
-                        clickByJs(); // Use JS as fallback
+                        log.info("Click intercepted on '{}': {}", getLocator().toString(), errorMsg);
+                        clickByJs(); 
                         return;
                     }
 
                     DriverUtils.delay(0.5); // Reduce delay
                     try {
                         scrollElementToCenterScreen();
-                        System.out.println("[CLICK-RETRY] " + getLocator().toString());
+                        log.info("Click retry on '{}': {}", getLocator().toString(), errorMsg);
                         getElement().click();
                         return;
                     } catch (Exception secondEx) {
                         if (times == 1) {
-                            System.out.println("[CLICK-BY-JS] " + getLocator().toString());
+                            log.info("Click retry error on '{}': {}", getLocator().toString(), secondEx.getMessage().split("\n")[0]);
                             clickByJs();
                             return;
                         }
                         click(times);
                     }
                 } else {
-                    log.error("Click error on '{}': {}", getLocator().toString(), errorMsg);
+                    log.info("Click error on '{}': {}", getLocator().toString(), errorMsg);
                     // Try JS click as last resort
                     try {
-                        System.out.println("[CLICK-BY-JS] " + getLocator().toString());
+                        log.info("Click by JS on '{}'", getLocator().toString());
                         clickByJs();
                     } catch (Exception jsEx) {
                         throw firstEx;
@@ -144,8 +143,6 @@ public class Clickable extends BaseControl implements IClickable {
             }
             log.debug("Wait for element clickable {}", getLocator().toString());
             WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(timeOutInSecond));
-            
-            // 🔑 Dùng locator thay vì getElement()
             wait.until(ExpectedConditions.elementToBeClickable(getLocator()));
             
             log.debug("Element is clickable: {}", getLocator().toString());

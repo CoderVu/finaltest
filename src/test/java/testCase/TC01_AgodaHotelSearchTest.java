@@ -58,6 +58,8 @@ public class TC01_AgodaHotelSearchTest extends TestBase {
 
         // Step 7: Verify search results
         List<Hotel> hotels = homePage.getAllHotelsFromListViewSearch(EXPECTED_HOTEL_COUNT);
+        Hotel hotel = new Hotel();
+        hotel.getName();
         softAssert.assertTrue(homePage.verifySearchResultsDisplayed(EXPECTED_HOTEL_COUNT),
             String.format("Verify at least %d hotels are displayed. Found hotels: %d",
                 EXPECTED_HOTEL_COUNT, homePage.getTotalHotelsCount(hotels)));

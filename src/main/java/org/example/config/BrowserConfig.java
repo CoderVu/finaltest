@@ -5,7 +5,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.report.LogConfig;
+import org.example.report.DebugConfig;
 import org.example.core.browser.chrome.ChromeBrowserConfig;
 import org.example.core.browser.firefox.FirefoxBrowserConfig;
 import org.example.core.browser.edge.EdgeBrowserConfig;

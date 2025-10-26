@@ -8,14 +8,12 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import java.time.Duration;
 
+import java.time.Duration;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Condition.*;
 @Slf4j
 public class BaseControl implements IBaseControl {
 
@@ -260,8 +258,11 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public boolean isClickable() {
+        int actualTimeout = Math.min(DriverUtils.getTimeOut(), (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
-            $(getLocator()).shouldBe(and("clickable", enabled, visible), Duration.ofSeconds(DriverUtils.getTimeOut()));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.elementToBeClickable(getLocator()));
             return true;
         } catch (Exception e) {
             return false;
@@ -292,16 +293,28 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public boolean isExist(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); 
+        WebDriver driver = getDriver();
+
         try {
-            $(getLocator()).shouldBe(exist, Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.presenceOfElementLocated(getLocator()));
             return true;
+
+        } catch (TimeoutException e) {
+            log.debug("isExist() timeout after {}s for locator '{}'", actualTimeout, getLocator());
+            return false;
+
+        } catch (StaleElementReferenceException e) {
+            log.debug("isExist() stale element for locator '{}': {}", getLocator(), e.getMessage());
+            return false;
+
         } catch (Exception e) {
-            log.debug("IsExisted timeout after {} seconds for control '{}': {}", 
-                actualTimeout, getLocator().toString(), e.getMessage());
+            log.debug("isExist() - Exception for locator '{}': {}", getLocator(), e.getMessage());
             return false;
         }
     }
+
 
     @Override
     public boolean isSelected() {
@@ -322,13 +335,28 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public boolean isVisible(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int) (Constants.DEFAULT_TIMEOUT / 1000)); 
+        WebDriver driver = DriverUtils.getDriver();
+
         try {
-            $(getLocator()).shouldBe(visible, Duration.ofSeconds(actualTimeout));
-            return true;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            return element.isDisplayed();
+
+        } catch (TimeoutException e) {
+            log.debug("isVisible() timeout after {}s for locator '{}'", actualTimeout, getLocator());
+            return false;
+
+        } catch (NoSuchElementException e) {
+            log.debug("isVisible() - Element not found for locator '{}'", getLocator());
+            return false;
+
+        } catch (StaleElementReferenceException e) {
+            log.debug("isVisible() - Stale element for locator '{}'", getLocator());
+            return false;
+
         } catch (Exception e) {
-            log.debug("IsVisible timeout after {} seconds for control '{}': {}", 
-                actualTimeout, getLocator().toString(), e.getMessage());
+            log.debug("isVisible() error for locator '{}': {}", getLocator(), e.getMessage());
             return false;
         }
     }
@@ -413,13 +441,6 @@ public class BaseControl implements IBaseControl {
 
     }
 
-    /**
-     * Set value for dynamic control.
-     *
-     * @param args
-     * @Example TextBox myTextBox = new TextBox("//input[@value='%s']"); </br>
-     * myTextBox.setDynamicValue("example");
-     */
     @Override
     public void setDynamicValue(Object... args) {
         this.locator = String.format(this.dynamicLocator, args);
@@ -438,16 +459,31 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForDisappear(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = DriverUtils.getDriver();
+        log.info("Wait for control to disappear {} with timeout {} seconds", getLocator().toString(), actualTimeout);
+
         try {
-            log.info("Wait for control disappear {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(disappear, Duration.ofSeconds(actualTimeout));
-        } catch (Exception e) {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            boolean invisible = wait.until(ExpectedConditions.invisibilityOfElementLocated(getLocator()));
+
+            if (!invisible) {
+                log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), actualTimeout);
+            }
+
+        } catch (TimeoutException e) {
             log.warn("waitForDisappear timeout after {} seconds for control '{}'. Continuing execution.", 
                 actualTimeout, getLocator().toString());
-            // Không throw exception, chỉ log warning và tiếp tục
+
+        } catch (NoSuchElementException e) {
+            log.debug("Element '{}' already disappeared (not found)", getLocator().toString());
+
+        } catch (Exception e) {
+            log.warn("waitForDisappear encountered error for control '{}': {}", 
+                getLocator().toString(), e.getMessage());
         }
     }
+
 
     @Override
     public void waitForDisplay() {
@@ -456,10 +492,12 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForDisplay(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info("Wait for control display {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(exist, Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.presenceOfElementLocated(getLocator()));
         } catch (Exception e) {
             log.error("WaitForDisplay timeout after {} seconds for control '{}': {}", 
                 actualTimeout, getLocator().toString(), e.getMessage().split("\n")[0]);
@@ -472,10 +510,12 @@ public class BaseControl implements IBaseControl {
     }
 
     public void waitForElementVisible(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info("Wait for element visible {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(visible, Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
         } catch (Exception e) {
             log.error("waitForElementVisible timeout after {} seconds for control '{}': {}", 
                 actualTimeout, getLocator().toString(), e.getMessage().split("\n")[0]);
@@ -490,10 +530,12 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForElementClickable(int timeOutInSecond) {
-        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info("Wait for element clickable {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(and("clickable", enabled, visible), Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.elementToBeClickable(getLocator()));
         } catch (Exception e) {
             log.error("WaitForElementClickable timeout after {} seconds for control '{}': {}", 
                 actualTimeout, getLocator().toString(), e.getMessage().split("\n")[0]);
@@ -503,8 +545,19 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForElementDisabled(int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
-            $(getLocator()).shouldBe(disabled, Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(d -> {
+                try {
+                    WebElement e = d.findElement(getLocator());
+                    return !e.isEnabled();
+                } catch (NoSuchElementException ex) {
+                    // If not present treat as disabled
+                    return true;
+                }
+            });
         } catch (Exception e) {
             log.error(String.format("waitForElementDisabled: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -518,8 +571,18 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForElementEnabled(int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
-            $(getLocator()).shouldBe(enabled, Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(d -> {
+                try {
+                    WebElement e = d.findElement(getLocator());
+                    return e.isEnabled();
+                } catch (NoSuchElementException ex) {
+                    return false;
+                }
+            });
         } catch (Exception e) {
             log.error(String.format("waitForElementEnabled: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -538,23 +601,35 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForInvisibility(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info("Wait for invisibility of {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(hidden, Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(getLocator()));
             log.info("Element {} is now invisible or removed from DOM", getLocator().toString());
         } catch (Exception e) {
             log.warn("waitForInvisibility timeout after {} seconds for control '{}'. Continuing execution.", 
                 actualTimeout, getLocator().toString());
-            // Không throw exception, chỉ log warning và tiếp tục
         }
     }
 
     @Override
     public void waitForTextToBeNotPresent(String text, int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info(String.format("Wait for text not to be present in %s", getLocator().toString()));
-            $(getLocator()).shouldNotHave(text(text), Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(d -> {
+                try {
+                    WebElement e = d.findElement(getLocator());
+                    String t = e.getText();
+                    return !t.contains(text);
+                } catch (NoSuchElementException ex) {
+                    return true; // not present => ok
+                }
+            });
         } catch (Exception e) {
             log.error(String.format("waitForTextToBeNotPresent: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -563,9 +638,12 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForTextToBePresent(String text, int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info(String.format("Wait for text to be present in %s", getLocator().toString()));
-            $(getLocator()).shouldHave(text(text), Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.textToBePresentInElementLocated(getLocator(), text));
         } catch (Exception e) {
             log.error(String.format("waitForTextToBePresent: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -574,9 +652,20 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForValueNotPresentInAttribute(String attribute, String value, int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info(String.format("Wait for %s not to be present in %s attribute of %s", value, attribute, getLocator().toString()));
-            $(getLocator()).shouldNotHave(attribute(attribute, value), Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(d -> {
+                try {
+                    WebElement e = d.findElement(getLocator());
+                    String attr = e.getAttribute(attribute);
+                    return attr == null || !attr.contains(value);
+                } catch (NoSuchElementException ex) {
+                    return true;
+                }
+            });
         } catch (Exception e) {
             log.error(String.format("waitForValueNotPresentInAttribute: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -585,9 +674,20 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForValuePresentInAttribute(String attribute, String value, int timeOutInSecond) {
+        int actualTimeout = Math.min(timeOutInSecond, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info(String.format("Wait for %s to be present in %s attribute of %s", value, attribute, getLocator().toString()));
-            $(getLocator()).shouldHave(attribute(attribute, value), Duration.ofSeconds(timeOutInSecond));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(d -> {
+                try {
+                    WebElement e = d.findElement(getLocator());
+                    String attr = e.getAttribute(attribute);
+                    return attr != null && attr.contains(value);
+                } catch (NoSuchElementException ex) {
+                    return false;
+                }
+            });
         } catch (Exception e) {
             log.error(String.format("waitForValuePresentInAttribute: Has error with control '%s': %s",
                     getLocator().toString(), e.getMessage().split("\n")[0]));
@@ -601,10 +701,12 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForVisibility(int timeOutInSeconds) {
-        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000)); // Giới hạn tối đa 20 giây
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info("Wait for control's visibility {} with timeout {} seconds", getLocator().toString(), actualTimeout);
-            $(getLocator()).shouldBe(visible, Duration.ofSeconds(actualTimeout));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
         } catch (Exception e) {
             log.error("waitForVisibility timeout after {} seconds for control '{}': {}", 
                 actualTimeout, getLocator().toString(), e.getMessage().split("\n")[0]);
@@ -619,10 +721,19 @@ public class BaseControl implements IBaseControl {
 
     @Override
     public void waitForStalenessOfElement(int timeOutInSeconds) {
+        int actualTimeout = Math.min(timeOutInSeconds, (int)(Constants.DEFAULT_TIMEOUT / 1000));
+        WebDriver driver = getDriver();
         try {
             log.info(String.format("Wait for control staleness %s", getLocator().toString()));
-            // Selenide doesn't have direct equivalent for staleness, using disappear instead
-            $(getLocator()).shouldBe(disappear, Duration.ofSeconds(timeOutInSeconds));
+            WebElement element;
+            try {
+                element = driver.findElement(getLocator());
+            } catch (NoSuchElementException e) {
+                // Element already not present => considered stale
+                return;
+            }
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(actualTimeout));
+            wait.until(ExpectedConditions.stalenessOf(element));
         } catch (Exception e) {
             log.error(String.format("waitForStalenessOfElement: Has error with control '%s': %s", getLocator().toString(),
                     e.getMessage().split("\n")[0]));

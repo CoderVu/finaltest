@@ -11,7 +11,7 @@ public class Constants {
     private static volatile String baseUrl;
     private static volatile String defaultBrowser;
     private static volatile List<String> browsers;
-    public static final long DEFAULT_TIMEOUT = 30000;
+    public static final long DEFAULT_TIMEOUT = 20000;
     public static final long DEFAULT_PAGE_LOAD_TIMEOUT = 30000;
 
     public static String getBaseUrl() {

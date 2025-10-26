@@ -1,11 +1,14 @@
 package org.example.report;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-public class LogConfig {
+@Slf4j
+public class DebugConfig {
 	
     private PrintStream originalOut;
     private PrintStream originalErr;
@@ -16,7 +19,7 @@ public class LogConfig {
         try {
             terminalLogFile = new File("target/allure-results/terminal.log");
             if (terminalLogFile.exists() && !terminalLogFile.delete()) {
-                System.out.println("Could not delete existing terminal.log; appending to it");
+                log.warn("Could not delete existing terminal log file: " + terminalLogFile.getAbsolutePath());
             }
             if (!terminalLogFile.exists()) {
                 File parent = terminalLogFile.getParentFile();
@@ -30,9 +33,9 @@ public class LogConfig {
             PrintStream teeErr = new PrintStream(new TeeOutputStream(originalErr, logFileOut), true);
             System.setOut(teeOut);
             System.setErr(teeErr);
-            System.out.println("Terminal logging initialized: " + terminalLogFile.getAbsolutePath());
+            log.info("Log config has been created");
         } catch (IOException ioEx) {
-            System.out.println("Failed to initialize terminal log capture: " + ioEx.getMessage());
+            log.error("Failed to initialize terminal log capture: " + ioEx.getMessage());
         }
     }
 
@@ -44,9 +47,9 @@ public class LogConfig {
                 logFileOut.flush();
                 logFileOut.close();
             }
-            System.out.println("Terminal logging finalized");
+            log.info("Terminal log capture finalized. Log file: " + terminalLogFile.getAbsolutePath());
         } catch (IOException ioEx) {
-            System.out.println("Failed to finalize terminal log capture: " + ioEx.getMessage());
+            log.error("Failed to finalize terminal log capture: " + ioEx.getMessage());
         }
 	}
 
