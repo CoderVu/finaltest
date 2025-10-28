@@ -1,7 +1,7 @@
 package config;
 
 import com.codeborne.selenide.WebDriverRunner;
-import org.example.config.BrowserConfig;
+import org.example.configure.BrowserConfig;
 import org.example.report.DebugConfig;
 import org.example.report.SoftAssertConfig;
 import org.testng.ITestResult;

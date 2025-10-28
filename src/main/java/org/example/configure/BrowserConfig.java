@@ -1,20 +1,18 @@
-package org.example.config;
+package org.example.configure;
 
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.report.DebugConfig;
-import org.example.core.browser.chrome.ChromeBrowserConfig;
-import org.example.core.browser.firefox.FirefoxBrowserConfig;
-import org.example.core.browser.edge.EdgeBrowserConfig;
 import org.openqa.selenium.WebDriver;
 
 import java.awt.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Map;
 
 
 @Slf4j
@@ -22,7 +20,6 @@ public class BrowserConfig {
     private static final boolean DEFAULT_HEADLESS = false;
     private static final long DEFAULT_TIMEOUT = Constants.DEFAULT_TIMEOUT;
     private static final long DEFAULT_PAGE_LOAD_TIMEOUT = Constants.DEFAULT_PAGE_LOAD_TIMEOUT;
-
     private static final String BROWSER_PROPERTY = "browser";
     private static final String BASE_URL_PROPERTY = "base.url";
     private static final String HEADLESS_PROPERTY = "headless";
@@ -33,6 +30,64 @@ public class BrowserConfig {
     private static final String REMOTE_URL_PROPERTY = "remote.url";
     private static final String W3C_ENABLED_PROPERTY = "w3c.enabled";
     private static final String GRID_ENABLED_PROPERTY = "grid.enabled";
+
+    public static void configureChromeOptions() {
+        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
+        Configuration.browserCapabilities.setCapability("goog:chromeOptions",
+                Map.of(
+                        "args", Arrays.asList(
+                                "--start-maximized",
+                                "--remote-allow-origins=*",
+                                "--disable-web-security",
+                                "--disable-features=VizDisplayCompositor"
+                        ),
+                        "excludeSwitches", Arrays.asList("enable-automation"),
+                        "useAutomationExtension", false
+                )
+        );
+    }
+
+    public static void configureEdgeOptions() {
+        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
+        Configuration.browserCapabilities.setCapability("ms:edgeOptions",
+                Map.of(
+                        "args", Arrays.asList(
+                                "--start-maximized",
+                                "--disable-web-security",
+                                "--disable-features=VizDisplayCompositor",
+                                "--disable-extensions",
+                                "--disable-plugins",
+                                "--disable-images",
+                                "--disable-javascript",
+                                "--no-sandbox",
+                                "--disable-dev-shm-usage",
+                                "--disable-gpu",
+                                "--remote-debugging-port=9222"
+                        ),
+                        "excludeSwitches", Arrays.asList("enable-automation", "enable-logging"),
+                        "useAutomationExtension", false,
+                        "detach", true
+                )
+        );
+        Configuration.browserCapabilities.setCapability("platformName", "windows");
+        Configuration.browserCapabilities.setCapability("ms:edgeChromium", true);
+    }
+
+    public static void configureFirefoxOptions() {
+        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
+        Configuration.browserCapabilities.setCapability("moz:firefoxOptions",
+                Map.of(
+                        "args", Arrays.asList(
+                                "--start-maximized",
+                                "--disable-web-security"
+                        ),
+                        "prefs", Map.of(
+                                "dom.webdriver.enabled", false,
+                                "useAutomationExtension", false
+                        )
+                )
+        );
+    }
 
     public static String getBrowser() {
         // Ưu tiên browser từ TestNG parameter (cho parallel execution)
@@ -46,31 +101,31 @@ public class BrowserConfig {
                     return param.trim().toLowerCase();
                 }
             }
-            
+
         } catch (Throwable ignored) {
         }
-        
+
         // Kiểm tra xem có single.browser được set không (khi user chọn chỉ 1 browser)
         String singleBrowser = System.getProperty("single.browser");
         if (singleBrowser != null && !singleBrowser.trim().isEmpty()) {
             log.info("BrowserConfig: Using single browser mode: {}", singleBrowser);
             return singleBrowser.trim().toLowerCase();
         }
-        
+
         // Fallback về command line parameter
         String browserFromCmd = System.getProperty(BROWSER_PROPERTY);
         if (browserFromCmd != null && !browserFromCmd.trim().isEmpty()) {
             log.info("BrowserConfig: Using command line browser: {}", browserFromCmd);
             return browserFromCmd.trim().toLowerCase();
         }
-        
+
         // Fallback về default browser từ Constants
         String defaultBrowser = Constants.getDefaultBrowser();
         if (defaultBrowser != null && !defaultBrowser.trim().isEmpty()) {
             log.info("BrowserConfig: Using default browser: {}", defaultBrowser);
             return defaultBrowser.trim().toLowerCase();
         }
-        
+
         // Cuối cùng là Chrome mặc định
         log.info("BrowserConfig: Using fallback browser: chrome");
         return "chrome";
@@ -114,7 +169,7 @@ public class BrowserConfig {
         if (url == null || url.trim().isEmpty()) {
             throw new IllegalStateException("Base URL is not configured. Please set it in environment file or system property.");
         }
-        
+
         url = url.trim();
         if (isRemoteEnabled()) {
             if (url.startsWith("http://localhost")) {
@@ -147,21 +202,21 @@ public class BrowserConfig {
 
     public static void initialize() {
         log.info("Initializing test configuration");
-        
+
         // Setup Allure report directories
         setupAllureDirectories();
-        
+
         // Validate remote configuration
         if (isRemoteEnabled()) {
             validateRemoteConfiguration();
         }
-        
+
         // Interactive configuration if not set via system properties
         if (System.getProperty("interactive.config", "false").equals("true")) {
-            InteractiveConfig.configure();
+            RunConfig.configure();
             // Removed TestNGConfigGenerator.generateTestNGConfig(); - using static testng.xml
         }
-        
+
         try {
             Constants.reload(getEnvFile());
         } catch (Exception e) {
@@ -180,7 +235,7 @@ public class BrowserConfig {
         }
         log.info("Timeout: " + getTimeout() + "ms");
         log.info("Page Load Timeout: " + getPageLoadTimeout() + "ms");
-        initializeSelenide();
+        initializeSelenium();
     }
 
     private static void setupAllureDirectories() {
@@ -191,18 +246,18 @@ public class BrowserConfig {
                 Files.createDirectories(allureResultsPath);
                 log.info("Created allure-results directory: {}", allureResultsPath.toAbsolutePath());
             }
-            
+
             // Ensure allure-report directory exists
             Path allureReportPath = Paths.get("target/allure-report");
             if (!Files.exists(allureReportPath)) {
                 Files.createDirectories(allureReportPath);
                 log.info("Created allure-report directory: {}", allureReportPath.toAbsolutePath());
             }
-            
+
             // Set system properties for Allure
             System.setProperty("allure.results.directory", allureResultsPath.toAbsolutePath().toString());
             System.setProperty("allure.report.directory", allureReportPath.toAbsolutePath().toString());
-            
+
             // Set environment variables (for Allure serve)
             try {
                 Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
@@ -214,10 +269,10 @@ public class BrowserConfig {
             } catch (Exception ignored) {
                 log.debug("Could not set environment variables for Allure");
             }
-            
+
             log.info("Allure results directory: {}", allureResultsPath.toAbsolutePath());
             log.info("Allure report directory: {}", allureReportPath.toAbsolutePath());
-            
+
         } catch (Exception e) {
             log.error("Failed to setup Allure directories", e);
         }
@@ -228,16 +283,16 @@ public class BrowserConfig {
         if (remoteUrl == null || remoteUrl.trim().isEmpty()) {
             throw new IllegalStateException("Remote execution enabled but remote.url is not configured!");
         }
-        
+
         log.info("Validating remote Selenium Grid connection...");
-        
+
         try {
             java.net.URL url = new java.net.URL(remoteUrl + "/status");
             java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
-            
+
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
                 log.info("✓ Selenium Grid is running at: {}", remoteUrl);
@@ -260,19 +315,19 @@ public class BrowserConfig {
         }
     }
 
-    private static void initializeSelenide() {
-        // Use custom WebDriverProvider so each parallel thread can resolve its own browser
-        Configuration.browser = org.example.config.GridConfig.class.getName();
+    private static void initializeSelenium() {
+
+        Configuration.browser = org.example.configure.GridConfig.class.getName();
         Configuration.headless = isHeadless();
         Configuration.timeout = getTimeout();
         Configuration.pageLoadTimeout = getPageLoadTimeout();
-        // Only use resolved base URL from Constants or system property
+
         Configuration.baseUrl = resolveBaseUrl();
         Configuration.screenshots = false;
         Configuration.savePageSource = false;
         Configuration.fileDownload = com.codeborne.selenide.FileDownloadMode.HTTPGET;
-        
-        if (!Configuration.browser.equals(org.example.config.GridConfig.class.getName())) {
+
+        if (!Configuration.browser.equals(org.example.configure.GridConfig.class.getName())) {
             configureBrowserOptions();
             if (isRemoteEnabled()) {
                 String remote = getRemoteUrl();
@@ -290,15 +345,15 @@ public class BrowserConfig {
         String browser = getBrowser().toLowerCase();
         switch (browser) {
             case "chrome":
-                ChromeBrowserConfig.configure();
+                configureChromeOptions();
                 log.info("Chrome options configured");
                 break;
             case "firefox":
-                FirefoxBrowserConfig.configure();
+                configureFirefoxOptions();
                 log.info("Firefox options configured");
                 break;
             case "edge":
-                EdgeBrowserConfig.configure();
+                configureEdgeOptions();
                 log.info("Edge options configured with enhanced settings");
                 break;
             default:
@@ -336,6 +391,7 @@ public class BrowserConfig {
     public static void tearDown() {
         Selenide.closeWebDriver();
     }
+
     public static void maximizeWindow() {
         try {
             if (!WebDriverRunner.hasWebDriverStarted()) {
@@ -365,7 +421,7 @@ public class BrowserConfig {
                 return false;
         }
     }
-    
+
     private static boolean isChromeAvailable() {
         try {
             io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
@@ -375,7 +431,7 @@ public class BrowserConfig {
             return false;
         }
     }
-    
+
     private static boolean isFirefoxAvailable() {
         try {
             io.github.bonigarcia.wdm.WebDriverManager.firefoxdriver().setup();
@@ -385,7 +441,7 @@ public class BrowserConfig {
             return false;
         }
     }
-    
+
     private static boolean isEdgeAvailable() {
         try {
             io.github.bonigarcia.wdm.WebDriverManager.edgedriver().setup();
@@ -397,17 +453,17 @@ public class BrowserConfig {
     }
 
     public static boolean shouldSkipBrowser() {
-        // Kiểm tra xem có chạy single browser mode không
+        // Check if running in single browser mode
         String singleBrowserMode = System.getProperty("single.browser");
         if (singleBrowserMode == null || !Boolean.parseBoolean(singleBrowserMode)) {
-            // Không phải single browser mode, chạy tất cả
+            // Not single br, run all chrome, ff, edge
             return false;
         }
-        
-        // Là single browser mode, kiểm tra browser hiện tại
+
+        // Single browser mode, check current browser
         String selectedBrowser = System.getProperty("browser");
         String currentBrowser = getBrowser();
-        
+
         if (selectedBrowser != null && !selectedBrowser.trim().isEmpty()) {
             boolean shouldSkip = !selectedBrowser.trim().toLowerCase().equals(currentBrowser.toLowerCase());
             if (shouldSkip) {
@@ -415,7 +471,7 @@ public class BrowserConfig {
             }
             return shouldSkip;
         }
-        
+
         return false;
     }
 }

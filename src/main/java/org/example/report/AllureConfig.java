@@ -33,7 +33,7 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
 
     @Override
     public void onTestFailure(ITestResult result) {
-        captureScreenshotOnFailure(result, "Failure");
+        // captureScreenshotOnFailure(result, "Failure");
     }
 
     @Override

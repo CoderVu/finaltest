@@ -1,38 +1,38 @@
-package org.example.config;
+package org.example.configure;
 
 import java.util.Scanner;
 
-public class InteractiveConfig {
+public class RunConfig {
     private static final Scanner scanner = new Scanner(System.in);
 
+    private static void print(String message, boolean newline) {
+        if (newline) {
+            System.out.println(message);
+        } else {
+            System.out.print(message);
+        }
+    }
+
     public static void configure() {
-        System.out.println("\n=== Interactive Test Configuration ===");
-        
-        // Environment file selection
+
+        print("\n=== VuNguyenCoder ===", true);
+
         configureEnvironmentFile();
-        
-        // Execution mode selection
+
         configureExecutionMode();
-        
-        // Browser selection
+
         configureBrowser();
-        
-        // Clean reports option
+
         configureCleanReports();
-        
-        System.out.println("\n=== Configuration Complete ===\n");
+
+        print("\n=== Configuration Complete ===", true);
     }
 
     private static void configureEnvironmentFile() {
-        System.out.println("\n1. Select Environment File:");
-        System.out.println("   1) dev-env.yaml");
-        System.out.println("   2) prod-env.yaml");
-        System.out.println("   3) Custom file path");
-        System.out.print("Enter your choice (1-3): ");
-        
+
         String choice = scanner.nextLine().trim();
         String envFile = "dev-env.yaml";
-        
+
         switch (choice) {
             case "1":
                 envFile = "dev-env.yaml";
@@ -41,43 +41,43 @@ public class InteractiveConfig {
                 envFile = "prod-env.yaml";
                 break;
             case "3":
-                System.out.print("Enter custom file path: ");
+                print("Enter custom environment file path: ", false);
                 String customPath = scanner.nextLine().trim();
                 if (!customPath.isEmpty()) {
                     envFile = customPath;
                 }
                 break;
             default:
-                System.out.println("Invalid choice, using default: dev-env.yaml");
+                print("Invalid choice, using default: dev-env.yaml", true);
                 break;
         }
-        
+
         System.setProperty("env.file", envFile);
-        System.out.println("Selected environment file: " + envFile);
+        print("Selected environment file: " + envFile, true);
     }
 
     private static void configureExecutionMode() {
-        System.out.println("\n2. Select Execution Mode:");
-        System.out.println("   1) Local execution");
-        System.out.println("   2) Remote Grid execution");
-        System.out.print("Enter your choice (1-2): ");
-        
+        print("\n2. Select Execution Mode:", true);
+        print("   1) Local execution", true);
+        print("   2) Remote Grid execution", true);
+        print("Enter your choice (1-2): ", false);
+
         String choice = scanner.nextLine().trim();
-        
+
         switch (choice) {
             case "1":
                 System.setProperty("remote.enabled", "false");
                 System.setProperty("grid.enabled", "false");
-                System.out.println("Selected: Local execution");
+                print("Selected: Local execution", true);
                 break;
             case "2":
                 System.setProperty("remote.enabled", "true");
                 System.setProperty("grid.enabled", "true");
                 configureRemoteUrl();
-                System.out.println("Selected: Remote Grid execution");
+                print("Selected: Remote Grid execution", true);
                 break;
             default:
-                System.out.println("Invalid choice, using default: Local execution");
+                print("Invalid choice, using default: Local execution", true);
                 System.setProperty("remote.enabled", "false");
                 System.setProperty("grid.enabled", "false");
                 break;
@@ -85,118 +85,118 @@ public class InteractiveConfig {
     }
 
     private static void configureRemoteUrl() {
-        System.out.println("\n   Remote Grid Configuration:");
-        System.out.println("   1) localhost:4444 (default)");
-        System.out.println("   2) Custom URL");
-        System.out.print("   Enter your choice (1-2): ");
-        
+        print("\n   Remote Grid Configuration:", true);
+        print("   1) localhost:4444 (default)", true);
+        print("   2) Custom URL", true);
+        print("   Enter your choice (1-2): ", false);
+
         String choice = scanner.nextLine().trim();
         String remoteUrl = "http://localhost:4444/wd/hub";
-        
+
         switch (choice) {
             case "1":
                 remoteUrl = "http://localhost:4444/wd/hub";
                 break;
             case "2":
-                System.out.print("   Enter remote URL: ");
+                print("   Enter remote URL: ", false);
                 String customUrl = scanner.nextLine().trim();
                 if (!customUrl.isEmpty()) {
                     remoteUrl = customUrl;
                 }
                 break;
             default:
-                System.out.println("   Using default: http://localhost:4444/wd/hub");
+                print("   Using default: http://localhost:4444/wd/hub", true);
                 break;
         }
-        
+
         System.setProperty("remote.url", remoteUrl);
-        System.out.println("   Remote URL: " + remoteUrl);
+        print("   Remote URL: " + remoteUrl, true);
     }
 
     private static void configureBrowser() {
-        System.out.println("\n3. Select Browser Execution:");
-        System.out.println("   1) Single browser (Chrome)");
-        System.out.println("   2) Single browser (Firefox)");
-        System.out.println("   3) Single browser (Edge)");
-        System.out.println("   4) All browsers (Parallel)");
-        System.out.print("Enter your choice (1-4): ");
-        
+        print("\n3. Select Browser Execution:", true);
+        print("   1) Single browser (Chrome)", true);
+        print("   2) Single browser (Firefox)", true);
+        print("   3) Single browser (Edge)", true);
+        print("   4) All browsers (Parallel)", true);
+        print("Enter your choice (1-4): ", false);
+
         String choice = scanner.nextLine().trim();
-        
+
         switch (choice) {
             case "1":
                 System.setProperty("browser", "chrome");
                 System.setProperty("single.browser", "true");
-                System.out.println("Selected: Chrome only");
+                print("Selected: Chrome only", true);
                 break;
             case "2":
                 System.setProperty("browser", "firefox");
                 System.setProperty("single.browser", "true");
-                System.out.println("Selected: Firefox only");
+                print("Selected: Firefox only", true);
                 break;
             case "3":
                 System.setProperty("browser", "edge");
                 System.setProperty("single.browser", "true");
-                System.out.println("Selected: Edge only");
+                print("Selected: Edge only", true);
                 break;
             case "4":
                 System.setProperty("single.browser", "false");
-                System.out.println("Selected: All browsers (Parallel execution)");
+                print("Selected: All browsers (Parallel execution)", true);
                 break;
             default:
-                System.out.println("Invalid choice, using default: Chrome only");
+                print("Invalid choice, using default: Chrome only", true);
                 System.setProperty("browser", "chrome");
                 System.setProperty("single.browser", "true");
                 break;
         }
-        
+
         // Additional options
         configureHeadlessMode();
     }
 
     private static void configureHeadlessMode() {
-        System.out.println("\n4. Headless Mode:");
-        System.out.println("   1) Normal mode (with GUI)");
-        System.out.println("   2) Headless mode (no GUI)");
-        System.out.print("Enter your choice (1-2): ");
-        
+        print("\n4. Headless Mode:", true);
+        print("   1) Normal mode (with GUI)", true);
+        print("   2) Headless mode (no GUI)", true);
+        print("Enter your choice (1-2): ", false);
+
         String choice = scanner.nextLine().trim();
-        
+
         switch (choice) {
             case "1":
                 System.setProperty("headless", "false");
-                System.out.println("Selected: Normal mode (with GUI)");
+                print("Selected: Normal mode (with GUI)", true);
                 break;
             case "2":
                 System.setProperty("headless", "true");
-                System.out.println("Selected: Headless mode (no GUI)");
+                print("Selected: Headless mode (no GUI)", true);
                 break;
             default:
-                System.out.println("Using default: Normal mode");
+                print("Using default: Normal mode", true);
                 System.setProperty("headless", "false");
                 break;
         }
     }
 
     private static void configureCleanReports() {
-        System.out.println("\n5. Clean previous reports?");
-        System.out.println("   1. Yes - Clean previous test results (mvn clean test)");
-        System.out.println("   2. No - Keep previous test results (mvn test)");
-        System.out.print("Select clean option (1-2): ");
-        
+        print("\n5. Clean previous reports?", true);
+        print("   1. Yes - Clean previous test results (mvn clean test)", true);
+        print("   2. No - Keep previous test results (mvn test)", true);
+        print("Select clean option (1-2): ", false);
+
         String cleanChoice = scanner.nextLine().trim();
         switch (cleanChoice) {
             case "1":
                 System.setProperty("clean.reports", "true");
-                System.out.println("✓ Clean reports enabled");
+                print("✓ Clean reports enabled", true);
                 break;
             case "2":
                 System.setProperty("clean.reports", "false");
-                System.out.println("✓ Clean reports disabled");
+                print("✓ Clean reports disabled", true);
                 break;
             default:
                 System.setProperty("clean.reports", "true");
-                System.out.println("✓ Default: Clean reports enabled");
+                print("✓ Default: Clean reports enabled", true);
                 break;
         }
     }

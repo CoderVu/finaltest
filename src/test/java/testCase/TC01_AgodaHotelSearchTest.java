@@ -31,7 +31,6 @@ public class TC01_AgodaHotelSearchTest extends TestBase {
     private final int EXPECTED_HOTEL_COUNT = 5;
 
     @Test(description = "TC01: Search and sort hotel successfully")
-    @Story("Hotel Search and Sort")
     @Severity(SeverityLevel.CRITICAL)
     @Description("Navigate to Agoda, search for hotels in Da Nang with specific criteria, and sort by lowest price")
     public void TC01_SearchAndSortHotelSuccessfully() {

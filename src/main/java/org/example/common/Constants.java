@@ -1,6 +1,6 @@
 package org.example.common;
 
-import org.example.config.EnvConfig;
+import org.example.configure.EnvConfig;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,21 +39,17 @@ public class Constants {
             try {
                 EnvConfig.load(envFilePath);
                 baseUrl = EnvConfig.get("base_url");
-                
-                // Validate that base_url is configured
+
                 if (baseUrl == null || baseUrl.trim().isEmpty()) {
                     throw new IllegalStateException("base_url is not configured in environment file: " + envFilePath);
                 }
-                
-                // Try to get browsers list first, fallback to single browser
+
                 String browsersStr = EnvConfig.get("browsers");
                 if (browsersStr != null && !browsersStr.trim().isEmpty()) {
-                    // Parse browsers list from YAML
                     browsersStr = browsersStr.replaceAll("\\[|\\]", "").trim();
                     browsers = Arrays.asList(browsersStr.split("\\s*,\\s*"));
-                    defaultBrowser = browsers.get(0); // First browser as default
+                    defaultBrowser = browsers.get(0);
                 } else {
-                    // Fallback to single browser
                     defaultBrowser = EnvConfig.get("browser");
                     if (defaultBrowser == null || defaultBrowser.trim().isEmpty()) {
                         throw new IllegalStateException("Neither 'browsers' nor 'browser' is configured in environment file: " + envFilePath);

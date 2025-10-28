@@ -1,0 +1,72 @@
+name: Build and Deploy Docker to Azure VM
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub (optional)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image (automation runner)
+        run: |
+          docker build -t selenium_automation_runner:latest .
+
+      - name: Save Docker image to tar file
+        run: |
+          docker save selenium_automation_runner:latest > selenium_automation_runner.tar
+
+      - name: Copy Docker image and docker-compose to remote server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }} # optional, set in secrets if non-default
+          source: |
+            selenium_automation_runner.tar
+            docker-compose.yml
+          target: /home/${{ secrets.SSH_USER }}/
+
+      - name: SSH and deploy on remote server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }} # optional
+          script: |
+            # create Docker network if missing (dockervu)
+            docker network inspect dockervu >/dev/null 2>&1 || docker network create dockervu
+
+            # stop and remove any existing compose-managed stack (safe recreate)
+            cd /home/${{ secrets.SSH_USER }} || exit 1
+
+            # Load new automation image
+            docker load < selenium_automation_runner.tar
+
+            # Ensure docker compose command exists; use docker compose plugin if available
+            if command -v docker-compose >/dev/null 2>&1; then
+              DC="docker-compose"
+            else
+              DC="docker compose"
+            fi
+
+            # Bring up services using the provided docker-compose.yml
+            $DC down --remove-orphans || true
+            $DC up -d --force-recreate --remove-orphans

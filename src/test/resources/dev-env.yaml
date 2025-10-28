@@ -1,2 +1,12 @@
 base_url:  https://www.agoda.com/
 browsers: [chrome, firefox, edge]
+
+# Local backend and DB for integration tests (override in CI if needed)
+# Updated to reference remote server for test runs (temporary)
+backend_url: http://20.3.131.196:8080
+database:
+  host: localhost
+  port: 3306
+  name: db_capstone
+  user: root
+  password: 123456789

@@ -1,4 +1,4 @@
-package org.example.config;
+package org.example.configure;
 
 import com.codeborne.selenide.WebDriverProvider;
 import io.github.bonigarcia.wdm.WebDriverManager;

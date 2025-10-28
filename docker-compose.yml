@@ -94,6 +94,48 @@ services:
     networks:
       - selenium-grid
 
+  # Add backend and DB services so remote server can use docker compose
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      - MYSQL_DATABASE=db_capstone
+      - MYSQL_ROOT_PASSWORD=123456789
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - dockervu
+
+  # Renamed service for automation runner (was springboot_capstone)
+  automation_runner:
+    image: selenium_automation_runner:latest
+    container_name: automation-runner
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db_capstone
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456789
+      # Secrets (in workflow these are injected into the run environment)
+      - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_ACCOUNT_KEY}
+      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
+      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    ports:
+      - "8080:8080"
+    networks:
+      - dockervu
+
+volumes:
+  mysql-data:
+
 networks:
   selenium-grid:
     driver: bridge
+
+  # Use an external network name 'dockervu' so the remote creation script can create it once
+  dockervu:
+    external: true
