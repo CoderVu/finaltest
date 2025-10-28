@@ -1,6 +1,6 @@
 package org.example.common;
 
-import org.example.configure.EnvConfig;
+import org.example.configure.EnvironmentConfig;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,20 +37,20 @@ public class Constants {
     public static void reload(String envFilePath) {
         synchronized (Constants.class) {
             try {
-                EnvConfig.load(envFilePath);
-                baseUrl = EnvConfig.get("base_url");
+                EnvironmentConfig.load(envFilePath);
+                baseUrl = EnvironmentConfig.get("base_url");
 
                 if (baseUrl == null || baseUrl.trim().isEmpty()) {
                     throw new IllegalStateException("base_url is not configured in environment file: " + envFilePath);
                 }
 
-                String browsersStr = EnvConfig.get("browsers");
+                String browsersStr = EnvironmentConfig.get("browsers");
                 if (browsersStr != null && !browsersStr.trim().isEmpty()) {
                     browsersStr = browsersStr.replaceAll("\\[|\\]", "").trim();
                     browsers = Arrays.asList(browsersStr.split("\\s*,\\s*"));
                     defaultBrowser = browsers.get(0);
                 } else {
-                    defaultBrowser = EnvConfig.get("browser");
+                    defaultBrowser = EnvironmentConfig.get("browser");
                     if (defaultBrowser == null || defaultBrowser.trim().isEmpty()) {
                         throw new IllegalStateException("Neither 'browsers' nor 'browser' is configured in environment file: " + envFilePath);
                     }

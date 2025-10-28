@@ -28,7 +28,6 @@ public class AllureConfig implements ITestListener, IConfigurationListener {
         if (!allureResultsDir.exists()) {
             allureResultsDir.mkdirs();
         }
-        log.info("Allure results directory setup completed");
     }
 
     @Override

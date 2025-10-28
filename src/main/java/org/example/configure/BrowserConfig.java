@@ -8,28 +8,13 @@ import org.example.common.Constants;
 import org.openqa.selenium.WebDriver;
 
 import java.awt.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
 
 @Slf4j
 public class BrowserConfig {
-    private static final boolean DEFAULT_HEADLESS = false;
-    private static final long DEFAULT_TIMEOUT = Constants.DEFAULT_TIMEOUT;
-    private static final long DEFAULT_PAGE_LOAD_TIMEOUT = Constants.DEFAULT_PAGE_LOAD_TIMEOUT;
-    private static final String BROWSER_PROPERTY = "browser";
-    private static final String BASE_URL_PROPERTY = "base.url";
-    private static final String HEADLESS_PROPERTY = "headless";
-    private static final String TIMEOUT_PROPERTY = "timeout";
-    private static final String PAGE_LOAD_TIMEOUT_PROPERTY = "page.load.timeout";
-    private static final String ENV_FILE_PROPERTY = "env.file";
-    private static final String REMOTE_ENABLED_PROPERTY = "remote.enabled";
-    private static final String REMOTE_URL_PROPERTY = "remote.url";
-    private static final String W3C_ENABLED_PROPERTY = "w3c.enabled";
-    private static final String GRID_ENABLED_PROPERTY = "grid.enabled";
+    // moved to ExecutionConfig to enforce SRP
 
     public static void configureChromeOptions() {
         Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
@@ -90,121 +75,53 @@ public class BrowserConfig {
     }
 
     public static String getBrowser() {
-        // Ưu tiên browser từ TestNG parameter (cho parallel execution)
-        try {
-            if (org.testng.Reporter.getCurrentTestResult() != null
-                    && org.testng.Reporter.getCurrentTestResult().getTestContext() != null
-                    && org.testng.Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest() != null) {
-                String param = org.testng.Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest().getParameter("browser");
-                if (param != null && !param.trim().isEmpty()) {
-                    log.info("BrowserConfig: Using TestNG parameter browser: {}", param);
-                    return param.trim().toLowerCase();
-                }
-            }
-
-        } catch (Throwable ignored) {
-        }
-
-        // Kiểm tra xem có single.browser được set không (khi user chọn chỉ 1 browser)
-        String singleBrowser = System.getProperty("single.browser");
-        if (singleBrowser != null && !singleBrowser.trim().isEmpty()) {
-            log.info("BrowserConfig: Using single browser mode: {}", singleBrowser);
-            return singleBrowser.trim().toLowerCase();
-        }
-
-        // Fallback về command line parameter
-        String browserFromCmd = System.getProperty(BROWSER_PROPERTY);
-        if (browserFromCmd != null && !browserFromCmd.trim().isEmpty()) {
-            log.info("BrowserConfig: Using command line browser: {}", browserFromCmd);
-            return browserFromCmd.trim().toLowerCase();
-        }
-
-        // Fallback về default browser từ Constants
-        String defaultBrowser = Constants.getDefaultBrowser();
-        if (defaultBrowser != null && !defaultBrowser.trim().isEmpty()) {
-            log.info("BrowserConfig: Using default browser: {}", defaultBrowser);
-            return defaultBrowser.trim().toLowerCase();
-        }
-
-        // Cuối cùng là Chrome mặc định
-        log.info("BrowserConfig: Using fallback browser: chrome");
-        return "chrome";
+        return ExecutionConfig.getBrowser();
     }
 
     public static String getBaseUrl() {
-        // Only get from system property or Constants, no hardcoding
-        String baseUrl = System.getProperty(BASE_URL_PROPERTY);
-        if (baseUrl != null && !baseUrl.trim().isEmpty()) {
-            return baseUrl.trim();
-        }
-        return Constants.getBaseUrl();
+        return ExecutionConfig.getBaseUrl();
     }
 
     public static boolean isHeadless() {
-        String headless = System.getProperty(HEADLESS_PROPERTY, String.valueOf(DEFAULT_HEADLESS));
-        return Boolean.parseBoolean(headless);
+        return ExecutionConfig.isHeadless();
     }
 
     public static long getTimeout() {
-        String timeout = System.getProperty(TIMEOUT_PROPERTY, String.valueOf(DEFAULT_TIMEOUT));
-        return Long.parseLong(timeout);
+        return ExecutionConfig.getTimeout();
     }
 
     public static long getPageLoadTimeout() {
-        String timeout = System.getProperty(PAGE_LOAD_TIMEOUT_PROPERTY, String.valueOf(DEFAULT_PAGE_LOAD_TIMEOUT));
-        return Long.parseLong(timeout);
+        return ExecutionConfig.getPageLoadTimeout();
     }
 
     public static String getEnvFile() {
-        // Only get from system property or Constants default, no hardcoding
-        String file = System.getProperty(ENV_FILE_PROPERTY);
-        if (file != null && !file.trim().isEmpty()) {
-            return file.trim();
-        }
-        return Constants.CONFIG_PROPERTIES_FILE;
+        return ExecutionConfig.getEnvFile();
     }
 
     private static String resolveBaseUrl() {
-        String url = getBaseUrl();
-        if (url == null || url.trim().isEmpty()) {
-            throw new IllegalStateException("Base URL is not configured. Please set it in environment file or system property.");
-        }
-
-        url = url.trim();
-        if (isRemoteEnabled()) {
-            if (url.startsWith("http://localhost")) {
-                url = url.replaceFirst("http://localhost", "http://host.docker.internal");
-            } else if (url.startsWith("http://127.0.0.1")) {
-                url = url.replaceFirst("http://127.0.0.1", "http://host.docker.internal");
-            }
-        }
-        return url;
+        return ExecutionConfig.resolveBaseUrlForSelenide();
     }
 
     public static boolean isRemoteEnabled() {
-        String enabled = System.getProperty(REMOTE_ENABLED_PROPERTY, "false");
-        return Boolean.parseBoolean(enabled);
+        return ExecutionConfig.isRemoteEnabled();
     }
 
     public static String getRemoteUrl() {
-        return System.getProperty(REMOTE_URL_PROPERTY, "");
+        return ExecutionConfig.getRemoteUrl();
     }
 
     public static boolean isW3CEnabled() {
-        String enabled = System.getProperty(W3C_ENABLED_PROPERTY, "true");
-        return Boolean.parseBoolean(enabled);
+        return ExecutionConfig.isW3CEnabled();
     }
 
     public static boolean isGridEnabled() {
-        String enabled = System.getProperty(GRID_ENABLED_PROPERTY, "false");
-        return Boolean.parseBoolean(enabled);
+        return ExecutionConfig.isGridEnabled();
     }
 
     public static void initialize() {
         log.info("Initializing test configuration");
 
-        // Setup Allure report directories
-        setupAllureDirectories();
+        // Allure directories now handled by org.example.report.AllureConfig (@BeforeSuite)
 
         // Validate remote configuration
         if (isRemoteEnabled()) {
@@ -213,7 +130,7 @@ public class BrowserConfig {
 
         // Interactive configuration if not set via system properties
         if (System.getProperty("interactive.config", "false").equals("true")) {
-            RunConfig.configure();
+            ExecutionConfig.configureInteractive();
             // Removed TestNGConfigGenerator.generateTestNGConfig(); - using static testng.xml
         }
 
@@ -238,45 +155,7 @@ public class BrowserConfig {
         initializeSelenium();
     }
 
-    private static void setupAllureDirectories() {
-        try {
-            // Ensure allure-results directory exists
-            Path allureResultsPath = Paths.get("target/allure-results");
-            if (!Files.exists(allureResultsPath)) {
-                Files.createDirectories(allureResultsPath);
-                log.info("Created allure-results directory: {}", allureResultsPath.toAbsolutePath());
-            }
-
-            // Ensure allure-report directory exists
-            Path allureReportPath = Paths.get("target/allure-report");
-            if (!Files.exists(allureReportPath)) {
-                Files.createDirectories(allureReportPath);
-                log.info("Created allure-report directory: {}", allureReportPath.toAbsolutePath());
-            }
-
-            // Set system properties for Allure
-            System.setProperty("allure.results.directory", allureResultsPath.toAbsolutePath().toString());
-            System.setProperty("allure.report.directory", allureReportPath.toAbsolutePath().toString());
-
-            // Set environment variables (for Allure serve)
-            try {
-                Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
-                java.lang.reflect.Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
-                theEnvironmentField.setAccessible(true);
-                java.util.Map<String, String> env = (java.util.Map<String, String>) theEnvironmentField.get(null);
-                env.put("ALLURE_RESULTS_DIRECTORY", allureResultsPath.toAbsolutePath().toString());
-                env.put("ALLURE_REPORT_DIRECTORY", allureReportPath.toAbsolutePath().toString());
-            } catch (Exception ignored) {
-                log.debug("Could not set environment variables for Allure");
-            }
-
-            log.info("Allure results directory: {}", allureResultsPath.toAbsolutePath());
-            log.info("Allure report directory: {}", allureReportPath.toAbsolutePath());
-
-        } catch (Exception e) {
-            log.error("Failed to setup Allure directories", e);
-        }
-    }
+    
 
     private static void validateRemoteConfiguration() {
         String remoteUrl = getRemoteUrl();
@@ -453,25 +332,6 @@ public class BrowserConfig {
     }
 
     public static boolean shouldSkipBrowser() {
-        // Check if running in single browser mode
-        String singleBrowserMode = System.getProperty("single.browser");
-        if (singleBrowserMode == null || !Boolean.parseBoolean(singleBrowserMode)) {
-            // Not single br, run all chrome, ff, edge
-            return false;
-        }
-
-        // Single browser mode, check current browser
-        String selectedBrowser = System.getProperty("browser");
-        String currentBrowser = getBrowser();
-
-        if (selectedBrowser != null && !selectedBrowser.trim().isEmpty()) {
-            boolean shouldSkip = !selectedBrowser.trim().toLowerCase().equals(currentBrowser.toLowerCase());
-            if (shouldSkip) {
-                log.info("Skipping browser: {} (Selected: {})", currentBrowser, selectedBrowser);
-            }
-            return shouldSkip;
-        }
-
-        return false;
+        return ExecutionConfig.shouldSkipBrowser();
     }
 }

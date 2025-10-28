@@ -1,7 +1,7 @@
 package org.example.launcher;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.configure.RunConfig;
+import org.example.configure.ExecutionConfig;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -33,7 +33,7 @@ public class TestLauncher {
             log.info("4. Display mode (normal or headless)");
             
             // Configure interactively
-            RunConfig.configure();
+            ExecutionConfig.configureInteractive();
             
             // Build Maven command
             List<String> command = buildMavenCommand();

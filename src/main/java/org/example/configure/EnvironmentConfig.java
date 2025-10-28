@@ -5,12 +5,12 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.util.Map;
 
-public class EnvConfig {
+public class EnvironmentConfig {
     private static Map<String, Object> config;
 
     public static void load(String filePath) {
         Yaml yaml = new Yaml();
-        try (InputStream in = EnvConfig.class.getClassLoader().getResourceAsStream(filePath)) {
+        try (InputStream in = EnvironmentConfig.class.getClassLoader().getResourceAsStream(filePath)) {
             if (in == null) {
                 throw new RuntimeException("YAML file not found in classpath: " + filePath);
             }

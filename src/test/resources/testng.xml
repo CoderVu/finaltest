@@ -2,8 +2,7 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Selenium Level 2 Test Suite" parallel="tests" thread-count="3">
     <listeners>
-        <listener class-name="org.example.report.AllureConfig"/>
-
+        <listener class-name="org.example.report.strategy.DelegatingReportListener"/>
     </listeners>
     
     <!-- Chrome Test-->
@@ -16,20 +15,20 @@
     </test>
 
     <!-- Firefox Test - sẽ được skip nếu user không chọn firefox -->
-    <!-- <test name="Firefox">
+     <test name="Firefox">
         <parameter name="browser" value="firefox"/>
         <classes>
             <class name="testCase.TC01_AgodaHotelSearchTest"/>
-         
+
         </classes>
-    </test> -->
+    </test>
 
     <!-- Edge Test - sẽ được skip nếu user không chọn edge -->
-    <!-- <test name="Edge">
+     <test name="Edge">
         <parameter name="browser" value="edge"/>
         <classes>
             <class name="testCase.TC01_AgodaHotelSearchTest"/>
          
         </classes>
-    </test> -->
+    </test>
 </suite>

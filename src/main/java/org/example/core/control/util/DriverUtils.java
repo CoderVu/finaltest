@@ -26,8 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class DriverUtils {
 
-
- 
     private DriverUtils() {}
 
     public static WebDriver getWebDriver() {

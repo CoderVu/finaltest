@@ -21,10 +21,10 @@ public class GridConfig implements WebDriverProvider {
     @Override
     @Nonnull
     public WebDriver createDriver(@Nonnull Capabilities ignored) {
-        String browser = resolveBrowser();
+        String browser = ExecutionConfig.getBrowser();
         String requestedVersion = resolveBrowserVersion();
 
-        if (!BrowserConfig.isRemoteEnabled()) {
+        if (!ExecutionConfig.isRemoteEnabled()) {
             return createLocalDriver(browser);
         }
 
@@ -36,38 +36,64 @@ public class GridConfig implements WebDriverProvider {
         switch (browser) {
             case "firefox":
                 FirefoxOptions ff = new FirefoxOptions();
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     ff.addArguments("--headless=new", "--disable-gpu");
                 }
-                try {
-                    WebDriverManager.firefoxdriver().setup();
-                } catch (Exception ex) {
-                    log.warn("WDM failed for geckodriver, fallback to Selenium Manager: {}", ex.getMessage());
+                // Prefer Selenium Manager. Optionally allow WDM via -Duse.wdm=true
+                if (Boolean.getBoolean("use.wdm")) {
+                    try {
+                        WebDriverManager.firefoxdriver().setup();
+                        log.info("Using WebDriverManager for Firefox driver setup");
+                    } catch (Exception ex) {
+                        log.warn("WDM failed for geckodriver, using Selenium Manager: {}", ex.getMessage());
+                    }
+                } else {
+                    log.info("Using Selenium Manager for Firefox driver resolution");
                 }
+                // Basic Windows binary check to avoid 'binary not found'
+                try {
+                    String[] candidates = new String[] {
+                            "C\\\\Program Files\\\\Mozilla Firefox\\\\firefox.exe",
+                            "C\\\\Program Files (x86)\\\\Mozilla Firefox\\\\firefox.exe"
+                    };
+                    java.io.File found = null;
+                    for (String c : candidates) { java.io.File f = new java.io.File(c); if (f.exists()) { found = f; break; } }
+                    if (found != null) { ff.setBinary(found.getAbsolutePath()); }
+                } catch (Throwable ignored) {}
                 return new org.openqa.selenium.firefox.FirefoxDriver(ff);
 
             case "edge":
                 EdgeOptions edge = new EdgeOptions();
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     edge.addArguments("--headless=new", "--disable-gpu");
                 }
-                try {
-                    WebDriverManager.edgedriver().setup();
-                } catch (Exception ex) {
-                    log.warn("WDM failed for msedgedriver, fallback to Selenium Manager: {}", ex.getMessage());
+                if (Boolean.getBoolean("use.wdm")) {
+                    try {
+                        WebDriverManager.edgedriver().setup();
+                        log.info("Using WebDriverManager for Edge driver setup");
+                    } catch (Exception ex) {
+                        log.warn("WDM failed for msedgedriver, using Selenium Manager: {}", ex.getMessage());
+                    }
+                } else {
+                    log.info("Using Selenium Manager for Edge driver resolution (avoids version mismatch)");
                 }
                 return new org.openqa.selenium.edge.EdgeDriver(edge);
 
             case "chrome":
             default:
                 ChromeOptions ch = new ChromeOptions();
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     ch.addArguments("--headless=new", "--disable-gpu");
                 }
-                try {
-                    WebDriverManager.chromedriver().setup();
-                } catch (Exception ex) {
-                    log.warn("WDM failed for chromedriver, fallback to Selenium Manager: {}", ex.getMessage());
+                if (Boolean.getBoolean("use.wdm")) {
+                    try {
+                        WebDriverManager.chromedriver().setup();
+                        log.info("Using WebDriverManager for Chrome driver setup");
+                    } catch (Exception ex) {
+                        log.warn("WDM failed for chromedriver, using Selenium Manager: {}", ex.getMessage());
+                    }
+                } else {
+                    log.info("Using Selenium Manager for Chrome driver resolution");
                 }
                 return new org.openqa.selenium.chrome.ChromeDriver(ch);
         }
@@ -75,7 +101,7 @@ public class GridConfig implements WebDriverProvider {
 
     // ---------------- REMOTE DRIVER ----------------
     private WebDriver createRemoteDriver(String browser, String requestedVersion) {
-        String remoteUrl = BrowserConfig.getRemoteUrl();
+        String remoteUrl = ExecutionConfig.getRemoteUrl();
         URL url;
         try {
             url = new URL(remoteUrl);
@@ -89,7 +115,7 @@ public class GridConfig implements WebDriverProvider {
                 ff.setCapability("browserName", "firefox");
                 if (requestedVersion != null) ff.setCapability("browserVersion", requestedVersion);
                 ff.setCapability("platformName", "linux");
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     ff.addArguments("--headless=new", "--disable-gpu");
                 }
                 return new RemoteWebDriver(url, ff);
@@ -99,7 +125,7 @@ public class GridConfig implements WebDriverProvider {
                 edge.setCapability("browserName", "MicrosoftEdge");
                 if (requestedVersion != null) edge.setCapability("browserVersion", requestedVersion);
                 edge.setCapability("platformName", "linux");
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     edge.addArguments("--headless=new", "--disable-gpu");
                 }
                 return new RemoteWebDriver(url, edge);
@@ -110,7 +136,7 @@ public class GridConfig implements WebDriverProvider {
                 ch.setCapability("browserName", "chrome");
                 if (requestedVersion != null) ch.setCapability("browserVersion", requestedVersion);
                 ch.setCapability("platformName", "linux");
-                if (BrowserConfig.isHeadless()) {
+                if (ExecutionConfig.isHeadless()) {
                     ch.addArguments("--headless=new", "--disable-gpu");
                 }
                 return new RemoteWebDriver(url, ch);
@@ -118,34 +144,7 @@ public class GridConfig implements WebDriverProvider {
     }
 
     // ---------------- RESOLVE BROWSER ----------------
-    private String resolveBrowser() {
-        try {
-            if (Reporter.getCurrentTestResult() != null
-                    && Reporter.getCurrentTestResult().getTestContext() != null
-                    && Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest() != null) {
-                String param = Reporter.getCurrentTestResult().getTestContext().getCurrentXmlTest().getParameter("browser");
-                if (param != null && !param.trim().isEmpty()) {
-                    log.info("GridConfig: Using TestNG parameter browser: {}", param);
-                    return param.trim().toLowerCase();
-                }
-            }
-        } catch (Throwable ignored) {}
-
-        String sys = System.getProperty("browser");
-        if (sys != null && !sys.trim().isEmpty()) {
-            log.info("GridConfig: Using system property browser: {}", sys);
-            return sys.trim().toLowerCase();
-        }
-
-        String defaultBrowser = org.example.common.Constants.getDefaultBrowser();
-        if (defaultBrowser != null && !defaultBrowser.trim().isEmpty()) {
-            log.info("GridConfig: Using default browser: {}", defaultBrowser);
-            return defaultBrowser.trim().toLowerCase();
-        }
-
-        log.info("GridConfig: Using fallback browser: chrome");
-        return "chrome";
-    }
+    
 
     // ---------------- RESOLVE VERSION ----------------
     private String resolveBrowserVersion() {
