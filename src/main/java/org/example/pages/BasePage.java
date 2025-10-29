@@ -1,19 +1,20 @@
 package org.example.pages;
 
-import com.codeborne.selenide.Condition;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.control.common.imp.Element;
 import org.example.core.control.util.DriverUtils;
+import org.example.report.ReporterFactory;
+import org.example.report.TestReporter;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-import java.time.Duration;
 import java.util.List;
-
-import static com.codeborne.selenide.Selenide.$;
 
 @Slf4j
 public class BasePage {
+
+    // Unified reporter for all Page Objects - works with Allure, Extent, or Jenkins
+    protected TestReporter reporter = ReporterFactory.getInstance();
 
     protected WebElement findElement(By locator) {
         return DriverUtils.getWebDriver().findElement(locator);

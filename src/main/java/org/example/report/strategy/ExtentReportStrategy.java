@@ -5,6 +5,7 @@ import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import lombok.extern.slf4j.Slf4j;
+import org.example.report.impl.ExtentReporter;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 
@@ -32,6 +33,8 @@ public class ExtentReportStrategy implements ReportStrategy {
     @Override
     public void onFinish(ITestContext context) {
         try { EXTENT.flush(); } catch (Throwable t) { log.warn("Extent flush failed: {}", t.getMessage()); }
+        // Cleanup ExtentReporter
+        ExtentReporter.clearTest();
     }
 
     @Override
@@ -40,6 +43,8 @@ public class ExtentReportStrategy implements ReportStrategy {
         ExtentTest test = EXTENT.createTest(name);
         NAME_TO_TEST.put(name, test);
         CURRENT_TEST.set(test);
+        // Register test with ExtentReporter for TestReporter interface
+        ExtentReporter.setTest(test);
     }
 
     @Override

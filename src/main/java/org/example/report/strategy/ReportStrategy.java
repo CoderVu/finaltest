@@ -8,6 +8,7 @@ import org.testng.ITestListener;
  * Implementations should be stateless per test run or manage their own lifecycle.
  */
 public interface ReportStrategy extends ITestListener, IConfigurationListener {
+
 }
 
 

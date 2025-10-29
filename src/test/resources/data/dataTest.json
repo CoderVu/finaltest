@@ -15,3 +15,20 @@
     }
   }
 }
+framework-core/
+  ├── driver/
+  ├── report/
+  │    ├── TestReporter.java
+  │    ├── ReporterFactory.java
+  │    ├── impl/
+  │         ├── AllureReporter.java
+  │         ├── ExtentReporter.java
+  │         ├── JenkinsReporter.java
+  │         └── ConsoleReporter.java
+  ├── config/
+  ├── utils/
+  └── base/
+tests/
+  ├── pageObject/
+  ├── testCase/
+  └── resources/
