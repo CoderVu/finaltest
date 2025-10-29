@@ -1,11 +1,11 @@
-package org.example.report.strategy;
+package org.example.core.report.strategy;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import lombok.extern.slf4j.Slf4j;
-import org.example.report.impl.ExtentReporter;
+import org.example.core.report.impl.ExtentReporter;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 

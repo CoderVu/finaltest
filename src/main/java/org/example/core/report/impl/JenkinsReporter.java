@@ -1,7 +1,7 @@
-package org.example.report.impl;
+package org.example.core.report.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.report.TestReporter;
+import org.example.core.report.TestReporter;
 import org.testng.Reporter;
 
 /**

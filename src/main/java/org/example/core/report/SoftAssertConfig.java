@@ -1,4 +1,4 @@
-package org.example.report;
+package org.example.core.report;
 
 import io.qameta.allure.Allure;
 import io.qameta.allure.model.Status;

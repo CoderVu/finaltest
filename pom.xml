@@ -97,10 +97,15 @@
             <artifactId>selenide</artifactId>
             <version>${selenide.version}</version>
         </dependency>
-        <!-- AspectJ Weaver for Allure step tracking and screenshot -->
+        <!-- AspectJ for custom @Step support -->
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
+            <version>${aspectjweaver.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
             <version>${aspectjweaver.version}</version>
         </dependency>
 

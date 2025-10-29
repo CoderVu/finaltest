@@ -1,10 +1,10 @@
-package org.example.report.impl;
+package org.example.core.report.impl;
 
 import com.codeborne.selenide.WebDriverRunner;
 import io.qameta.allure.Allure;
 import io.qameta.allure.model.Status;
 import lombok.extern.slf4j.Slf4j;
-import org.example.report.TestReporter;
+import org.example.core.report.TestReporter;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -65,6 +65,7 @@ public class AllureReporter implements TestReporter {
         }
     }
 
+
     // ==================== Advanced Allure-Specific Methods ====================
 
     /**
@@ -95,5 +96,23 @@ public class AllureReporter implements TestReporter {
      */
     public void addDescription(String description) {
         Allure.getLifecycle().updateTestCase(update -> update.setDescription(description));
+    }
+
+    // ==================== Step wrapper implementations ====================
+
+    @Override
+    public void withinStep(String name, Runnable runnable) {
+        Allure.step(name, () -> runnable.run());
+    }
+
+    @Override
+    public <T> T withinStep(String name, java.util.function.Supplier<T> supplier) {
+        final Object[] holder = new Object[1];
+        Allure.step(name, () -> {
+            holder[0] = supplier.get();
+        });
+        @SuppressWarnings("unchecked")
+        T result = (T) holder[0];
+        return result;
     }
 }

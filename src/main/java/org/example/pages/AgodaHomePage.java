@@ -3,26 +3,20 @@ package org.example.pages;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.control.common.imp.*;
 import org.example.core.control.util.DriverUtils;
-import io.qameta.allure.Step;
+import org.example.core.report.annotations.Step;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.time.DayOfWeek;
 import org.example.common.Constants;
-import org.example.model.Hotel;
-import org.example.utils.DateUtils;
+import org.example.models.Hotel;
 
-import java.util.stream.Collectors;
 import static org.example.core.control.util.DriverUtils.getCurrentUrl;
-import static com.codeborne.selenide.Selenide.sleep;
 
 @Slf4j
 public class AgodaHomePage extends BasePage {
@@ -78,25 +72,25 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Enter destination: {destination}")
+    @Step("Enter destination: {arg0}")
     public void enterDestination(String destination) {
         destinationSearchInput.clear();
         destinationSearchInput.setText(destination);
     }
 
-    @Step("Select destination from suggestions: {destinationName}")
+    @Step("Select destination from suggestions: {arg0}")
     public void selectDestinationFromSuggestions(String destinationName) {
         autocompletePanel.waitForVisibility();
         findElement(By.xpath(String.format("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName))).click();
     }
 
-    @Step("Select check-in date: {checkInDate} and check-out date: {checkOutDate}")
+    @Step("Select check-in date: {arg0} and check-out date: {arg1}")
     public void selectDates(String checkInDate, String checkOutDate) {
         selectCheckInDate(checkInDate);
         selectCheckOutDate(checkOutDate);
     }
 
-    @Step("Select check-in date: {checkInDate}")
+    @Step("Select check-in date: {arg0}")
     public void selectCheckInDate(String checkInDate) {
         // 1. Mở calendar chắc chắn
         int openAttempts = 0;
@@ -129,7 +123,7 @@ public class AgodaHomePage extends BasePage {
             }
             nextMonthBtn.waitForElementClickable();
             nextMonthBtn.click();
-            sleep(500);
+            DriverUtils.delay(0.5);
             nextTries++;
         }
         // Nếu vẫn chưa thấy thì chuyển lui lại tối đa 24 lần
@@ -144,7 +138,7 @@ public class AgodaHomePage extends BasePage {
             }
             prevMonthBtn.waitForElementClickable();
             prevMonthBtn.click();
-            sleep(500);
+            DriverUtils.delay(0.5);
             prevTries++;
         }
         // 2. Select check-in date with retry if element not yet rendered
@@ -179,7 +173,7 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select check-out date: {checkOutDate}")
+    @Step("Select check-out date: {arg0}")
     public void selectCheckOutDate(String checkOutDate) {
         // 1. Open calendar if not already open
         checkOutBox.waitForElementClickable();
@@ -211,7 +205,7 @@ public class AgodaHomePage extends BasePage {
                 nextMonthBtn.waitForElementClickable();
                 nextMonthBtn.click();
             }
-            sleep(500);
+            DriverUtils.delay(0.5);
         }
         // 2. Select check-out date with retry if element not yet rendered
         Element checkOutDateElement = new Element(
@@ -274,7 +268,7 @@ public class AgodaHomePage extends BasePage {
         selectDates(checkInDateStr, checkOutDateStr);
     }
 
-    @Step("Select occupancy: {rooms} rooms, {adults} adults, {children} children")
+    @Step("Select occupancy: {arg0} rooms, {arg1} adults, {arg2} children")
     public void SelectOccupancy(int rooms, int adults, int children) {
         // Check if occupancy popup is already open (it might auto-open after date selection)
         Element occupancyPopup = new Element(occupancyPopupXpathString);
@@ -304,7 +298,7 @@ public class AgodaHomePage extends BasePage {
         selectChildren(children);
     }
 
-    @Step("Select rooms to: {targetRooms}")
+    @Step("Select rooms to: {arg0}")
     private void selectRooms(int targetRooms) {
         Element roomValueElement = new Element(roomValueXpath);
         roomValueElement.waitForVisibility();
@@ -334,7 +328,7 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select adults to: {targetAdults}")
+    @Step("Select adults to: {arg0}")
     private void selectAdults(int targetAdults) {
         Element adultValueElement = new Element(adultValueXpath);
         adultValueElement.waitForVisibility();
@@ -364,7 +358,7 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select children to: {targetChildren}")
+    @Step("Select children to: {arg0}")
     private void selectChildren(int targetChildren) {
         Element childrenValueElement = new Element(childrenValueXpath);
         childrenValueElement.waitForVisibility();
@@ -509,7 +503,7 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Verify search results are displayed correctly with at least {expectedCount} hotels")
+    @Step("Verify search results are displayed correctly with at least {arg0} hotels")
     public boolean verifySearchResultsDisplayed(int expectedCount) {
         try {
             List<Hotel> hotels = getAllHotelsFromListViewSearch(expectedCount);
@@ -620,7 +614,7 @@ public class AgodaHomePage extends BasePage {
         return true;
     }
 
-    @Step("Verify first 5 hotels have correct destination: {expectedDestination}")
+    @Step("Verify first 5 hotels have correct destination: {arg0}")
     public boolean verifyHotelsDestination(List<Hotel> hotels, String expectedDestination) {
         for (int i = 0; i < Math.min(5, hotels.size()); i++) {
             Hotel hotel = hotels.get(i);
@@ -635,7 +629,7 @@ public class AgodaHomePage extends BasePage {
         return true;
     }
 
-    @Step("Wait for property card count to change within {beforeCount} seconds")
+    @Step("Wait for property card count to change within {arg0} seconds")
     public void waitForPropertyCardCountChange(int beforeCount) {
         try {
             // Chờ container xuất hiện trước khi kiểm tra số lượng card

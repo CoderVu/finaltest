@@ -1,0 +1,20 @@
+{
+  "TC01AgodaHotelSearch": [
+    {
+      "destination": "Da Nang",
+      "occupancy": {
+        "rooms": 2,
+        "adults": 4,
+        "children": 0
+      },
+      "validation": {
+        "expectedHotelCount": 5
+      },
+      "testInfo": {
+        "testName": "TC01_SearchAndSortHotelSuccessfully",
+        "description": "Search for hotels in Da Nang with specific criteria and verify results"
+      }
+    }
+  ]
+}
+

@@ -1,4 +1,4 @@
-package org.example.report.strategy;
+package org.example.core.report.strategy;
 
 import com.codeborne.selenide.WebDriverRunner;
 import io.qameta.allure.Allure;

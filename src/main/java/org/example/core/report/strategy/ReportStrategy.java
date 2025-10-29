@@ -1,4 +1,4 @@
-package org.example.report.strategy;
+package org.example.core.report.strategy;
 
 import org.testng.IConfigurationListener;
 import org.testng.ITestListener;

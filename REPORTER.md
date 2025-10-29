@@ -4,12 +4,16 @@
 
 ```
 report/
-  ├── TestReporter.java          # Interface for all reporters
-  ├── ReporterFactory.java       # Factory to create appropriate reporter
+  ├── TestReporter.java             # Interface for all reporters
+  ├── ReporterManager.java          # Selects active reporter globally
+  ├── annotations/
+  │   └── Step.java                 # Custom step annotation
+  ├── aop/
+  │   └── StepAspect.java           # Logs @Step via active reporter
   └── impl/
-      ├── AllureReporter.java      # Allure implementation (full features)
-      ├── ExtentReporter.java      # Extent implementation (full features)
-      └── JenkinsReporter.java     # Jenkins implementation (full features)
+      ├── AllureReporter.java       # Allure implementation
+      ├── ExtentReporter.java       # Extent implementation
+      └── JenkinsReporter.java      # Jenkins implementation
 ```
 
 ## Basic Usage
@@ -19,32 +23,29 @@ report/
 ```java
 package org.example.pages;
 
-import org.example.report.ReporterFactory;
-import org.example.report.TestReporter;
+import org.example.core.report.ReporterManager;
+import org.example.core.report.TestReporter;
+import org.example.core.report.annotations.Step;
 
 public class LoginPage extends BasePage {
-    
+
     // Already available in BasePage
-    // protected TestReporter reporter = ReporterFactory.getInstance();
-    
+    // protected TestReporter reporter = ReporterManager.get();
+
+    @Step("Login with user: {arg0}")
     public void login(String username, String password) {
-        // Main step
-        reporter.logStep("Login to application");
-        
-        // Nested info/data
         reporter.info("Entering username: " + username);
         enterText(usernameField, username);
-        
+
         reporter.info("Entering password");
         enterText(passwordField, password);
-        
-        // Main step
+
         reporter.logStep("Click login button");
         clickElement(loginButton);
     }
-    
+
+    @Step("Verify login successful")
     public void verifyLoginSuccess() {
-        reporter.logStep("Verify login successful");
         reporter.info("Expected: Dashboard page");
         // verification code
     }
@@ -83,35 +84,54 @@ Output: `target/surefire-reports/` (XML for Jenkins)
 If you need framework-specific features, you can cast to the specific reporter:
 
 ```java
-import org.example.report.impl.AllureReporter;
-import org.example.report.impl.ExtentReporter;
-import org.example.report.impl.JenkinsReporter;
+import org.example.core.report.impl.AllureReporter;
+import org.example.core.report.impl.ExtentReporter;
+import org.example.core.report.impl.JenkinsReporter;
+import org.example.core.report.ReporterManager;
 
 // Get the reporter
-TestReporter reporter = ReporterFactory.getInstance();
+TestReporter reporter = ReporterManager.get();
 
 // Allure-specific features
-if (reporter instanceof AllureReporter) {
-    AllureReporter allure = (AllureReporter) reporter;
-    allure.logPass("Test passed");
-    allure.logWarn("Warning occurred");
-    allure.addDescription("Test description");
+if(reporter instanceof AllureReporter){
+        AllureReporter allure = (AllureReporter) reporter;
+    allure.
+
+        logPass("Test passed");
+    allure.
+
+        logWarn("Warning occurred");
+    allure.
+
+        addDescription("Test description");
 }
 
 // Extent-specific features
-if (reporter instanceof ExtentReporter) {
-    ExtentReporter extent = (ExtentReporter) reporter;
-    extent.logPass("Test passed");
-    extent.logWarn("Warning");
-    extent.logWithScreenshot("Page loaded", "/path/to/screenshot.png");
+        if(reporter instanceof ExtentReporter){
+        ExtentReporter extent = (ExtentReporter) reporter;
+    extent.
+
+        logPass("Test passed");
+    extent.
+
+        logWarn("Warning");
+    extent.
+
+        logWithScreenshot("Page loaded","/path/to/screenshot.png");
 }
 
 // Jenkins-specific features
-if (reporter instanceof JenkinsReporter) {
-    JenkinsReporter jenkins = (JenkinsReporter) reporter;
-    jenkins.logPass("Test passed");
-    jenkins.logWarn("Warning");
-    jenkins.logWithMetadata("Step completed", "{userId: 123}");
+        if(reporter instanceof JenkinsReporter){
+        JenkinsReporter jenkins = (JenkinsReporter) reporter;
+    jenkins.
+
+        logPass("Test passed");
+    jenkins.
+
+        logWarn("Warning");
+    jenkins.
+
+        logWithMetadata("Step completed","{userId: 123}");
 }
 ```
 
@@ -123,7 +143,7 @@ if (reporter instanceof JenkinsReporter) {
   - Example: "Click login button", "Navigate to checkout"
   - Creates top-level steps in reports
   
-- **`info()`**: Log nested information or data within steps
+- **`info()`**: Log nested information or dataProvider within steps
   - Example: "Username: john@example.com", "Total: $150", "Found 5 items"
   - Creates nested/sub-steps in reports
 

@@ -1,9 +1,9 @@
-package org.example.report.impl;
+package org.example.core.report.impl;
 
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.example.report.TestReporter;
+import org.example.core.report.TestReporter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -130,4 +130,46 @@ public class ExtentReporter implements TestReporter {
             }
         }
     }
+
+    // ==================== Step wrapper implementations ====================
+
+    @Override
+    public void withinStep(String name, Runnable runnable) {
+        ExtentTest test = getCurrentTest();
+        if (test != null) {
+            test.info("STEP: " + name);
+        }
+        try {
+            runnable.run();
+            if (test != null) {
+                test.pass("PASSED: " + name);
+            }
+        } catch (RuntimeException e) {
+            if (test != null) {
+                test.fail("FAILED: " + name + " - " + e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public <T> T withinStep(String name, java.util.function.Supplier<T> supplier) {
+        ExtentTest test = getCurrentTest();
+        if (test != null) {
+            test.info("STEP: " + name);
+        }
+        try {
+            T result = supplier.get();
+            if (test != null) {
+                test.pass("PASSED: " + name);
+            }
+            return result;
+        } catch (RuntimeException e) {
+            if (test != null) {
+                test.fail("FAILED: " + name + " - " + e.getMessage());
+            }
+            throw e;
+        }
+    }
+
 }

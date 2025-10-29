@@ -1,4 +1,4 @@
-package org.example.report;
+package org.example.core.report;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 @Slf4j
-public class DebugConfig {
+public class ConsoleConfig {
 	
     private PrintStream originalOut;
     private PrintStream originalErr;
@@ -17,7 +17,7 @@ public class DebugConfig {
 
     public void startTerminalLog() {
         try {
-            terminalLogFile = new File("target/allure-results/terminal.log");
+            terminalLogFile = new File("target/console.log");
             if (terminalLogFile.exists() && !terminalLogFile.delete()) {
                 log.warn("Could not delete existing terminal log file: " + terminalLogFile.getAbsolutePath());
             }

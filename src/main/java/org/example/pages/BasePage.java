@@ -3,8 +3,8 @@ package org.example.pages;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.control.common.imp.Element;
 import org.example.core.control.util.DriverUtils;
-import org.example.report.ReporterFactory;
-import org.example.report.TestReporter;
+import org.example.core.report.ReporterManager;
+import org.example.core.report.TestReporter;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -13,8 +13,9 @@ import java.util.List;
 @Slf4j
 public class BasePage {
 
-    // Unified reporter for all Page Objects - works with Allure, Extent, or Jenkins
-    protected TestReporter reporter = ReporterFactory.getInstance();
+    protected TestReporter reporter = ReporterManager.getAllureReport();
+    // protected TestReporter reporter = ReporterManager.getExtentReport();
+    // protected TestReporter reporter = ReporterManager.getJenkinsReport();
 
     protected WebElement findElement(By locator) {
         return DriverUtils.getWebDriver().findElement(locator);

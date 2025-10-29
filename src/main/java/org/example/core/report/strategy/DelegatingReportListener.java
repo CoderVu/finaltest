@@ -1,4 +1,4 @@
-package org.example.report.strategy;
+package org.example.core.report.strategy;
 
 import lombok.extern.slf4j.Slf4j;
 import org.testng.IConfigurationListener;

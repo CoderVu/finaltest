@@ -2,15 +2,15 @@ package config;
 
 import com.codeborne.selenide.WebDriverRunner;
 import org.example.configure.BrowserConfig;
-import org.example.report.DebugConfig;
-import org.example.report.SoftAssertConfig;
+import org.example.core.report.ConsoleConfig;
+import org.example.core.report.SoftAssertConfig;
 import org.testng.ITestResult;
 import org.testng.SkipException;
 import org.testng.annotations.*;
 
 public class TestBase {
 
-    private static final DebugConfig logConfig = new DebugConfig();
+    private static final ConsoleConfig logConfig = new ConsoleConfig();
 
     @BeforeClass(alwaysRun = true)
     public void setUpClass() {
