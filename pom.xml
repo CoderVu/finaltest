@@ -18,7 +18,7 @@
         <log4j.version>2.21.1</log4j.version>
         <allure.version>2.24.0</allure.version>
         <selenide.version>7.2.3</selenide.version>
-        <aspectjweaver.version>1.9.21</aspectjweaver.version>
+        <aspectjweaver.version>1.9.22</aspectjweaver.version>
         <freemarker.version>2.3.32</freemarker.version>
     </properties>
 
@@ -116,12 +116,7 @@
             <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
-        <!-- Yaml -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.2</version>
-        </dependency>
+       
         <!-- ExtentReports for optional strategy -->
         <dependency>
             <groupId>com.aventstack</groupId>
@@ -131,6 +126,7 @@
     </dependencies>
  <build>
         <plugins>
+            <!-- Standard Maven compiler with Lombok support -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -147,6 +143,27 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!-- Generate testng.xml before running tests -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-testng-xml</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.example.core.browser.TestNGXmlGenerator</mainClass>
+                            <arguments>
+                                <argument>${env.file:dev-env.properties}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -161,7 +178,13 @@
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <useFile>false</useFile>
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar" -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar" 
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens java.base/java.text=ALL-UNNAMED
+                        --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                        -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
                     </argLine>
                     <systemPropertyVariables>
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
@@ -193,5 +216,37 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Preset: Run smoke on staging (single Chrome, headless) -->
+        <profile>
+            <id>smoke-staging</id>
+            <properties>
+                <env.file>staging-env.yaml</env.file>
+                <headless>true</headless>
+                <single.browser>true</single.browser>
+                <browser>chrome</browser>
+                <clean.reports>true</clean.reports>
+                <test.groups>smoke</test.groups>
+                <grid.enabled>false</grid.enabled>
+                <remote.enabled>false</remote.enabled>
+                <w3c.enabled>true</w3c.enabled>
+            </properties>
+        </profile>
+
+        <!-- Preset: Nightly on all browsers (matrix recommended in CI) -->
+        <profile>
+            <id>nightly-all-browsers</id>
+            <properties>
+                <env.file>prod-env.yaml</env.file>
+                <headless>true</headless>
+                <single.browser>false</single.browser>
+                <clean.reports>true</clean.reports>
+                <grid.enabled>true</grid.enabled>
+                <remote.enabled>false</remote.enabled>
+                <w3c.enabled>true</w3c.enabled>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

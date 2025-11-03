@@ -1,7 +1,8 @@
 package org.example.core.control.util;
 
-import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.WebDriverRunner;
+import org.example.configure.Config;
+import org.example.core.driver.DriverManager;
+import org.example.enums.BrowserType;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -29,7 +30,8 @@ public final class DriverUtils {
     private DriverUtils() {}
 
     public static WebDriver getWebDriver() {
-        return WebDriverRunner.getWebDriver();
+        BrowserType browserType = Config.getBrowserType();
+        return DriverManager.getInstance(browserType).getDriver();
     }
 
     public static WebDriver getDriver() {
@@ -219,7 +221,7 @@ public final class DriverUtils {
     }
 
     public static int getTimeOut() {
-        long ms = Configuration.timeout;
+        long ms = Config.getTimeout();
         int seconds = (int) Math.max(1, ms / 1000);
         return seconds;
     }

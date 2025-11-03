@@ -1,18 +1,19 @@
-package org.example.core.report.strategy;
+package org.example.core.report.hook;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.core.report.ReportManager;
+import org.example.core.report.strategy.ReportStrategy;
 import org.testng.IConfigurationListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 @Slf4j
-public class DelegatingReportListener implements ITestListener, IConfigurationListener {
-
+public class ReportHook implements ITestListener, IConfigurationListener {
     private final ReportStrategy delegate;
 
-    public DelegatingReportListener() {
-        this.delegate = ReportStrategySelector.select();
+    public ReportHook() {
+        this.delegate = ReportManager.selectStrategy();
         log.info("Using report strategy: {}", delegate.getClass().getSimpleName());
     }
 
@@ -31,5 +32,3 @@ public class DelegatingReportListener implements ITestListener, IConfigurationLi
     @Override public void onConfigurationFailure(ITestResult itr) { delegate.onConfigurationFailure(itr); }
     @Override public void onConfigurationSkip(ITestResult itr) { delegate.onConfigurationSkip(itr); }
 }
-
-

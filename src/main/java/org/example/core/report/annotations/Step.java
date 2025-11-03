@@ -15,5 +15,3 @@ public @interface Step {
     /** Optional message template. You can use {argN} placeholders for arguments. */
     String value() default "";
 }
-
-

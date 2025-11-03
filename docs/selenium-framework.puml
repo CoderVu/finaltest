@@ -1,0 +1,409 @@
+@startuml SeleniumFramework
+skinparam classAttributeIconSize 0
+skinparam dpi 150
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName Arial
+
+title Selenium/TestNG Automation Framework - Class Diagram
+
+package "Tests" {
+  class TestBase {
+    + setUpClass()
+    + setUpMethod()
+    + tearDownMethod(result)
+    + tearDownClass()
+    + getDriver() : WebDriver
+    + getTestEnv() : String
+  }
+
+  class TC01AgodaHotelSearch {
+    + testHotelSearch()
+    + testSortByPrice()
+  }
+}
+
+package "Pages" {
+  class BasePage {
+    - reporter : ITestReporter
+    # findElement(By) : WebElement
+    # findElements(By) : List<WebElement>
+    # waitForElementVisible(Element)
+    # clickElement(Element)
+    # enterText(Element, String)
+    + open(url)
+    + isLoaded() : boolean
+  }
+
+  class AgodaHomePage {
+    + navigateToHomePage()
+    + enterDestination(destination)
+    + selectDestinationFromSuggestions(name)
+    + selectDates(checkIn, checkOut)
+    + selectDatesFromNextFriday()
+    + selectOccupancy(rooms, adults, children)
+    + clickSearchButton()
+    + switchToSearchResultsTab()
+    + waitForSearchResultsToLoad()
+    + sortByLowestPrice()
+    + getHotelListSize() : int
+    + getAllHotelsFromListViewSearch(n) : List<Hotel>
+    + verifySearchResultsDisplayed(n) : boolean
+    + verifyHotelsSortedByLowestPrice(hotels) : boolean
+    + verifyHotelsDestination(hotels, dest) : boolean
+    + extractHotelFromCard(element) : Hotel
+  }
+}
+
+package "Controls" {
+  interface IBaseControl {
+    + click()
+    + isVisible() : boolean
+    + getText() : String
+  }
+  interface IClickable {
+    + click()
+  }
+  interface IEditable {
+    + setText(text: String)
+    + clear()
+  }
+
+  class BaseControl {
+    - locator : String
+    - byLocator : By
+    - dynamicLocator : String
+    - parent : BaseControl
+    + getText() : String
+    + enterText(text: String)
+    + getChildElement (xpath: String) : WebElement
+    + getChildElements (xpath: String) : List<WebElement>
+    + isVisible() : boolean
+    + isEnabled() : boolean
+    + moveMouseByOffset (x, y)
+    + scrollToView ()
+    + waitForVisibility([timeout])
+    + waitForElementClickable([timeout])
+    + scrollToView() ...
+
+  }
+
+  interface IElement {
+    + getAttribute(name: String) : String
+    + waitForVisibility([timeout])
+  }
+  class Element {
+    + getText() : String
+    + click()
+    + waitForElementClickable([timeout])
+    + getChildElements(xpath: String) : List<WebElement>
+  }
+  interface IButton {
+    + click()
+  }
+  class Button {
+    + click()
+    + isEnabled() : boolean
+  }
+  interface ITextBox {
+    + setText(text: String)
+    + clear()
+  }
+  class TextBox {
+    + setText(text: String)
+    + clear()
+    + getText() : String
+  }
+  interface IComboBox {
+    + selectByValue(value: String)
+  }
+  class ComboBox {
+    + selectByValue(value: String)
+  }
+  interface ICheckBox {
+    + check()
+    + uncheck()
+    + isChecked() : boolean
+  }
+  class CheckBox {
+    + check()
+    + uncheck()
+    + isChecked() : boolean
+  }
+  interface IRadioButton {
+    + select()
+    + isSelected() : boolean
+  }
+  class RadioButton {
+    + select()
+    + isSelected() : boolean
+  }
+  interface ILabel {
+    + getText() : String
+  }
+  class Label {
+    + getText() : String
+  }
+  interface IImage {
+    + getSrc() : String
+  }
+  class Image {
+    + getSrc() : String
+  }
+  interface IFrame {
+    + switchTo()
+  }
+  class Frame {
+    + switchTo()
+  }
+  interface ITable {
+    + getRows() : List<WebElement>
+  }
+  class Table {
+    + getRows() : List<WebElement>
+  }
+
+  package "Utils (control/util)" {
+    class DriverUtils {
+      + getWebDriver() : WebDriver
+      + getDriver() : WebDriver
+      + execJavaScript(script, ...args)
+      + getCurrentUrl() : String
+      + navigateTo(url: String)
+      + switchToWindow(index)
+      + waitForNewWindowOpened(n)
+      + waitForUrlContains(sub, timeout)
+      + delay(seconds: double)
+      + refresh()
+      + deleteCookie()
+      + moveMouseByOffset(x, y)
+      + openNewTab()
+      + waitForAjax()
+      + waitForAngularReady()
+      + setWindowSize(width, height)
+      ...
+    }
+  }
+}
+
+package "Models" {
+  class Hotel {
+    + name : String
+    + rating : String
+    + location : String
+    + distanceToCenter : String
+    + badges : String[]
+    + amenities : String[]
+    + price : String
+    + builder() : HotelBuilder
+    + getName() : String
+    + getPrice() : String
+  }
+}
+
+package "Driver & Config" {
+  class DriverFactory {
+    + getDriver(browserType, platformType) : WebDriver
+    + quitDriver()
+  }
+  abstract class DriverManager {
+    + getDriver() : WebDriver
+    + quitDriver()
+  }
+  class ChromeDriverManager {
+
+  }
+  class FirefoxDriverManager
+  class EdgeDriverManager
+
+  class BrowserConfig {
+    + createWebDriver() : WebDriver
+    + quitWebDriver()
+  }
+  class ExecutionConfig {
+    + shouldSkipBrowser() : boolean
+    + resolveBaseUrlForSelenium() : String
+  }
+  class EnvironmentConfig {
+    + getEnvName() : String
+    + getBaseUrl() : String
+    + isRemoteExecution() : boolean
+    + getRemoteUrl() : String
+  }
+class GridConfig {
+  - WebDriver createLocalDriver (browserType) : WebDriver
+  - WebDriver createRemoteDriver (browserType) : WebDriver
+  - setupCapabilities(browserType) : DesiredCapabilities
+  - setupChromeOptions() : ChromeOptions
+  - setupFirefoxOptions() : FirefoxOptions
+  - setupEdgeOptions() : EdgeOptions
+}
+
+  class InteractiveConfigHelper {
+    - confirmEnvironmentSettings() : void
+    - confirmExecutionMode() : void
+    - confirmBrowserSettings() : void
+    - confirmHeadlessMode() : void
+    - confirmClearReports() : void
+  }
+
+  enum PlatformType {
+    PC_WEB
+    MOBILE_WEB
+  }
+  enum BrowserType {
+    CHROME
+    FIREFOX
+    EDGE
+  }
+}
+
+package "Reporting" {
+  interface ITestReporter {
+    + logStep(description: String)
+    + info(msg: String)
+    + error(msg: String)
+    + attach(screenshot)
+  }
+  class ReportFactory {
+    + get() : ITestReporter
+  }
+  interface ReportStrategy
+  class ReportStrategySelector {
+    + selectStrategy(type: ReportType) : ReportStrategy
+  }
+  enum ReportType {
+  ALLURE
+  EXTENT
+  JENKINS
+  }
+  class AllureStrategy
+  class ExtentStrategy
+  class JenkinsStrategy
+  class AllureTestReporter
+  class ExtentTestReporter
+  class JenkinsTestReporter
+  class Step <<annotation>>
+  class StepAspect
+  class ReportHook
+  class ConsoleConfig {
+  }
+  class SoftAssertConfig {
+    + reset()
+  }
+}
+
+package "Utils (global)" {
+  class Constants
+  class DateUtils
+  class FormatUtils
+  class JsonHelper
+}
+
+package "Data Provider" {
+  class DataProvider {
+    + auto(method: Method) : Iterator<Object[]>
+    + loadData(testCaseKey: String, dataFile: String) : Iterator<Object[]>
+    + getString(data: JsonObject, path: String, default)
+    + getInt(data: JsonObject, path: String, default)
+    + getBoolean(data: JsonObject, path: String, default)
+    + getObject(data: JsonObject, path: String) : JsonObject
+  }
+  class DataFile <<annotation>> {
+    + value() : String
+  }
+  class DataPath <<annotation>> {
+    + value() : String
+  }
+}
+
+' Relationships
+TestBase <|.. TC01AgodaHotelSearch
+BasePage <|-- AgodaHomePage
+
+IBaseControl <|.. BaseControl
+IClickable <|.. BaseControl
+IEditable <|.. BaseControl
+
+IElement <|.. Element
+BaseControl <|-- Element
+IButton <|.. Button
+BaseControl <|-- Button
+ITextBox <|.. TextBox
+BaseControl <|-- TextBox
+IComboBox <|.. ComboBox
+BaseControl <|-- ComboBox
+ICheckBox <|.. CheckBox
+BaseControl <|-- CheckBox
+IRadioButton <|.. RadioButton
+BaseControl <|-- RadioButton
+ILabel <|.. Label
+BaseControl <|-- Label
+IImage <|.. Image
+BaseControl <|-- Image
+IFrame <|.. Frame
+BaseControl <|-- Frame
+ITable <|.. Table
+BaseControl <|-- Table
+
+AgodaHomePage ..> Element : uses
+AgodaHomePage ..> Button : uses
+AgodaHomePage ..> TextBox : uses
+AgodaHomePage ..> DriverUtils : uses
+AgodaHomePage ..> Hotel
+
+BasePage ..> DriverUtils : uses
+BaseControl ..> DriverUtils : uses
+
+DriverManager <|-- ChromeDriverManager
+DriverManager <|-- FirefoxDriverManager
+DriverManager <|-- EdgeDriverManager
+BrowserConfig ..> DriverFactory
+BrowserConfig ..> BrowserType
+TestBase ..> BrowserConfig
+TestBase ..> ExecutionConfig
+ExecutionConfig ..> EnvironmentConfig
+ExecutionConfig ..> GridConfig
+ExecutionConfig ..> PlatformType
+TestBase ..> ConsoleConfig
+TestBase ..> SoftAssertConfig
+
+ReportFactory ..> ITestReporter
+ReportFactory ..> ReportStrategySelector
+ReportStrategySelector ..> ReportStrategy
+ReportStrategy <|-- AllureStrategy
+ReportStrategy <|-- ExtentStrategy
+ReportStrategy <|-- JenkinsStrategy
+ITestReporter <|.. AllureTestReporter
+ITestReporter <|.. ExtentTestReporter
+ITestReporter <|.. JenkinsTestReporter
+BasePage ..> ITestReporter
+StepAspect ..> Step
+
+' New relationships to Utils (global)
+AgodaHomePage ..> Constants
+AgodaHomePage ..> DateUtils
+AgodaHomePage ..> FormatUtils
+BasePage ..> Constants
+TC01AgodaHotelSearch ..> Constants
+TC01AgodaHotelSearch ..> DateUtils
+TestBase ..> Constants
+
+' Data-driven relationships
+TC01AgodaHotelSearch ..> DataProvider : <<dataProvider=auto>>
+TC01AgodaHotelSearch ..> DataFile : <<annotation>>
+TC01AgodaHotelSearch ..> DataPath : <<annotation on parameters>>
+DataProvider ..> JsonHelper
+
+'note right of Controls::DriverUtils
+'Utility for actions, waits & switching, tightly coupled
+'with control layer (org.example.core.control.util)
+'end note
+'
+'note right of AgodaHomePage
+'Contains search flows, date/occupancy selection,
+'and list extraction logic for Hotel.
+'end note
+
+@enduml
+

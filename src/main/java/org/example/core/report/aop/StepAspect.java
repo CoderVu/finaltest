@@ -5,17 +5,13 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.example.core.report.ReporterManager;
-import org.example.core.report.TestReporter;
 import org.example.core.report.annotations.Step;
+import org.example.core.report.ITestReporter;
+import org.example.core.report.ReportManager;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-/**
- * Aspect to intercept methods annotated with @Step and log them via active reporter.
- * Wraps method execution in a step to enable nested step structure in reports.
- */
 @Aspect
 @Slf4j
 public class StepAspect {
@@ -26,11 +22,21 @@ public class StepAspect {
             Method method = getMethod(joinPoint);
             Step step = method.getAnnotation(Step.class);
             String message = buildMessage(step, method, joinPoint.getArgs());
-            TestReporter reporter = ReporterManager.get();
 
-            // Reporter-agnostic: delegate to reporter's withinStep wrappers
+            // Debug: confirm aspect is invoked and show step message
+            log.info("StepAspect invoked for: {}. Method: {}", message, method.getName());
+
+            ITestReporter reporter = ReportManager.getReporter();
+
+            // Defensive fallback: if reporter is not ready (no weaving/initialization), execute method directly
+            if (reporter == null) {
+                log.debug("No ITestReporter available — executing method directly: {}", method.getName());
+                return joinPoint.proceed();
+            }
+
+            // Use childStep to create steps in the reporter
             if (method.getReturnType() == void.class || method.getReturnType() == Void.class) {
-                reporter.withinStep(message, () -> {
+                reporter.childStep(message, () -> {
                     try {
                         joinPoint.proceed();
                     } catch (Throwable throwable) {
@@ -39,7 +45,7 @@ public class StepAspect {
                 });
                 return null;
             } else {
-                return reporter.withinStep(message, () -> {
+                return reporter.childStep(message, () -> {
                     try {
                         return joinPoint.proceed();
                     } catch (Throwable throwable) {
@@ -59,13 +65,10 @@ public class StepAspect {
         throw (T) throwable;
     }
 
-    // ChildStep support removed; nested logs are explicit via reporter.logStep(...)
-
     private Method getMethod(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         return signature.getMethod();
     }
-
     private String buildMessage(Step step, Method method, Object[] args) {
         String template = step != null ? step.value() : "";
         if (template == null || template.trim().isEmpty()) {
@@ -78,9 +81,6 @@ public class StepAspect {
         }
         return message;
     }
-
-    // buildMessageForChild removed
-
     private String formatArgs(Object[] args) {
         if (args == null || args.length == 0) return "";
         try {
@@ -90,5 +90,3 @@ public class StepAspect {
         }
     }
 }
-
-

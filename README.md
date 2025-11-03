@@ -1,110 +1,114 @@
-﻿# VuNguyenFinalTestSele3
+﻿# finaltest — Quick Start (clean & concise)
 
-Selenium + TestNG automation framework for testing `tiki.vn`
+Selenium + TestNG automation framework with multi-browser support and multiple reporting options.
 
-**Tech Stack:** Java 17, Maven, Selenide 7.2.3, TestNG 7.9.0, Allure 2.24.0
+Tech: Java 17+, Maven, Selenium WebDriver, TestNG, Allure, ExtentReports.
 
-**Prerequisites:** Java 17+, Maven 3.8+, Docker Desktop (for Grid mode)
+Prerequisites
+- Java 17+ and Maven 3.8+
+- Installed browsers: Chrome, Firefox, Edge
+- (Optional) Docker for Selenium Grid
 
-## Quick Start Guide
+Quick examples
+- Run default tests:
+  mvn clean test
 
-### Interactive Mode (Recommended)
+- Run one browser:
+  mvn clean test -Dbrowser=chrome
+  mvn clean test -Dbrowser=firefox
 
-```bash
-# Windows
-run-interactive-tests-windows.bat
+- Enable WebDriverManager (download drivers automatically):
+  mvn clean test -Dbrowser=chrome -Duse.wdm=true
 
-# Unix/Mac/Linux
-./run-interactive-tests-unix.sh
+- Headless:
+  mvn clean test -Dbrowser=chrome -Dheadless=true
 
-# Java-based (any platform)
-mvn compile exec:java -Dexec.mainClass="org.example.launcher.TestLauncher"
-```
+Remote / Grid
+- Run on remote Grid:
+  mvn clean test -Dremote.enabled=true -Dremote.url=http://GRID_HOST:4444/wd/hub -Dbrowser=firefox
 
-**Interactive prompts:** Environment (dev/prod) → Execution mode (local/grid) → Browser (single/all) → Display (GUI/headless)
+- Specify remote browser/version/platform:
+  mvn clean test -Dremote.enabled=true -Dremote.url=http://GRID_HOST:4444/wd/hub -Dbrowser=chrome -Dbrowser.version=141.0 -Dplatform.name=LINUX
 
-### Command Line Mode
+IntelliJ VM options example
+-Dbrowser=chrome -Duse.wdm=true -Dheadless=false
 
-**Basic Usage:**
-```bash
-mvn clean test                              # Default: Chrome, dev, local
-mvn clean test -Dbrowser=firefox           # Specific browser
-mvn clean test -Denv.file=prod-env.yaml    # Production environment
-mvn clean test -Dheadless=true             # Headless mode
-```
+Common system properties
+- -Dbrowser=chrome|firefox|edge
+- -Duse.wdm=true|false
+- -Dheadless=true|false
+- -Dremote.enabled=true|false
+- -Dremote.url=http://host:4444/wd/hub
+- -Dbrowser.version=xxx
+- -Dplatform.name=LINUX|WINDOWS|MAC
 
-**Execution Modes:**
-```bash
-# Local execution (uses local browsers)
-mvn clean test -Dremote.enabled=false
+Reports
+- Allure (default): run tests then:
+  mvn allure:report
+  mvn allure:serve
 
-# Remote Grid execution (uses Docker containers)
-mvn clean test -Dremote.enabled=true -Dremote.url=http://localhost:4444/wd/hub
-```
+- ExtentReports: mvn clean test -DreportType=extent
 
-**Browser Selection:**
-```bash
-mvn clean test -Dbrowser=chrome -Dsingle.browser=true    # Single browser only
-mvn clean test -Dsingle.browser=false                    # All browsers in parallel
-```
+Troubleshooting (fast)
+- WebDriverManager network/parse errors → run without it: -Duse.wdm=false (Selenium Manager will attempt driver).
+- CDP warnings for Chrome → add matching selenium-devtools artifact if you need DevTools.
+- Driver/browser mismatch → update browser, enable -Duse.wdm=true, or supply -Dbrowser.version.
 
-## Docker Grid Mode
+Enable @Step (AspectJ AOP)
+- Why steps may not appear:
+  - The @Step annotation is implemented with an AspectJ aspect (StepAspect). If AspectJ weaving is not enabled, the aspect won't run and steps won't be created in the reporter. You do not need Spring for this — use either load-time weaving (javaagent) or compile-time weaving.
 
-**Start Grid manually:**
-```bash
-docker-compose up -d                    # Start all services
-docker-compose down                     # Stop all services
-```
+- Quick options to enable AOP for plain Selenium/TestNG projects (no Spring required):
 
-**Grid URLs:**
-- **Hub Endpoint:** `http://localhost:4444/wd/hub` (for test connections)
-- **Grid Console:** `http://localhost:4444/ui#/` (for monitoring)
-- **VNC Viewers:** Watch live browser sessions
-  - Chrome: `http://localhost:7900/`
-  - Firefox: `http://localhost:7901/`  
-  - Edge: `http://localhost:7902/`
+  1) Load-time (runtime) weaving — recommended for local/IDE runs
+     - Add aspectjweaver to your test/runtime classpath (pom.xml):
+       <dependency>
+         <groupId>org.aspectj</groupId>
+         <artifactId>aspectjweaver</artifactId>
+         <version>1.9.9.1</version>
+         <scope>test</scope>
+       </dependency>
 
-## System Properties
+     - Start the JVM with AspectJ javaagent. Example IntelliJ VM options:
+       -javaagent:${user.home}/.m2/repository/org/aspectj/aspectjweaver/1.9.9.1/aspectjweaver-1.9.9.1.jar
 
-| Property | Default | Options | Description |
-|----------|---------|---------|-------------|
-| `browser` | chrome | chrome, firefox, edge | Browser type |
-| `env.file` | dev-env.yaml | dev-env.yaml, prod-env.yaml | Environment config |
-| `headless` | false | true, false | Headless execution |
-| `remote.enabled` | false | true, false | Use Grid or local |
-| `remote.url` | http://localhost:4444/wd/hub | Grid Hub URL | Grid endpoint |
-| `single.browser` | false | true, false | Single vs parallel |
-| `timeout` | 10000 | milliseconds | Element timeout |
+     - Or configure Maven Surefire to add the agent at test runtime (pom.xml):
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-surefire-plugin</artifactId>
+         <configuration>
+           <argLine>-javaagent:${settings.localRepository}/org/aspectj/aspectjweaver/1.9.9.1/aspectjweaver-1.9.9.1.jar ${argLine}</argLine>
+         </configuration>
+       </plugin>
 
-## Reports & Monitoring
+  2) Compile-time / post-compile weaving (CI-friendly)
+     - Use aspectj-maven-plugin to weave aspects during build (recommended for CI to avoid passing agents):
+       <plugin>
+         <groupId>org.codehaus.mojo</groupId>
+         <artifactId>aspectj-maven-plugin</artifactId>
+         <version>1.14.0</version>
+         <configuration>
+           <complianceLevel>17</complianceLevel>
+           <source>17</source>
+           <target>17</target>
+         </configuration>
+         <executions>
+           <execution>
+             <goals>
+               <goal>compile</goal>
+               <goal>test-compile</goal>
+             </goals>
+           </execution>
+         </executions>
+       </plugin>
 
-**Generate Reports:**
-```bash
-mvn allure:report                       # Generate static report
-mvn allure:serve                        # Generate and serve with auto-refresh
-```
+- Quick verification (no Spring):
+  - Add a debug log in StepAspect.aroundStep (already added in project) and run a test.
+  - If you see "StepAspect invoked for: ..." in logs, weaving is active and @Step will produce report steps.
+  - If not, enable load-time agent or use the aspectj-maven-plugin to weave at compile/test-compile.
 
-**Report Locations:**
-- Allure HTML: `target/allure-report/index.html`
-- Allure Results: `target/allure-results/`
-- Selenide Screenshots: `target/selenide-reports/`
-- Test Logs: `target/allure-results/terminal.log`
-
-**Auto-generation:** Reports are automatically generated after successful test runs via TestLauncher.
-
-## Platform Support
-
-**Supported Platforms:** Windows 10/11, macOS, Linux
-
-**Requirements:** 
-- Java 17+ (`java -version`)
-- Maven 3.8+ (`mvn -version`) 
-- Docker Desktop (for Grid mode)
-- Browsers: Chrome, Firefox, Edge
-
-**Troubleshooting:**
-1. Verify Java/Maven in PATH
-2. For Grid: Check Docker is running (`docker info`)
-3. Check Grid status: `curl http://localhost:4444/status`
-
-4. View logs: `docker-compose logs`
+Notes
+- Use load-time weaving during local runs (IntelliJ) by adding the -javaagent argument; use compile-time weaving for CI pipelines to avoid setting agents.
+- After enabling weaving, @Step methods will be intercepted and reporter.withinStep will create steps in Allure/Extent immediately.
+- Check org.example.configure.Config for exact property names and defaults.
+- Look at build logs for generated artifacts (testng.xml, allure results).

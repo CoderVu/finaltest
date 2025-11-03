@@ -1,94 +1,123 @@
 package org.example.core.report;
 
 import lombok.extern.slf4j.Slf4j;
+import java.io.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-
+/**
+ * Simple console logger that redirects System.out/System.err to a single suite-level file.
+ * Start it once in @BeforeSuite and stop it in @AfterSuite to produce one shared log for all browsers.
+ */
 @Slf4j
 public class ConsoleConfig {
-	
-    private PrintStream originalOut;
-    private PrintStream originalErr;
-    private FileOutputStream logFileOut;
-    private File terminalLogFile;
 
-    public void startTerminalLog() {
-        try {
-            terminalLogFile = new File("target/console.log");
-            if (terminalLogFile.exists() && !terminalLogFile.delete()) {
-                log.warn("Could not delete existing terminal log file: " + terminalLogFile.getAbsolutePath());
-            }
-            if (!terminalLogFile.exists()) {
-                File parent = terminalLogFile.getParentFile();
-                if (parent != null) parent.mkdirs();
-                terminalLogFile.createNewFile();
-            }
-            logFileOut = new FileOutputStream(terminalLogFile, true);
-            originalOut = System.out;
-            originalErr = System.err;
-            PrintStream teeOut = new PrintStream(new TeeOutputStream(originalOut, logFileOut), true);
-            PrintStream teeErr = new PrintStream(new TeeOutputStream(originalErr, logFileOut), true);
-            System.setOut(teeOut);
-            System.setErr(teeErr);
-            log.info("Log config has been created");
-        } catch (IOException ioEx) {
-            log.error("Failed to initialize terminal log capture: " + ioEx.getMessage());
-        }
-    }
+	// suite-wide streams
+	private static volatile boolean suiteLogStarted = false;
+	private static PrintStream originalOut;
+	private static PrintStream originalErr;
+	private static PrintStream teeOut;
+	private static FileOutputStream fileOutputStream;
 
-    public void stopTerminalLog() {
-        try {
-            if (originalOut != null) System.setOut(originalOut);
-            if (originalErr != null) System.setErr(originalErr);
-            if (logFileOut != null) {
-                logFileOut.flush();
-                logFileOut.close();
-            }
-            log.info("Terminal log capture finalized. Log file: " + terminalLogFile.getAbsolutePath());
-        } catch (IOException ioEx) {
-            log.error("Failed to finalize terminal log capture: " + ioEx.getMessage());
-        }
+	/**
+	 * Start suite-level console capture. If already started, this is a no-op.
+	 */
+	public void startTerminalLog() {
+		synchronized (ConsoleConfig.class) {
+			if (suiteLogStarted) {
+				log.debug("ConsoleConfig: suite log already started");
+				return;
+			}
+			try {
+				originalOut = System.out;
+				originalErr = System.err;
+
+				File file = new File("target/console-suite.log");
+				file.getParentFile().mkdirs();
+				fileOutputStream = new FileOutputStream(file, true);
+
+				// tee -> write to original console AND file
+				TeeOutputStream tos = new TeeOutputStream(originalOut, fileOutputStream);
+				teeOut = new PrintStream(tos, true);
+
+				System.setOut(teeOut);
+				System.setErr(teeOut);
+
+				suiteLogStarted = true;
+				log.info("ConsoleConfig - Suite console log started: {}", file.getAbsolutePath());
+			} catch (Exception e) {
+				log.warn("ConsoleConfig - Failed to start suite console log: {}", e.getMessage());
+				// ensure partial resources cleaned
+				try { if (fileOutputStream != null) fileOutputStream.close(); } catch (Exception ignored) {}
+			}
+		}
 	}
 
-    static class TeeOutputStream extends java.io.OutputStream {
-        private final java.io.OutputStream first;
-        private final java.io.OutputStream second;
+	/**
+	 * Stop suite-level console capture and restore original System.out/System.err.
+	 */
+	public void stopTerminalLog() {
+		synchronized (ConsoleConfig.class) {
+			if (!suiteLogStarted) {
+				return;
+			}
+			try {
+				if (originalOut != null) {
+					System.setOut(originalOut);
+				}
+				if (originalErr != null) {
+					System.setErr(originalErr);
+				}
+				// closing teeOut will close the fileOutputStream via TeeOutputStream.close()
+				if (teeOut != null) {
+					teeOut.close();
+				}
+				log.info("ConsoleConfig - Suite console log stopped");
+			} catch (Exception e) {
+				log.warn("ConsoleConfig - Failed to stop suite console log: {}", e.getMessage());
+			} finally {
+				suiteLogStarted = false;
+				originalOut = null;
+				originalErr = null;
+				teeOut = null;
+				fileOutputStream = null;
+			}
+		}
+	}
 
-        TeeOutputStream(java.io.OutputStream first, java.io.OutputStream second) {
-            this.first = first;
-            this.second = second;
-        }
+	/**
+	 * OutputStream that writes to two outputs. On close it closes only the second (file) stream
+	 * to avoid closing the original System.out/System.err.
+	 */
+	private static class TeeOutputStream extends OutputStream {
+		private final OutputStream out1; // original console (do NOT close)
+		private final OutputStream out2; // file (close on close)
 
-        @Override
-        public void write(int b) throws IOException {
-            first.write(b);
-            second.write(b);
-        }
+		public TeeOutputStream(OutputStream out1, OutputStream out2) {
+			this.out1 = out1;
+			this.out2 = out2;
+		}
 
-        @Override
-        public void write(byte[] b) throws IOException {
-            first.write(b);
-            second.write(b);
-        }
+		@Override
+		public void write(int b) throws IOException {
+			try { out1.write(b); } catch (IOException ignored) {}
+			out2.write(b);
+		}
 
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            first.write(b, off, len);
-            second.write(b, off, len);
-        }
+		@Override
+		public void write(byte[] b, int off, int len) throws IOException {
+			try { out1.write(b, off, len); } catch (IOException ignored) {}
+			out2.write(b, off, len);
+		}
 
-        @Override
-        public void flush() throws IOException {
-            first.flush();
-            second.flush();
-        }
+		@Override
+		public void flush() throws IOException {
+			try { out1.flush(); } catch (IOException ignored) {}
+			out2.flush();
+		}
 
-        @Override
-        public void close() throws IOException {
-            try { first.close(); } finally { second.close(); }
-        }
-    }
+		@Override
+		public void close() throws IOException {
+			// do not close out1 (original console), only close file output
+			try { out2.close(); } catch (IOException ignored) {}
+		}
+	}
 }

@@ -1,6 +1,7 @@
 package org.example.enums;
 
 import lombok.Getter;
+import org.example.configure.Config;
 
 /**
  * Enum for supported report types.
@@ -52,12 +53,24 @@ public enum ReportType {
     }
 
     /**
-     * Get report type from system properties.
-     * Checks both system property and environment variable.
+     * Get report type from system properties/env/yaml in that order, fallback to ALLURE.
      */
     public static ReportType getConfigured() {
-        String value = System.getProperty("report.strategy", System.getenv("REPORT_STRATEGY"));
+        String value = System.getProperty("reportType");
+        if (isEmpty(value)) value = System.getProperty("report.strategy");
+        if (isEmpty(value)) value = System.getenv("REPORT_TYPE");
+        if (isEmpty(value)) value = System.getenv("REPORT_STRATEGY");
+        if (isEmpty(value)) {
+            try { value = Config.getEnvironmentValue("reportType"); } catch (Throwable ignored) { }
+        }
+        if (isEmpty(value)) {
+            try { value = Config.getEnvironmentValue("report.strategy"); } catch (Throwable ignored) { }
+        }
         return fromString(value);
+    }
+
+    private static boolean isEmpty(String s) {
+        return s == null || s.trim().isEmpty();
     }
 
     /**

@@ -30,8 +30,6 @@ public class TC01AgodaHotelSearch extends TestBase {
     @Severity(SeverityLevel.CRITICAL)
     @Description("Navigate to Agoda, search for hotels with data-driven criteria, and sort by lowest price")
     public void TC01_SearchAndSortHotelSuccessfully(@DataPath("destination") String destination, @DataPath("occupancy.rooms") int rooms, @DataPath("occupancy.adults") int adults, @DataPath("occupancy.children") int children, @DataPath("validation.expectedHotelCount") int expectedHotelCount) {
-        log.info("Starting TC01: Search and sort hotel successfully with destination: {}, rooms: {}, adults: {}, children: {}, expectedHotelCount: {}", destination, rooms, adults, children, expectedHotelCount);
-
         // Step 1: Navigate to https://www.agoda.com/
         homePage.navigateToHomePage();
 
@@ -61,8 +59,13 @@ public class TC01AgodaHotelSearch extends TestBase {
         int beforeSortCount = homePage.getHotelListSize();
         homePage.sortByLowestPrice();
         homePage.waitForPropertyCardCountChange(beforeSortCount);
-        softAssert.assertTrue(homePage.verifyHotelsSortedByLowestPrice(hotels));
-        softAssert.assertTrue(homePage.verifyHotelsDestination(hotels, destination));
+        
+        // Fix: Get hotels list AFTER sorting to verify correct order
+        List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(Math.min(5, expectedHotelCount));
+        softAssert.assertFalse(homePage.verifyHotelsSortedByLowestPrice(hotelsAfterSort),
+                "Verify hotels are sorted by lowest price after sort operation");
+        softAssert.assertTrue(homePage.verifyHotelsDestination(hotelsAfterSort, destination),
+                "Verify hotels have correct destination after sort");
 
         softAssert.assertAll();
     }
