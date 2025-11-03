@@ -23,8 +23,7 @@ public class StepAspect {
             Step step = method.getAnnotation(Step.class);
             String message = buildMessage(step, method, joinPoint.getArgs());
 
-            // Debug: confirm aspect is invoked and show step message
-            log.info("StepAspect invoked for: {}. Method: {}", message, method.getName());
+            // log.info("StepAspect invoked for: {}. Method: {}", message, method.getName());
 
             ITestReporter reporter = ReportManager.getReporter();
 

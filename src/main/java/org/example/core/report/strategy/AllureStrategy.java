@@ -51,8 +51,7 @@ public class AllureStrategy implements ReportStrategy {
     @Override
     public void onTestSuccess(ITestResult result) {
         log.debug("Test passed: {}", result.getName());
-        // Allure TestNG listener will handle test case status update
-        // We just need to ensure steps from @AfterMethod can still be added
+        // Allure TestNG listener will handle test case status update and we just need to ensure steps from @AfterMethod can still be added
     }
     @Override
     public void onTestFailure(ITestResult result) {
@@ -67,23 +66,19 @@ public class AllureStrategy implements ReportStrategy {
         } catch (Throwable ignored) {}
 
         captureScreenshotOnFailure(result, "Failure");
-        
-        // Allure TestNG listener will handle test case status update
-        // We just need to ensure steps from @AfterMethod can still be added
-        
-        // ensure any leftover thread marker is cleared after handling a hard failure
+
         try { org.example.core.report.FailureTracker.clearForCurrentThread(); } catch (Throwable ignored) {}
     }
     
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        attachScreenshot("test_skipped_" + result.getName());
-        // Allure TestNG listener will handle test case status update
+        log.debug("Test skipped: {}", result.getName());
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
+        log.debug("Test failed within success percentage: {}", result.getName());
     }
 
     @Override

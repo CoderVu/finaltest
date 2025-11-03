@@ -11,29 +11,53 @@ import org.testng.ITestContext;
 import org.testng.ITestResult;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class JenkinsStrategy implements ReportStrategy {
-    
+
+    // buffer steps per thread/test
+    private static final ThreadLocal<List<String>> STEP_BUFFER = ThreadLocal.withInitial(ArrayList::new);
+
+    private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS");
+
     @Override
     public void onStart(ITestContext context) {
         log.info("Jenkins report: rely on Surefire/JUnit XML at target/surefire-reports/");
     }
-    
+
     @Override
     public void onFinish(ITestContext context) {
         log.info("Jenkins report: test suite finished. Reports available at target/surefire-reports/");
     }
-    
+
     @Override
     public void onTestStart(ITestResult result) {
+        // initialize step buffer for this test
+        List<String> buf = STEP_BUFFER.get();
+        buf.clear();
+        String header = String.format("TEST START: %s (%s)", result.getMethod().getMethodName(),
+                LocalDateTime.now().format(TS_FMT));
+        buf.add(header);
+        log.info(header);
     }
-    
+
     @Override
     public void onTestSuccess(ITestResult result) {
+        String msg = String.format("TEST PASS: %s", result.getMethod().getMethodName());
+        log.info(msg);
+        STEP_BUFFER.get().add(msg);
+        writeStepLog(result);
+        STEP_BUFFER.remove();
     }
-    
+
     @Override
     public void onTestFailure(ITestResult result) {
         try {
@@ -45,38 +69,112 @@ public class JenkinsStrategy implements ReportStrategy {
             }
         } catch (Throwable ignored) {}
 
-        // existing behavior (if any) - currently no default screenshot here
+        String failMsg = String.format("TEST FAIL: %s - %s", result.getMethod().getMethodName(), getErrorMessage(result));
+        log.error(failMsg);
+        STEP_BUFFER.get().add(failMsg);
+
+        // capture screenshot and include path in log
+        try {
+            String screenshot = captureScreenshotToTarget(result);
+            if (screenshot != null) {
+                String s = "SCREENSHOT: " + screenshot;
+                log.error(s);
+                STEP_BUFFER.get().add(s);
+            }
+        } catch (Throwable t) {
+            log.debug("Failed to capture screenshot for JenkinsStrategy.onTestFailure: {}", t.getMessage());
+        }
+
+        writeStepLog(result);
         try { org.example.core.report.FailureTracker.clearForCurrentThread(); } catch (Throwable ignored) {}
+        STEP_BUFFER.remove();
     }
-    
+
     @Override
     public void onTestSkipped(ITestResult result) {
+        String msg = String.format("TEST SKIPPED: %s", result.getMethod().getMethodName());
+        log.info(msg);
+        STEP_BUFFER.get().add(msg);
+        writeStepLog(result);
+        STEP_BUFFER.remove();
     }
-    
+
     @Override
-    public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-    }
-    
+    public void onTestFailedButWithinSuccessPercentage(ITestResult result) { }
+
     @Override
-    public void onTestFailedWithTimeout(ITestResult result) {
-    }
-    
+    public void onTestFailedWithTimeout(ITestResult result) { onTestFailure(result); }
+
     @Override
-    public void onConfigurationSuccess(ITestResult itr) {
-    }
-    
+    public void onConfigurationSuccess(ITestResult itr) { }
+
     @Override
-    public void onConfigurationFailure(ITestResult itr) {
-    }
-    
+    public void onConfigurationFailure(ITestResult itr) { }
+
     @Override
-    public void onConfigurationSkip(ITestResult itr) {
-    }
-    
+    public void onConfigurationSkip(ITestResult itr) { }
+
+    /**
+     * Called by framework when a step fails (ReportStrategy.failStep)
+     * Will record failed step and attempt to capture a screenshot immediately.
+     */
     @Override
     public void failStep(String name) {
         try {
-            // try to capture screenshot and save under target/jenkins-screenshots
+            String entry = "STEP FAIL: " + name;
+            log.error(entry);
+            STEP_BUFFER.get().add(entry);
+
+            // capture screenshot for failure step
+            String screenshot = captureScreenshotToTarget(null);
+            if (screenshot != null) {
+                String s = "STEP SCREENSHOT: " + screenshot;
+                log.error(s);
+                STEP_BUFFER.get().add(s);
+            }
+        } catch (Throwable t) {
+            log.debug("JenkinsStrategy.failStep failed: {}", t.getMessage());
+        }
+    }
+
+    /**
+     * Optional: allow other parts of code to log normal steps to JenkinsStrategy buffer.
+     * Call JenkinsStrategy.logStep("...") from JenkinsTestReporter or similar if desired.
+     */
+    public void logStep(String name) {
+        try {
+            String entry = "STEP: " + name;
+            log.info("STEP: {}", name);
+            STEP_BUFFER.get().add(entry);
+        } catch (Throwable ignored) {}
+    }
+
+    // helper to write buffered steps to a file under target/jenkins-steps/
+    private void writeStepLog(ITestResult result) {
+        try {
+            List<String> buf = STEP_BUFFER.get();
+            if (buf == null || buf.isEmpty()) return;
+
+            String testName = (result != null && result.getMethod() != null)
+                    ? result.getMethod().getMethodName()
+                    : "unknown_test";
+            String ts = LocalDateTime.now().format(TS_FMT);
+            Path dir = new File("target/jenkins-steps").toPath();
+            if (!Files.exists(dir)) Files.createDirectories(dir);
+
+            Path file = dir.resolve(testName + "_" + ts + ".log");
+            Files.write(file, buf, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            log.info("Wrote Jenkins step log: {}", file.toAbsolutePath());
+        } catch (IOException e) {
+            log.warn("Failed to write Jenkins step log: {}", e.getMessage(), e);
+        } catch (Throwable t) {
+            log.debug("Unexpected error writing Jenkins step log: {}", t.getMessage());
+        }
+    }
+
+    // capture screenshot under target/jenkins-screenshots and return absolute path (or null)
+    private String captureScreenshotToTarget(ITestResult result) {
+        try {
             BrowserType browserType = Config.getBrowserType();
             WebDriver driver = null;
             try {
@@ -90,13 +188,21 @@ public class JenkinsStrategy implements ReportStrategy {
                     String fileName = "jenkins_fail_" + System.currentTimeMillis() + ".png";
                     File file = new File(out, fileName);
                     Files.write(file.toPath(), bytes);
-                    log.error("STEP FAILED: {}  (screenshot saved: {})", name, file.getAbsolutePath());
-                    return;
+                    return file.getAbsolutePath();
                 }
             }
-            log.error("STEP FAILED: {}  (no screenshot available)", name);
         } catch (Throwable t) {
-            log.debug("JenkinsStrategy.failStep failed: {}", t.getMessage());
+            log.debug("Failed to capture screenshot in JenkinsStrategy: {}", t.getMessage());
         }
+        return null;
+    }
+
+    private String getErrorMessage(ITestResult result) {
+        if (result == null) return "No result info";
+        Throwable t = result.getThrowable();
+        if (t == null) return "No throwable available";
+        String msg = t.getMessage();
+        if (msg != null && !msg.trim().isEmpty()) return msg;
+        return t.getClass().getName();
     }
 }

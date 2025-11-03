@@ -28,7 +28,6 @@ public class TC01AgodaHotelSearch extends TestBase {
     @Test(description = "TC01: Search and sort hotel successfully", dataProvider = "auto", dataProviderClass = DataProvider.class)
     @DataFile("src/test/resources/data/tc01.json")
     @Severity(SeverityLevel.CRITICAL)
-    @Description("Navigate to Agoda, search for hotels with data-driven criteria, and sort by lowest price")
     public void TC01_SearchAndSortHotelSuccessfully(@DataPath("destination") String destination, @DataPath("occupancy.rooms") int rooms, @DataPath("occupancy.adults") int adults, @DataPath("occupancy.children") int children, @DataPath("validation.expectedHotelCount") int expectedHotelCount) {
         // Step 1: Navigate to https://www.agoda.com/
         homePage.navigateToHomePage();

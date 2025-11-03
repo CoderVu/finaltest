@@ -3,6 +3,8 @@ package org.example.pages;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.control.common.imp.*;
 import org.example.core.control.util.DriverUtils;
+import org.example.core.report.ITestReporter;
+import org.example.core.report.ReportManager;
 import org.example.core.report.annotations.Step;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.By;
@@ -74,6 +76,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Enter destination: {arg0}")
     public void enterDestination(String destination) {
+        reporter.info("Debug log via reporter :Entering destination by text: " + destination);
         // Wait for input to be visible and enabled before interacting (fix Chrome timing issue)
         try {
             destinationSearchInput.waitForVisibility();

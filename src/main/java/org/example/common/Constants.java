@@ -17,6 +17,8 @@ public class Constants {
     public static final String BASE_URL_PROPERTY = "base.url";
     public static final String HEADLESS_PROPERTY = "headless";
     public static final String TIMEOUT_PROPERTY = "timeout";
+    public static final String REPORT_TYPE_PROPERTY = "reportType";
+    public static final String DEFAULT_REPORT_TYPE = "allure";
     public static final String PAGE_LOAD_TIMEOUT_PROPERTY = "page.load.timeout";
     public static final String ENV_FILE_PROPERTY = "env.file";
     public static final String REMOTE_URL_PROPERTY = "remote.url";
@@ -41,6 +43,7 @@ public class Constants {
     private static volatile boolean initialized = false;
     private static volatile String baseUrl;
     private static volatile List<String> browsers;
+    private static volatile List<String> reportTypes;
     private static volatile boolean remoteEnabled;
     private static volatile boolean gridEnabled;
     private static volatile String remoteUrl;
@@ -88,6 +91,13 @@ public class Constants {
                 browsers = parseBrowsers(getEnv(BROWSERS_PROPERTY)
                         .orElseGet(() -> getEnv(BROWSER_PROPERTY).orElse(DEFAULT_BROWSER)));
 
+                reportTypes = getEnv(REPORT_TYPE_PROPERTY)
+                        .map(s -> Arrays.stream(s.split("\\s*,\\s*"))
+                                .map(String::trim)
+                                .filter(str -> !str.isEmpty())
+                                .collect(Collectors.toList()))
+                        .orElseGet(() -> Arrays.asList(DEFAULT_REPORT_TYPE));
+
                 remoteEnabled = parseBoolean(
                         getEnv(IS_REMOTE_PROPERTY)
                                 .or(() -> getEnv(REMOTE_ENABLED_PROPERTY)),
@@ -107,14 +117,15 @@ public class Constants {
                 initialized = true;
 
                 log.info("""
-                        ✅ Environment loaded successfully:
+                        Environment loaded successfully:
                           • Base URL: {}
                           • Browsers: {}
+                          . Report Types: {}
                           • Remote Enabled: {}
                           • Grid Enabled: {}
                           • Remote URL: {}
                         """,
-                        baseUrl, browsers, remoteEnabled, gridEnabled, remoteUrl
+                        baseUrl, browsers, reportTypes, remoteEnabled, gridEnabled, remoteUrl
                 );
 
             } catch (Exception e) {
@@ -179,4 +190,10 @@ public class Constants {
             log.debug("TestNGXmlGenerator error details", e);
         }
     }
+
+    public static List<String> getReportTypes() {
+        ensureInitialized();
+        return reportTypes;
+    }
+
 }

@@ -9,39 +9,33 @@ title Selenium/TestNG Automation Framework - Class Diagram
 
 package "Tests" {
   class TestBase {
-    + setUpClass()
+    + setUpClass(browser)
     + setUpMethod()
     + tearDownMethod(result)
     + tearDownClass()
-    + getDriver() : WebDriver
-    + getTestEnv() : String
   }
 
   class TC01AgodaHotelSearch {
-    + testHotelSearch()
-    + testSortByPrice()
+    + TC01_SearchAndSortHotelSuccessfully(destination, rooms, adults, children, expectedHotelCount)
   }
 }
 
 package "Pages" {
   class BasePage {
-    - reporter : ITestReporter
+    # reporter : ITestReporter
     # findElement(By) : WebElement
     # findElements(By) : List<WebElement>
     # waitForElementVisible(Element)
     # clickElement(Element)
     # enterText(Element, String)
-    + open(url)
-    + isLoaded() : boolean
   }
 
   class AgodaHomePage {
     + navigateToHomePage()
     + enterDestination(destination)
     + selectDestinationFromSuggestions(name)
-    + selectDates(checkIn, checkOut)
     + selectDatesFromNextFriday()
-    + selectOccupancy(rooms, adults, children)
+    + SelectOccupancy(rooms, adults, children)
     + clickSearchButton()
     + switchToSearchResultsTab()
     + waitForSearchResultsToLoad()
@@ -56,19 +50,6 @@ package "Pages" {
 }
 
 package "Controls" {
-  interface IBaseControl {
-    + click()
-    + isVisible() : boolean
-    + getText() : String
-  }
-  interface IClickable {
-    + click()
-  }
-  interface IEditable {
-    + setText(text: String)
-    + clear()
-  }
-
   class BaseControl {
     - locator : String
     - byLocator : By
@@ -76,91 +57,21 @@ package "Controls" {
     - parent : BaseControl
     + getText() : String
     + enterText(text: String)
-    + getChildElement (xpath: String) : WebElement
-    + getChildElements (xpath: String) : List<WebElement>
+    + getChildElement(xpath: String) : WebElement
+    + getChildElements(xpath: String) : List<WebElement>
     + isVisible() : boolean
     + isEnabled() : boolean
-    + moveMouseByOffset (x, y)
-    + scrollToView ()
+    + moveMouseByOffset(x, y)
+    + scrollToView()
     + waitForVisibility([timeout])
     + waitForElementClickable([timeout])
-    + scrollToView() ...
-
   }
 
-  interface IElement {
-    + getAttribute(name: String) : String
-    + waitForVisibility([timeout])
-  }
   class Element {
     + getText() : String
     + click()
     + waitForElementClickable([timeout])
     + getChildElements(xpath: String) : List<WebElement>
-  }
-  interface IButton {
-    + click()
-  }
-  class Button {
-    + click()
-    + isEnabled() : boolean
-  }
-  interface ITextBox {
-    + setText(text: String)
-    + clear()
-  }
-  class TextBox {
-    + setText(text: String)
-    + clear()
-    + getText() : String
-  }
-  interface IComboBox {
-    + selectByValue(value: String)
-  }
-  class ComboBox {
-    + selectByValue(value: String)
-  }
-  interface ICheckBox {
-    + check()
-    + uncheck()
-    + isChecked() : boolean
-  }
-  class CheckBox {
-    + check()
-    + uncheck()
-    + isChecked() : boolean
-  }
-  interface IRadioButton {
-    + select()
-    + isSelected() : boolean
-  }
-  class RadioButton {
-    + select()
-    + isSelected() : boolean
-  }
-  interface ILabel {
-    + getText() : String
-  }
-  class Label {
-    + getText() : String
-  }
-  interface IImage {
-    + getSrc() : String
-  }
-  class Image {
-    + getSrc() : String
-  }
-  interface IFrame {
-    + switchTo()
-  }
-  class Frame {
-    + switchTo()
-  }
-  interface ITable {
-    + getRows() : List<WebElement>
-  }
-  class Table {
-    + getRows() : List<WebElement>
   }
 
   package "Utils (control/util)" {
@@ -191,113 +102,248 @@ package "Models" {
     + name : String
     + rating : String
     + location : String
-    + distanceToCenter : String
+    + price : String
     + badges : String[]
     + amenities : String[]
-    + price : String
-    + builder() : HotelBuilder
     + getName() : String
     + getPrice() : String
+    + getLocation() : String
   }
 }
 
 package "Driver & Config" {
-  class DriverFactory {
-    + getDriver(browserType, platformType) : WebDriver
-    + quitDriver()
-  }
   abstract class DriverManager {
+    # driver : WebDriver
+    # browserType : BrowserType
+    + getInstance(browserType) : DriverManager
     + getDriver() : WebDriver
-    + quitDriver()
-  }
-  class ChromeDriverManager {
-
-  }
-  class FirefoxDriverManager
-  class EdgeDriverManager
-
-  class BrowserConfig {
+    + initializeDriver(browserType)
+    + quitWebDriver(browserType)
     + createWebDriver() : WebDriver
-    + quitWebDriver()
+    # initLocalDriver()
+    # initRemoteDriver()
   }
-  class ExecutionConfig {
-    + shouldSkipBrowser() : boolean
-    + resolveBaseUrlForSelenium() : String
-  }
-  class EnvironmentConfig {
-    + getEnvName() : String
-    + getBaseUrl() : String
-    + isRemoteExecution() : boolean
-    + getRemoteUrl() : String
-  }
-class GridConfig {
-  - WebDriver createLocalDriver (browserType) : WebDriver
-  - WebDriver createRemoteDriver (browserType) : WebDriver
-  - setupCapabilities(browserType) : DesiredCapabilities
-  - setupChromeOptions() : ChromeOptions
-  - setupFirefoxOptions() : FirefoxOptions
-  - setupEdgeOptions() : EdgeOptions
-}
 
-  class InteractiveConfigHelper {
-    - confirmEnvironmentSettings() : void
-    - confirmExecutionMode() : void
-    - confirmBrowserSettings() : void
-    - confirmHeadlessMode() : void
-    - confirmClearReports() : void
+  class Chrome {
+    # initLocalDriver()
+    + initDriver()
+  }
+
+  class Firefox {
+    # initLocalDriver()
+    + initDriver()
+  }
+
+  class Edge {
+    # initLocalDriver()
+    + initDriver()
+  }
+
+  class Config {
+    + getBrowserType() : BrowserType
+    + getBaseUrl() : String
+    + isRemoteEnabled() : boolean
+    + isGridEnabled() : boolean
+    + shouldSkipBrowser() : boolean
+    + setThreadBrowser(browser: String)
+    + getEnvFile() : String
+  }
+
+  enum BrowserType {
+    CHROME
+    FIREFOX
+    EDGE
   }
 
   enum PlatformType {
     PC_WEB
     MOBILE_WEB
   }
-  enum BrowserType {
-    CHROME
-    FIREFOX
-    EDGE
+
+  enum PlatformOS {
+    WINDOWS
+    LINUX
+    MACOS
   }
 }
 
 package "Reporting" {
-  interface ITestReporter {
-    + logStep(description: String)
-    + info(msg: String)
-    + error(msg: String)
-    + attach(screenshot)
-  }
-  class ReportFactory {
-    + get() : ITestReporter
-  }
-  interface ReportStrategy
-  class ReportStrategySelector {
-    + selectStrategy(type: ReportType) : ReportStrategy
-  }
-  enum ReportType {
-  ALLURE
-  EXTENT
-  JENKINS
-  }
-  class AllureStrategy
-  class ExtentStrategy
-  class JenkinsStrategy
-  class AllureTestReporter
-  class ExtentTestReporter
-  class JenkinsTestReporter
-  class Step <<annotation>>
-  class StepAspect
-  class ReportHook
-  class ConsoleConfig {
-  }
-  class SoftAssertConfig {
+  class ReportManager {
+    - reporterInstance : ITestReporter
+    - strategyInstance : ReportStrategy
+    + getReporter() : ITestReporter
+    + selectStrategy() : ReportStrategy
     + reset()
   }
+
+  interface ITestReporter {
+    + logStep(message: String)
+    + info(message: String)
+    + logFail(message: String, error: Throwable)
+    + attachScreenshot(name: String)
+    + childStep(name: String, runnable: Runnable)
+    + childStep(name: String, supplier: Supplier<T>) : T
+  }
+
+  interface ReportStrategy {
+    + onStart(context: ITestContext)
+    + onFinish(context: ITestContext)
+    + onTestStart(result: ITestResult)
+    + onTestSuccess(result: ITestResult)
+    + onTestFailure(result: ITestResult)
+    + onTestSkipped(result: ITestResult)
+    + onConfigurationSuccess(result: ITestResult)
+    + onConfigurationFailure(result: ITestResult)
+    + failStep(name: String)
+  }
+
+  class ReportHook {
+    - delegate : ReportStrategy
+    + onTestStart(result)
+    + onTestSuccess(result)
+    + onTestFailure(result)
+    + onTestSkipped(result)
+    + onConfigurationSuccess(result)
+    + onConfigurationFailure(result)
+  }
+
+  class AllureStrategy {
+    + onStart(context)
+    + onTestStart(result)
+    + onTestSuccess(result)
+    + onTestFailure(result)
+    + onConfigurationSuccess(result)
+    + failStep(name)
+    - captureScreenshotOnFailure(result, type)
+  }
+
+  class ExtentStrategy {
+    + onStart(context)
+    + onTestStart(result)
+    + onTestSuccess(result)
+    + onTestFailure(result)
+    + onConfigurationSuccess(result)
+    - getTestForConfiguration(result) : ExtentTest
+  }
+
+  class JenkinsStrategy {
+    + onStart(context)
+    + onTestStart(result)
+    + onTestSuccess(result)
+    + onTestFailure(result)
+    + failStep(name)
+  }
+
+  class AllureTestReporter {
+    + logStep(message)
+    + info(message)
+    + logFail(message, error)
+    + attachScreenshot(name)
+    + childStep(name, runnable)
+    + childStep(name, supplier) : T
+  }
+
+  class ExtentTestReporter {
+    + logStep(message)
+    + info(message)
+    + logFail(message, error)
+    + attachScreenshot(name)
+    + childStep(name, runnable)
+    + childStep(name, supplier) : T
+    - getCurrentTest() : ExtentTest
+    + setTest(test: ExtentTest)
+    + clearTest()
+  }
+
+  class JenkinsTestReporter {
+    + logStep(message)
+    + info(message)
+    + logFail(message, error)
+    + attachScreenshot(name)
+    + childStep(name, runnable)
+    + childStep(name, supplier) : T
+  }
+
+  class Step <<annotation>> {
+    + value() : String
+  }
+
+  class StepAspect {
+    + aroundStep(joinPoint) : Object
+    - buildMessage(step, method, args) : String
+  }
+
+  class ConsoleConfig {
+    + startTerminalLog()
+    + stopTerminalLog()
+  }
+
+  class SoftAssertConfig {
+    + reset()
+    + assertTrue(condition, message)
+    + assertAll()
+  }
+
+  class FailureTracker {
+    + isHandledForCurrentThread() : boolean
+    + markHandledForCurrentThread()
+    + clearForCurrentThread()
+  }
+
+  enum ReportType {
+    ALLURE
+    EXTENT
+    JENKINS
+  }
+
+  note right of AllureStrategy
+    Handles Allure report lifecycle.
+    Relies on AllureTestNg listener
+    (external) to create test cases.
+  end note
+
+  note right of ExtentStrategy
+  Handles Extent report lifecycle.
+  Relies on ExtentTestNg listener
+  (external) to create test cases.
+  end note
+
+   note right of JenkinsStrategy
+    Handles Jenkins report lifecycle.
+    Integrates with Jenkins plugins
+    for reporting.
+   end note
+
+  note right of StepAspect
+    AspectJ AOP aspect that intercepts
+    @Step annotations and creates steps
+    via ITestReporter.childStep()
+  end note
 }
 
 package "Utils (global)" {
-  class Constants
-  class DateUtils
-  class FormatUtils
-  class JsonHelper
+  class Constants {
+    + getBrowsers() : List<String>
+    + getBaseUrl() : String
+    + loadEnvironment(envFile: String)
+  }
+
+  class DateUtils {
+    + getNextFriday() : LocalDate
+    + getDateAfterDays(date: LocalDate, days: int) : LocalDate
+  }
+
+  class FormatUtils {
+    + formatPrice(price: String) : double
+    + parseDouble(value: String) : double
+  }
+
+  class JsonHelper {
+    + getJsonObject(filePath: String) : JsonObject
+    + getString(data: JsonObject, path: String) : String
+    + getInt(data: JsonObject, path: String) : int
+    + getListData(data: JsonObject, path: String) : List<JsonObject>
+  }
 }
 
 package "Data Provider" {
@@ -309,101 +355,128 @@ package "Data Provider" {
     + getBoolean(data: JsonObject, path: String, default)
     + getObject(data: JsonObject, path: String) : JsonObject
   }
+
   class DataFile <<annotation>> {
     + value() : String
   }
+
   class DataPath <<annotation>> {
     + value() : String
   }
+}
+
+package "Browser Config" {
+  class TestNGXmlGenerator {
+    + generate(envFile: String)
+    + generateFromBrowsers(browsers: List<String>)
+    - generateXmlContent(browsers: List<String>) : String
+  }
+}
+
+' External Dependencies (shown for clarity)
+class AllureTestNg <<external>> {
+  + onTestStart(result)
+  + onTestSuccess(result)
+  + onTestFailure(result)
+}
+
+class ExtentTestNg <<external>> {
+  + onTestStart(result)
+  + onTestSuccess(result)
+  + onTestFailure(result)
+}
+
+class JenkinsTestNg <<external>> {
+  + onTestStart(result)
+  + onTestSuccess(result)
+  + onTestFailure(result)
 }
 
 ' Relationships
 TestBase <|.. TC01AgodaHotelSearch
 BasePage <|-- AgodaHomePage
 
-IBaseControl <|.. BaseControl
-IClickable <|.. BaseControl
-IEditable <|.. BaseControl
-
-IElement <|.. Element
 BaseControl <|-- Element
-IButton <|.. Button
-BaseControl <|-- Button
-ITextBox <|.. TextBox
-BaseControl <|-- TextBox
-IComboBox <|.. ComboBox
-BaseControl <|-- ComboBox
-ICheckBox <|.. CheckBox
-BaseControl <|-- CheckBox
-IRadioButton <|.. RadioButton
-BaseControl <|-- RadioButton
-ILabel <|.. Label
-BaseControl <|-- Label
-IImage <|.. Image
-BaseControl <|-- Image
-IFrame <|.. Frame
-BaseControl <|-- Frame
-ITable <|.. Table
-BaseControl <|-- Table
 
 AgodaHomePage ..> Element : uses
-AgodaHomePage ..> Button : uses
-AgodaHomePage ..> TextBox : uses
 AgodaHomePage ..> DriverUtils : uses
-AgodaHomePage ..> Hotel
+AgodaHomePage ..> Hotel : returns
+AgodaHomePage ..> Step : <<@Step annotations>>
 
 BasePage ..> DriverUtils : uses
+BasePage ..> ITestReporter : uses
 BaseControl ..> DriverUtils : uses
 
-DriverManager <|-- ChromeDriverManager
-DriverManager <|-- FirefoxDriverManager
-DriverManager <|-- EdgeDriverManager
-BrowserConfig ..> DriverFactory
-BrowserConfig ..> BrowserType
-TestBase ..> BrowserConfig
-TestBase ..> ExecutionConfig
-ExecutionConfig ..> EnvironmentConfig
-ExecutionConfig ..> GridConfig
-ExecutionConfig ..> PlatformType
-TestBase ..> ConsoleConfig
-TestBase ..> SoftAssertConfig
+DriverManager <|-- Chrome
+DriverManager <|-- Firefox
+DriverManager <|-- Edge
 
-ReportFactory ..> ITestReporter
-ReportFactory ..> ReportStrategySelector
-ReportStrategySelector ..> ReportStrategy
-ReportStrategy <|-- AllureStrategy
-ReportStrategy <|-- ExtentStrategy
-ReportStrategy <|-- JenkinsStrategy
+TestBase ..> DriverManager : uses
+TestBase ..> Config : uses
+TestBase ..> ConsoleConfig : uses
+TestBase ..> SoftAssertConfig : uses
+TestBase ..> BrowserType : uses
+
+Config ..> BrowserType : uses
+Config ..> ReportType : uses
+
+' Reporting relationships
+ReportManager ..> ITestReporter : creates
+ReportManager ..> ReportStrategy : creates
+ReportManager ..> ReportType : uses
+
+ReportStrategy <|.. AllureStrategy
+ReportStrategy <|.. ExtentStrategy
+ReportStrategy <|.. JenkinsStrategy
+
 ITestReporter <|.. AllureTestReporter
 ITestReporter <|.. ExtentTestReporter
 ITestReporter <|.. JenkinsTestReporter
-BasePage ..> ITestReporter
-StepAspect ..> Step
 
-' New relationships to Utils (global)
-AgodaHomePage ..> Constants
-AgodaHomePage ..> DateUtils
-AgodaHomePage ..> FormatUtils
-BasePage ..> Constants
-TC01AgodaHotelSearch ..> Constants
-TC01AgodaHotelSearch ..> DateUtils
-TestBase ..> Constants
+ReportHook ..> ReportManager : uses
+ReportHook ..> ReportStrategy : delegates to
+
+AllureStrategy ..> AllureTestReporter : uses (via ReportManager)
+ExtentStrategy ..> ExtentTestReporter : uses (via ReportManager)
+JenkinsStrategy ..> JenkinsTestReporter : uses (via ReportManager)
+
+StepAspect ..> Step : intercepts
+StepAspect ..> ITestReporter : uses (via ReportManager)
+StepAspect ..> ReportManager : uses
+
+BasePage ..> ReportManager : uses
+AgodaHomePage ..> Step : <<@Step annotations>>
+
+AllureStrategy ..> AllureTestNg : relies on (external listener)
+AllureTestNg ..> AllureStrategy : complements
+ExtentStrategy ..> ExtentTestNg : relies on (external listener)
+JenkinsStrategy ..> JenkinsTestNg : relies on (external listener)
+
+
 
 ' Data-driven relationships
 TC01AgodaHotelSearch ..> DataProvider : <<dataProvider=auto>>
 TC01AgodaHotelSearch ..> DataFile : <<annotation>>
 TC01AgodaHotelSearch ..> DataPath : <<annotation on parameters>>
-DataProvider ..> JsonHelper
+DataProvider ..> JsonHelper : uses
 
-'note right of Controls::DriverUtils
-'Utility for actions, waits & switching, tightly coupled
-'with control layer (org.example.core.control.util)
-'end note
-'
-'note right of AgodaHomePage
-'Contains search flows, date/occupancy selection,
-'and list extraction logic for Hotel.
-'end note
+' Utils relationships
+AgodaHomePage ..> Constants : uses
+AgodaHomePage ..> DateUtils : uses
+AgodaHomePage ..> FormatUtils : uses
+TestBase ..> Constants : uses
+DataProvider ..> JsonHelper : uses
+
+' Browser Config
+TestNGXmlGenerator ..> Constants : uses
+TestNGXmlGenerator ..> Config : uses
+
+note right of Reporting
+  Reporting Architecture:
+  1. ReportHook (TestNG listener) delegates to ReportStrategy
+  2. AllureTestNg (external) creates Allure test cases
+  3. StepAspect intercepts @Step and uses ITestReporter
+  4. ReportManager selects strategy/reporter based on ReportType
+end note
 
 @enduml
-
