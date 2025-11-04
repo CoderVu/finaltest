@@ -1,52 +1,24 @@
 package org.example.core.driver;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
-import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
-import org.openqa.selenium.HasCapabilities;
+import org.example.enums.BrowserType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Slf4j
-public class Chrome extends DriverManager {
-    @Override
-    public void initDriver() {
-        initDriverInternal();
+public class Chrome extends AbstractDriverManager {
+
+    public Chrome() {
+        super(BrowserType.CHROME);
     }
 
     @Override
-    protected void initLocalDriver() {
-        // WebDriverManager setup is handled centrally in DriverManager.setupDriverBinary() when use.wdm=true.
-        ChromeOptions options = buildChromeOptions();
-        driver = new ChromeDriver(options);
-
-        // Log actual browser version after driver initialization
-        try {
-            if (driver instanceof HasCapabilities) {
-                String actualVersion = ((HasCapabilities) driver).getCapabilities().getBrowserVersion();
-                if (actualVersion != null) {
-                    log.info("✅ Chrome driver initialized with browser version: {}", sanitizeVersion(actualVersion));
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Could not get browser version from driver: {}", e.getMessage());
-        }
-    }
-
-    @Override
-    protected WebDriver createRemoteDriver(URL url, String browserVersion) {
-        ChromeOptions options = buildRemoteChromeOptions(browserVersion);
-        return new RemoteWebDriver(url, options);
-    }
-
-    private ChromeOptions buildChromeOptions() {
+    public void initLocalDriver() {
         ChromeOptions options = new ChromeOptions();
         options.setCapability("acceptInsecureCerts", true);
         options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
@@ -63,35 +35,31 @@ public class Chrome extends DriverManager {
             options.addArguments("--headless=new", "--disable-gpu");
         }
 
-        return options;
+        driver = new ChromeDriver(options);
     }
 
-    private ChromeOptions buildRemoteChromeOptions(String browserVersion) {
+    @Override
+    public WebDriver createRemoteDriver(URL url, String version) {
         ChromeOptions options = new ChromeOptions();
         options.setCapability("browserName", "chrome");
-        if (browserVersion != null) {
-            options.setCapability("browserVersion", browserVersion);
-        }
-        options.setCapability("platformName", resolvePlatformName());
         options.setCapability("acceptInsecureCerts", true);
 
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
 
-        return options;
+        if (version != null) {
+            options.setBrowserVersion(sanitizeVersion(version));
+        }
+
+        driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
+        return driver;
     }
 
     private String sanitizeVersion(String version) {
-        if (version == null) {
-            return null;
-        }
-        Pattern p = Pattern.compile("(\\d+(?:\\.\\d+)+)");
-        Matcher m = p.matcher(version);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return version.trim();
+        if (version == null) return null;
+        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)+)");
+        Matcher matcher = pattern.matcher(version);
+        return matcher.find() ? matcher.group(1) : version.trim();
     }
 }
-

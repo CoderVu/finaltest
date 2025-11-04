@@ -1,7 +1,8 @@
 package org.example.core.report.strategy;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.driver.DriverManager;
+import org.example.core.driver.AbstractDriverManager;
+import org.example.core.driver.DriverFactory;
 import org.example.enums.BrowserType;
 import org.example.configure.Config;
 import org.openqa.selenium.OutputType;
@@ -19,6 +20,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.example.core.control.util.DriverUtils.getDriver;
 
 @Slf4j
 public class JenkinsStrategy implements ReportStrategy {
@@ -73,18 +76,6 @@ public class JenkinsStrategy implements ReportStrategy {
         log.error(failMsg);
         STEP_BUFFER.get().add(failMsg);
 
-        // capture screenshot and include path in log
-        try {
-            String screenshot = captureScreenshotToTarget(result);
-            if (screenshot != null) {
-                String s = "SCREENSHOT: " + screenshot;
-                log.error(s);
-                STEP_BUFFER.get().add(s);
-            }
-        } catch (Throwable t) {
-            log.debug("Failed to capture screenshot for JenkinsStrategy.onTestFailure: {}", t.getMessage());
-        }
-
         writeStepLog(result);
         try { org.example.core.report.FailureTracker.clearForCurrentThread(); } catch (Throwable ignored) {}
         STEP_BUFFER.remove();
@@ -124,14 +115,6 @@ public class JenkinsStrategy implements ReportStrategy {
             String entry = "STEP FAIL: " + name;
             log.error(entry);
             STEP_BUFFER.get().add(entry);
-
-            // capture screenshot for failure step
-            String screenshot = captureScreenshotToTarget(null);
-            if (screenshot != null) {
-                String s = "STEP SCREENSHOT: " + screenshot;
-                log.error(s);
-                STEP_BUFFER.get().add(s);
-            }
         } catch (Throwable t) {
             log.debug("JenkinsStrategy.failStep failed: {}", t.getMessage());
         }
@@ -170,31 +153,6 @@ public class JenkinsStrategy implements ReportStrategy {
         } catch (Throwable t) {
             log.debug("Unexpected error writing Jenkins step log: {}", t.getMessage());
         }
-    }
-
-    // capture screenshot under target/jenkins-screenshots and return absolute path (or null)
-    private String captureScreenshotToTarget(ITestResult result) {
-        try {
-            BrowserType browserType = Config.getBrowserType();
-            WebDriver driver = null;
-            try {
-                driver = DriverManager.getInstance(browserType).getDriver();
-            } catch (Throwable ignored) {}
-            if (driver != null && driver instanceof TakesScreenshot) {
-                byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                if (bytes != null && bytes.length > 0) {
-                    File out = new File("target/jenkins-screenshots");
-                    if (!out.exists()) out.mkdirs();
-                    String fileName = "jenkins_fail_" + System.currentTimeMillis() + ".png";
-                    File file = new File(out, fileName);
-                    Files.write(file.toPath(), bytes);
-                    return file.getAbsolutePath();
-                }
-            }
-        } catch (Throwable t) {
-            log.debug("Failed to capture screenshot in JenkinsStrategy: {}", t.getMessage());
-        }
-        return null;
     }
 
     private String getErrorMessage(ITestResult result) {

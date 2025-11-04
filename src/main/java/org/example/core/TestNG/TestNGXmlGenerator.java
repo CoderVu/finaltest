@@ -1,10 +1,8 @@
-package org.example.core.browser;
+package org.example.core.TestNG;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.configure.Config;
-import org.example.core.report.ReportManager;
-import org.example.enums.ReportType;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -17,7 +15,6 @@ public class TestNGXmlGenerator {
 
     private static final String TESTNG_XML_PATH = "src/test/resources/testng.xml";
     private static final String TEST_CLASS = "testCase.TC01AgodaHotelSearch";
-
 
     /**
      * Generate testng.xml từ browsers list (internal use - called from Constants)

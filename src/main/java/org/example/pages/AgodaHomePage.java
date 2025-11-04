@@ -27,9 +27,9 @@ public class AgodaHomePage extends BasePage {
     protected TextBox destinationSearchInput = new TextBox("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
 
     // Elements
-    protected Element autocompletePanel = new Element("//div[@data-selenium='autocompletePanel']");
+    protected Element autocompletePanel = new Element("//div[@data-selenium='aautocompletePanel']");
     protected Element checkInBox = new Element("//div[@data-element-name='check-in-box']");
-    protected Element checkOutBox = new Element("//div[@data-element-name='check-out-box']");
+    protected Element checkOutBox = new Element("//div[@data-element-name='ccheck-out-box']");
     protected Element calendarContainer = new Element("//div[@id='DatePicker__AccessibleV2']");
     protected Element nextMonthButton = new Element("//button[@data-selenium='calendar-next-month-button']");
     protected Element occupancyBox = new Element("//div[@data-element-name='occupancy-box']");
@@ -69,6 +69,7 @@ public class AgodaHomePage extends BasePage {
     public void navigateToHomePage() {
         String current = getCurrentUrl();
         String base = Constants.getBaseUrl();
+        reporter.logStep("Navigating to Agoda home page bang log report khong phai anonymous");
         if (current == null || !current.startsWith(base)) {
             DriverUtils.navigateTo(base);
         }

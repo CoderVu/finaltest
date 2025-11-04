@@ -1,20 +1,10 @@
 package org.example.core.report;
 
-import io.qameta.allure.Allure;
-import io.qameta.allure.model.Status;
-import io.qameta.allure.model.StepResult;
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.control.util.DriverUtils;
-import org.example.core.report.strategy.AllureStrategy;
 import org.example.core.report.strategy.ReportStrategy;
-import org.example.core.report.ReportManager;
-import org.example.core.driver.DriverManager;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.testng.asserts.IAssert;
 import org.testng.asserts.SoftAssert;
-import java.io.ByteArrayInputStream;
-import java.util.UUID;
+
 import static org.example.utils.DateUtils.getCurrentDate;
 
 
@@ -83,6 +73,8 @@ public class SoftAssertConfig extends SoftAssert {
             if (reporter != null) {
                 try {
                     reporter.logFail(stepName, ex);
+                    // request reporters to capture screenshot for this soft-assert failure
+                    try { reporter.attachScreenshot("softassert_" + System.currentTimeMillis() + ".png"); } catch (Throwable tt) { log.debug("Reporter.attachScreenshot failed: {}", tt.getMessage()); }
                 } catch (Throwable t) {
                     log.debug("Reporter.logFail failed: {}", t.getMessage());
                 }

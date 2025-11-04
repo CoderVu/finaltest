@@ -180,7 +180,7 @@ public class Constants {
         try {
             // Sử dụng browsers đã load, không load lại environment (tránh vòng lặp)
             if (browsers != null && !browsers.isEmpty()) {
-                org.example.core.browser.TestNGXmlGenerator.generateFromBrowsers(browsers);
+                org.example.core.TestNG.TestNGXmlGenerator.generateFromBrowsers(browsers);
             } else {
                 log.warn("No browsers to generate testng.xml");
             }

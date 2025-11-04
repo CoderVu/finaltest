@@ -1,7 +1,7 @@
 package org.example.core.control.util;
 
 import org.example.configure.Config;
-import org.example.core.driver.DriverManager;
+import org.example.core.driver.DriverFactory;
 import org.example.enums.BrowserType;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -31,7 +31,7 @@ public final class DriverUtils {
 
     public static WebDriver getWebDriver() {
         BrowserType browserType = Config.getBrowserType();
-        return DriverManager.getInstance(browserType).getDriver();
+        return DriverFactory.getDriverManager(browserType).getDriver();
     }
 
     public static WebDriver getDriver() {

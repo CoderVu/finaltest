@@ -156,7 +156,7 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>org.example.core.browser.TestNGXmlGenerator</mainClass>
+                            <mainClass>org.example.core.TestNG.TestNGXmlGenerator</mainClass>
                             <arguments>
                                 <argument>${env.file:dev-env.properties}</argument>
                             </arguments>

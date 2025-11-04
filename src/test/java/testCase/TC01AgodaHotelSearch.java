@@ -18,7 +18,6 @@ import io.qameta.allure.Story;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Epic("Hotel Booking")
 @Story("Hotel Search and Sort")
 public class TC01AgodaHotelSearch extends TestBase {
 

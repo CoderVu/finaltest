@@ -4,7 +4,8 @@ import com.aventstack.extentreports.*;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.driver.DriverManager;
+import org.example.core.driver.AbstractDriverManager;
+import org.example.core.driver.DriverFactory;
 import org.example.core.report.impl.ExtentTestReporter;
 import org.example.enums.BrowserType;
 import org.example.configure.Config;
@@ -12,11 +13,15 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.io.FileHandler;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
+import org.example.core.report.ReportManager;
+import org.example.core.report.ITestReporter;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.example.core.control.util.DriverUtils.getDriver;
 
 @Slf4j
 public class ExtentStrategy implements ReportStrategy {
@@ -25,7 +30,11 @@ public class ExtentStrategy implements ReportStrategy {
     private static final Map<String, ExtentTest> NAME_TO_TEST = new ConcurrentHashMap<>();
 
     private static volatile boolean INITIALIZED = false;
-    private static String REPORT_DIR = null;
+    private static volatile String REPORT_DIR = null;
+
+    public static String getReportDir() {
+        return REPORT_DIR;
+    }
 
     @Override
     public void onStart(ITestContext context) {
@@ -33,7 +42,6 @@ public class ExtentStrategy implements ReportStrategy {
         synchronized (ExtentStrategy.class) {
             if (INITIALIZED) return;
 
-            // Tạo thư mục chứa report và screenshot
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             REPORT_DIR = "target/extent-report/" + timestamp;
             File reportDir = new File(REPORT_DIR);
@@ -45,7 +53,7 @@ public class ExtentStrategy implements ReportStrategy {
 
             // Use timestamp in the HTML report filename so each run has a unique report file
             File htmlReport = new File(REPORT_DIR, "index_" + timestamp + ".html");
-            ExtentSparkReporter spark = new ExtentSparkReporter(htmlReport);
+            ExtentSparkReporter spark = new ExtentSparkReporter(htmlReport.getAbsolutePath());
 
             try {
                 String suiteName = (context != null && context.getSuite() != null)
@@ -60,9 +68,9 @@ public class ExtentStrategy implements ReportStrategy {
                 EXTENT.setSystemInfo("Suite", suiteName);
                 EXTENT.setSystemInfo("Environment", Config.getEnvFile());
                 EXTENT.setSystemInfo("Browser", Config.getBrowserType().name());
-                log.info("✅ ExtentReports initialized at {}", htmlReport.getAbsolutePath());
+                log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
             } catch (Throwable t) {
-                log.warn("⚠️ Failed to initialize ExtentSparkReporter: {}", t.getMessage(), t);
+                log.warn("Failed to initialize ExtentSparkReporter: {}", t.getMessage(), t);
             } finally {
                 INITIALIZED = true;
             }
@@ -73,7 +81,7 @@ public class ExtentStrategy implements ReportStrategy {
     public void onFinish(ITestContext context) {
         try {
             EXTENT.flush();
-            log.info("✅ Extent report generated at {}", REPORT_DIR);
+            log.info("Extent report generated at {}", REPORT_DIR);
         } catch (Throwable t) {
             log.warn("Extent flush failed: {}", t.getMessage());
         }
@@ -91,7 +99,7 @@ public class ExtentStrategy implements ReportStrategy {
 
     @Override
     public void onTestSuccess(ITestResult result) {
-        getTest(result).ifPresent(t -> t.log(Status.PASS, "✅ Test Passed"));
+        getTest(result).ifPresent(t -> t.log(Status.PASS, "Test Passed"));
     }
 
     @Override
@@ -99,38 +107,40 @@ public class ExtentStrategy implements ReportStrategy {
         if (isSoftAssertHandled(result)) return;
 
         Throwable error = result.getThrowable();
-        String message = (error == null) ? "❌ Test Failed" : error.getMessage();
-        String screenshot = attachScreenshot();
+        String message = (error == null) ? "Test Failed" : error.getMessage();
 
-        getTest(result).ifPresent(t -> {
-            try {
-                if (screenshot != null)
-                    t.fail(message, MediaEntityBuilder.createScreenCaptureFromPath(screenshot).build());
-                else
-                    t.fail(message);
-            } catch (Exception e) {
-                t.log(Status.FAIL, message);
-            }
-        });
+        // Delegate logging + screenshot capture to reporter implementations
+        ITestReporter reporter = ReportManager.getReporter();
+        try {
+            reporter.logFail(message, error);
+            reporter.attachScreenshot("failure_" + System.currentTimeMillis() + ".png");
+        } catch (Throwable t) {
+            log.warn("Reporter handling of failure failed: {}", t.getMessage());
+        }
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        String screenshot = attachScreenshot();
-        getTest(result).ifPresent(t -> {
-            try {
-                if (screenshot != null)
-                    t.skip("⏭️ Skipped", MediaEntityBuilder.createScreenCaptureFromPath(screenshot).build());
-                else
-                    t.skip("⏭️ Skipped");
-            } catch (Exception e) {
-                t.log(Status.SKIP, "Skipped");
-            }
-        });
+        ITestReporter reporter = ReportManager.getReporter();
+        try {
+            reporter.logStep("Skipped: " + result.getMethod().getMethodName());
+            reporter.attachScreenshot("skipped_" + System.currentTimeMillis() + ".png");
+        } catch (Throwable t) {
+            log.warn("Reporter handling of skipped failed: {}", t.getMessage());
+        }
     }
 
-    @Override public void onTestFailedButWithinSuccessPercentage(ITestResult result) {}
-    @Override public void onTestFailedWithTimeout(ITestResult result) { onTestFailure(result); }
+    @Override
+    public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
+        // Log for diagnostic purposes (avoids being identical to the super implementation)
+        try {
+            log.debug("onTestFailedButWithinSuccessPercentage called for {}", result.getMethod().getMethodName());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @Override
+    public void onTestFailedWithTimeout(ITestResult result) { onTestFailure(result); }
 
     @Override
     public void onConfigurationSuccess(ITestResult itr) {
@@ -145,68 +155,35 @@ public class ExtentStrategy implements ReportStrategy {
     @Override
     public void onConfigurationFailure(ITestResult itr) {
         Throwable t = itr.getThrowable();
-        String message = (t == null) ? "⚙️ Config failed" : "⚙️ Config failed: " + t.getMessage();
-        String screenshot = attachScreenshot();
-
-        getTest(itr).ifPresent(test -> {
-            try {
-                if (screenshot != null)
-                    test.fail(message, MediaEntityBuilder.createScreenCaptureFromPath(screenshot).build());
-                else
-                    test.log(Status.FAIL, message);
-            } catch (Exception e) {
-                test.log(Status.FAIL, message);
-            }
-        });
+        String message = (t == null) ? "Config failed" : "Config failed: " + t.getMessage();
+        ITestReporter reporter = ReportManager.getReporter();
+        try {
+            reporter.logFail(message, t);
+            reporter.attachScreenshot("config_failure_" + System.currentTimeMillis() + ".png");
+        } catch (Throwable tt) {
+            log.warn("Reporter handling of configuration failure failed: {}", tt.getMessage());
+        }
     }
 
-    @Override public void onConfigurationSkip(ITestResult itr) {}
+    @Override
+    public void onConfigurationSkip(ITestResult itr) {
+        try {
+            log.debug("onConfigurationSkip called for {}", itr.getMethod().getMethodName());
+        } catch (Throwable ignored) {
+        }
+    }
 
     @Override
     public void failStep(String stepName) {
         try {
-            ExtentTest test = CURRENT_TEST.get();
-            if (test == null) test = EXTENT.createTest(stepName);
-
-            String screenshot = attachScreenshot();
-            if (screenshot != null)
-                test.fail(stepName, MediaEntityBuilder.createScreenCaptureFromPath(screenshot).build());
-            else
-                test.fail(stepName);
+            ITestReporter reporter = ReportManager.getReporter();
+            reporter.logFail(stepName, null);
+            reporter.attachScreenshot("failstep_" + System.currentTimeMillis() + ".png");
         } catch (Throwable t) {
             log.warn("failStep failed: {}", t.getMessage());
         }
     }
 
-    // ================== Screenshot logic ==================
-    private String attachScreenshot() {
-        try {
-            BrowserType browserType = Config.getBrowserType();
-            WebDriver driver = DriverManager.getInstance(browserType).getDriver();
-            if (driver instanceof TakesScreenshot) {
-                String screenshotName = "screenshot_" + System.currentTimeMillis() + ".png";
-                File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-
-                File screenshotDir = new File(REPORT_DIR, "screenshots");
-                if (!screenshotDir.exists()) {
-                    if (!screenshotDir.mkdirs()) {
-                        log.warn("Could not create screenshot directory: {}", screenshotDir.getAbsolutePath());
-                    }
-                }
-
-                File dest = new File(screenshotDir, screenshotName);
-                FileHandler.copy(src, dest);
-
-                // Trả về đường dẫn tương đối để hiển thị được trong HTML
-                return "screenshots/" + screenshotName;
-            }
-        } catch (Throwable e) {
-            log.warn("❌ Screenshot capture failed: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    // ================== Helpers ==================
     private Optional<ExtentTest> getTest(ITestResult result) {
         ExtentTest test = CURRENT_TEST.get();
         if (test != null) return Optional.of(test);

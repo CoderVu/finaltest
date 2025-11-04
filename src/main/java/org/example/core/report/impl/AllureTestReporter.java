@@ -3,14 +3,14 @@ package org.example.core.report.impl;
 import io.qameta.allure.Allure;
 import io.qameta.allure.model.Status;
 import lombok.extern.slf4j.Slf4j;
-import org.example.configure.Config;
-import org.example.core.driver.DriverManager;
 import org.example.core.report.ITestReporter;
-import org.example.enums.BrowserType;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
+
 import java.io.ByteArrayInputStream;
+
+import static org.example.core.control.util.DriverUtils.getDriver;
 
 @Slf4j
 public class AllureTestReporter implements ITestReporter {
@@ -24,23 +24,23 @@ public class AllureTestReporter implements ITestReporter {
     }
     @Override
     public void logFail(String message, Throwable error) {
-        String errorMsg = "FAIL: " + message;
-        if (error != null) errorMsg += " - " + error.getMessage();
-        Allure.step(errorMsg, Status.FAILED);
+        Allure.step(message, Status.FAILED);
     }
     @Override
     public void attachScreenshot(String name) {
         try {
-            BrowserType browserType = Config.getBrowserType();
-            WebDriver driver = DriverManager.getInstance(browserType).getDriver();
-            if (driver != null) {
+            WebDriver driver = getDriver();
+            if (driver != null && (driver instanceof TakesScreenshot)) {
                 byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
                 if (bytes != null && bytes.length > 0) {
-                    Allure.addAttachment(name, "image/png", new ByteArrayInputStream(bytes), "png");
+                    Allure.addAttachment(name != null ? name : "screenshot", "image/png", new ByteArrayInputStream(bytes), "png");
+                    log.debug("Allure attached screenshot: {}", name);
+                    return;
                 }
             }
+            log.debug("Allure: no driver or cannot take screenshot for {}", name);
         } catch (Throwable t) {
-            log.warn("Failed to attach screenshot: {}", t.getMessage());
+            log.warn("Allure attachScreenshot failed: {}", t.getMessage());
         }
     }
     @Override
@@ -55,7 +55,7 @@ public class AllureTestReporter implements ITestReporter {
             runnable.run();
         }
     }
-    
+
     @Override
     public <T> T childStep(String name, java.util.function.Supplier<T> supplier) {
         try {

@@ -3,6 +3,13 @@ package org.example.core.report.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.report.ITestReporter;
 import org.testng.Reporter;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+
+import java.util.Base64;
+
+import static org.example.core.control.util.DriverUtils.getDriver;
 
 @Slf4j
 public class JenkinsTestReporter implements ITestReporter {
@@ -30,8 +37,21 @@ public class JenkinsTestReporter implements ITestReporter {
     }
     @Override
     public void attachScreenshot(String name) {
-        log.info("Screenshot: {}", name);
-        Reporter.log("Screenshot: " + name);
+        try {
+            WebDriver driver = getDriver();
+            if (driver != null && (driver instanceof TakesScreenshot)) {
+                byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+                if (bytes != null && bytes.length > 0) {
+                    String base64 = Base64.getEncoder().encodeToString(bytes);
+                    Reporter.log("Screenshot: <br/><img src=\"data:image/png;base64," + base64 + "\" alt=\"" + (name != null ? name : "screenshot") + "\"/>");
+                    log.info("Jenkins attached screenshot: {}", name);
+                    return;
+                }
+            }
+            log.debug("Jenkins: no driver or cannot take screenshot for {}", name);
+        } catch (Throwable t) {
+            log.warn("Jenkins attachScreenshot failed: {}", t.getMessage());
+        }
     }
     
     @Override
