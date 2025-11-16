@@ -20,6 +20,10 @@
         <selenide.version>7.2.3</selenide.version>
         <aspectjweaver.version>1.9.22</aspectjweaver.version>
         <freemarker.version>2.3.32</freemarker.version>
+        <!-- Default to 'latest', can be overridden with -Dallure.report.folder=YYYYMMdd_HHmmss
+             PowerShell: $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"; mvn clean test allure:report "-Dallure.report.folder=$timestamp"
+             Bash: export TIMESTAMP=$(date +%Y%m%d_%H%M%S); mvn clean test allure:report -Dallure.report.folder=$TIMESTAMP -->
+        <allure.report.folder>latest</allure.report.folder>
     </properties>
 
     <dependencies>
@@ -51,7 +55,14 @@
             <version>${testng.version}</version>
         </dependency>
 
-        <!-- Allure TestNG -->
+        <!-- Allure Java Commons - For annotations like @Story, @Severity -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-java-commons</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+        
+        <!-- Allure TestNG - Required for Allure to automatically create test cases from TestNG -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-testng</artifactId>
@@ -156,10 +167,7 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>org.example.core.TestNG.TestNGXmlGenerator</mainClass>
-                            <arguments>
-                                <argument>${env.file:dev-env.properties}</argument>
-                            </arguments>
+                            <mainClass>org.example.core.helper.TestNGXml</mainClass>
                         </configuration>
                     </execution>
                 </executions>
@@ -187,11 +195,8 @@
                         -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
                     </argLine>
                     <systemPropertyVariables>
-                        <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
-                        <selenide.reportsEnabled>true</selenide.reportsEnabled>
-                        <selenide.screenshots>true</selenide.screenshots>
-                        <selenide.savePageSource>true</selenide.savePageSource>
-                        <selenide.fileDownload>HTTPGET</selenide.fileDownload>
+                        <!-- Set allure.results.directory using ${allure.report.folder} property -->
+                        <allure.results.directory>${project.build.directory}/allure-results/${allure.report.folder}</allure.results.directory>
                         <org.slf4j.simpleLogger.defaultLogLevel>info</org.slf4j.simpleLogger.defaultLogLevel>
                         <org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>
                         <org.slf4j.simpleLogger.dateTimeFormat>yyyy-MM-dd HH:mm:ss.SSS</org.slf4j.simpleLogger.dateTimeFormat>
@@ -200,7 +205,6 @@
                         <org.slf4j.simpleLogger.showShortLogName>true</org.slf4j.simpleLogger.showShortLogName>
                         <org.slf4j.simpleLogger.log.org.example>debug</org.slf4j.simpleLogger.log.org.example>
                         <org.slf4j.simpleLogger.log.org.openqa.selenium>warn</org.slf4j.simpleLogger.log.org.openqa.selenium>
-                        <org.slf4j.simpleLogger.log.com.codeborne.selenide>info</org.slf4j.simpleLogger.log.com.codeborne.selenide>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -210,8 +214,8 @@
                 <version>2.12.0</version>
                 <configuration>
                     <reportVersion>${allure.version}</reportVersion>
-                    <reportDirectory>${project.build.directory}/allure-report</reportDirectory>
-                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
+                    <reportDirectory>${project.build.directory}/allure-reports/${allure.report.folder}</reportDirectory>
+                    <resultsDirectory>${project.build.directory}/allure-results/${allure.report.folder}</resultsDirectory>
                 </configuration>
             </plugin>
         </plugins>

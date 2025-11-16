@@ -18,16 +18,19 @@ public class DriverFactory {
         DRIVER_MAP.put(BrowserType.EDGE, Edge::new);
     }
 
-    public static AbstractDriverManager getDriverManager(BrowserType type) {
+    public static void createDriver(BrowserType type) {
+        log.warn("Creating Driver for type {}", type);
         AbstractDriverManager manager = THREAD_LOCAL.get();
         if (manager == null || manager.getBrowserType() != type) {
             manager = DRIVER_MAP.getOrDefault(type, Chrome::new).get();
             manager.initDriver();
             THREAD_LOCAL.set(manager);
         }
-        log.info("Initialized WebDriver for browser: {}", type);
-        log.info("WebDriver browser type: {}", manager.browserType);
-        return manager;
+        log.debug("Driver initialized for browser: {}", type);
+    }
+
+    public static AbstractDriverManager getCurrentDriverManager() {
+        return THREAD_LOCAL.get();
     }
 
     public static void quitDriver() {

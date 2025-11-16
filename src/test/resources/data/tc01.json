@@ -12,9 +12,9 @@
       },
       "testInfo": {
         "testName": "TC01_SearchAndSortHotelSuccessfully",
-        "description": "Search for hotels in Da Nang with specific criteria and verify results"
+        "description": "Search for hotels in Da Nang with 2 rooms, 4 adults, 0 children"
       }
     }
-  ]
+    ]
 }
 

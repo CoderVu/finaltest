@@ -137,16 +137,14 @@ public class JsonHelper {
 	}
 
 	public static List<String> convertJsonToArguments(String json) {
-		List<String> args = new ArrayList<String>();
-
-		Map<String, String> maps = JsonHelper.convertJsonToMap(json);
-		if (maps != null) {
-			Set<String> keys = maps.keySet();
-			for (String key : keys) {
-				args.add(maps.get(key));
-			}
-		}
-		return args;
+        try {
+            Gson gson = new Gson();
+            Type listType = new TypeToken<List<String>>() {}.getType();
+            return gson.fromJson(json, listType);
+        } catch (Exception e) {
+            log.error("Error converting JSON to arguments: {}", e.getMessage());
+            return new ArrayList<>();
+        }
 	}
 
 	private static JsonReader getJsonReader(String jsonPath) {

@@ -13,6 +13,5 @@ public interface IDriver {
     void setupDriverBinary(BrowserType browserType);
     WebDriver getDriver();
     void quitDriver();
-
     BrowserType getBrowserType();
 }

@@ -5,11 +5,14 @@ import org.example.enums.BrowserType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.example.core.control.util.DriverUtils.sanitizeVersion;
 
 public class Chrome extends AbstractDriverManager {
 
@@ -52,14 +55,7 @@ public class Chrome extends AbstractDriverManager {
             options.setBrowserVersion(sanitizeVersion(version));
         }
 
-        driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
+        driver = new RemoteWebDriver(url, options);
         return driver;
-    }
-
-    private String sanitizeVersion(String version) {
-        if (version == null) return null;
-        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)+)");
-        Matcher matcher = pattern.matcher(version);
-        return matcher.find() ? matcher.group(1) : version.trim();
     }
 }

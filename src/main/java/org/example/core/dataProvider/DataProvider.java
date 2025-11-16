@@ -6,62 +6,46 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.helper.JsonHelper;
 
+import java.io.File;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Simple DataProvider for end-users - Easiest to use!
- * 
+ * <p>
  * How to use:
  * 1. Just add @Test(dataProvider = "auto") and the method will automatically get data
  * 2. Method parameter should be JsonObject - that's it!
- * 
+ * <p>
  * Example:
+ *
  * @Test(dataProvider = "auto")
  * public void myTest(JsonObject data) {
- *     String city = dataProvider.DataProvider.getString(data, "destination");
- *     int rooms = dataProvider.DataProvider.getInt(data, "occupancy.rooms");
+ * String city = dataProvider.DataProvider.getString(data, "destination");
+ * int rooms = dataProvider.DataProvider.getInt(data, "occupancy.rooms");
  * }
  */
 @Slf4j
 public class DataProvider {
 
-    private static final String DEFAULT_DATA_FILE = "src/test/resources/data/tc01.json";
-
-    /**
-     * Auto DataProvider - reads data automatically based on class name
-     * Usage: @Test(dataProvider = "auto", dataProviderClass = dataProvider.DataProvider.class)
-     * 
-     * You can specify data file using @DataFile annotation:
-     * @Test(dataProvider = "auto", dataProviderClass = DataProvider.class)
-     * @DataFile("src/test/resources/data/tc01.json")
-     * public void myTest(JsonObject data) { ... }
-     */
     @org.testng.annotations.DataProvider(name = "auto")
     public static Iterator<Object[]> auto(Method method) {
         String className = method.getDeclaringClass().getSimpleName();
-        String dataFile = DEFAULT_DATA_FILE;
-        
-        // Check if @DataFile annotation is present on the test method
-        DataFile dataFileAnnotation = method.getAnnotation(DataFile.class);
-        if (dataFileAnnotation != null && !dataFileAnnotation.value().isEmpty()) {
-            dataFile = dataFileAnnotation.value();
-            log.info("Using data file from @DataFile annotation: {}", dataFile);
-        } else {
-            log.info("Using default data file: {}", dataFile);
-        }
-        
+        String dataFile = resolveDataFile(method, className);
+
         log.info("Auto-loading data for class: {} from file: {}", className, dataFile);
         Iterator<Object[]> raw = loadData(className, dataFile);
 
-        // If method expects exactly one JsonObject and has no @DataPath, keep legacy behavior
         Class<?>[] paramTypes = method.getParameterTypes();
         boolean hasDataPath = false;
-        java.lang.annotation.Annotation[][] paramAnns = method.getParameterAnnotations();
-        for (java.lang.annotation.Annotation[] anns : paramAnns) {
-            for (java.lang.annotation.Annotation a : anns) {
+        Annotation[][] paramAnns = method.getParameterAnnotations();
+        for (Annotation[] anns : paramAnns) {
+            for (Annotation a : anns) {
                 if (a instanceof DataPath) {
                     hasDataPath = true;
                     break;
@@ -84,7 +68,7 @@ public class DataProvider {
             for (int i = 0; i < paramTypes.length; i++) {
                 Class<?> p = paramTypes[i];
                 DataPath ann = null;
-                for (java.lang.annotation.Annotation a : paramAnns[i]) {
+                for (Annotation a : paramAnns[i]) {
                     if (a instanceof DataPath) {
                         ann = (DataPath) a;
                         break;
@@ -117,7 +101,6 @@ public class DataProvider {
                 } else if (JsonObject.class.isAssignableFrom(p)) {
                     params[i] = getObject(dataset, path);
                 } else {
-                    // Unsupported type -> leave null
                     params[i] = null;
                 }
             }
@@ -128,25 +111,74 @@ public class DataProvider {
         return bound.iterator();
     }
 
-    /**
-     * Load data from JSON file with test case key
-     * @param testCaseKey Key in JSON (usually class name)
-     * @param dataFile Path to data file
-     */
+    private static final String DATA_DIR = "src/test/resources/data/";
+
+    private static String resolveDataFile(Method method, String className) {
+        DataFile dataFileAnnotation = method.getAnnotation(DataFile.class);
+        if (dataFileAnnotation == null || dataFileAnnotation.value().isEmpty()) {
+            String errorMsg = String.format(
+                    "Test method '%s' in class '%s' must specify @DataFile annotation with a valid file path.",
+                    method.getName(), className
+            );
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+
+        String filePath = dataFileAnnotation.value();
+        
+        // If path is just a filename (no directory), prepend default data directory
+        if (!filePath.contains("/") && !filePath.contains("\\")) {
+            filePath = DATA_DIR + filePath;
+            log.debug("Prepending data directory to filename: {}", filePath);
+        }
+        
+        if (!fileExists(filePath)) {
+            String errorMsg = String.format(
+                    "Data file specified in @DataFile annotation not found: %s. Please check the file path.",
+                    filePath
+            );
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+
+        log.info("Using data file from @DataFile annotation: {}", filePath);
+        return filePath;
+    }
+
+    private static boolean fileExists(String filePath) {
+        // Check as file system path
+        File file = new File(filePath);
+        if (file.exists() && file.isFile()) {
+            return true;
+        }
+
+        try {
+            InputStream in = DataProvider.class.getClassLoader().getResourceAsStream(
+                    filePath.startsWith("src/") ? filePath.replace("src/test/resources/", "") : filePath
+            );
+            if (in != null) {
+                in.close();
+                return true;
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        return false;
+    }
+
     public static Iterator<Object[]> loadData(String testCaseKey, String dataFile) {
         JsonObject root = JsonHelper.getJsonObject(dataFile);
-        
+
         if (root == null) {
             log.error("Cannot read test data from: {}", dataFile);
             return new ArrayList<Object[]>().iterator();
         }
 
-        // 1) Exact key
         JsonElement node = root.get(testCaseKey);
 
-        // 2) Case-insensitive match if exact not found
         if (node == null || node.isJsonNull()) {
-            for (java.util.Map.Entry<String, JsonElement> entry : root.entrySet()) {
+            for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
                 if (entry.getKey().equalsIgnoreCase(testCaseKey)) {
                     node = entry.getValue();
                     log.info("Matched test data key case-insensitively: '{}' -> '{}'", testCaseKey, entry.getKey());
@@ -155,10 +187,9 @@ public class DataProvider {
             }
         }
 
-        // 3) Relaxed match: strip non-alphanumeric characters and compare
         if (node == null || node.isJsonNull()) {
             String normalizedKey = testCaseKey.replaceAll("[^A-Za-z0-9]", "");
-            for (java.util.Map.Entry<String, JsonElement> entry : root.entrySet()) {
+            for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
                 String normalizedEntry = entry.getKey().replaceAll("[^A-Za-z0-9]", "");
                 if (normalizedEntry.equalsIgnoreCase(normalizedKey)) {
                     node = entry.getValue();
@@ -168,7 +199,6 @@ public class DataProvider {
             }
         }
 
-        // 4) Single top-level key fallback
         if (node == null || node.isJsonNull()) {
             java.util.Set<String> keys = root.keySet();
             if (keys.size() == 1) {
@@ -193,11 +223,11 @@ public class DataProvider {
             JsonArray array = element.getAsJsonArray();
             for (JsonElement item : array) {
                 if (item != null && item.isJsonObject()) {
-                    dataSets.add(new Object[] { item.getAsJsonObject() });
+                    dataSets.add(new Object[]{item.getAsJsonObject()});
                 }
             }
         } else if (element.isJsonObject()) {
-            dataSets.add(new Object[] { element.getAsJsonObject() });
+            dataSets.add(new Object[]{element.getAsJsonObject()});
         }
 
         return dataSets;
@@ -212,10 +242,10 @@ public class DataProvider {
      */
     public static String getString(JsonObject data, String path, String defaultValue) {
         if (data == null || path == null) return defaultValue;
-        
+
         String[] keys = path.split("\\.");
         JsonElement element = data;
-        
+
         for (String key : keys) {
             if (element == null || !element.isJsonObject()) {
                 return defaultValue;
@@ -225,7 +255,7 @@ public class DataProvider {
                 return defaultValue;
             }
         }
-        
+
         return element.getAsString();
     }
 
@@ -238,10 +268,10 @@ public class DataProvider {
      */
     public static int getInt(JsonObject data, String path, int defaultValue) {
         if (data == null || path == null) return defaultValue;
-        
+
         String[] keys = path.split("\\.");
         JsonElement element = data;
-        
+
         for (String key : keys) {
             if (element == null || !element.isJsonObject()) {
                 return defaultValue;
@@ -251,7 +281,7 @@ public class DataProvider {
                 return defaultValue;
             }
         }
-        
+
         try {
             return element.getAsInt();
         } catch (Exception e) {
@@ -260,19 +290,13 @@ public class DataProvider {
         }
     }
 
-    /**
-     * Get boolean value
-     */
-    public static boolean getBoolean(JsonObject data, String path) {
-        return getBoolean(data, path, false);
-    }
 
     public static boolean getBoolean(JsonObject data, String path, boolean defaultValue) {
         if (data == null || path == null) return defaultValue;
-        
+
         String[] keys = path.split("\\.");
         JsonElement element = data;
-        
+
         for (String key : keys) {
             if (element == null || !element.isJsonObject()) {
                 return defaultValue;
@@ -282,7 +306,7 @@ public class DataProvider {
                 return defaultValue;
             }
         }
-        
+
         try {
             return element.getAsBoolean();
         } catch (Exception e) {
@@ -290,16 +314,12 @@ public class DataProvider {
         }
     }
 
-    /**
-     * Get nested JsonObject
-     * Example: JsonObject occupancy = getObject(data, "occupancy");
-     */
     public static JsonObject getObject(JsonObject data, String path) {
         if (data == null || path == null) return null;
-        
+
         String[] keys = path.split("\\.");
         JsonElement element = data;
-        
+
         for (String key : keys) {
             if (element == null || !element.isJsonObject()) {
                 return null;
@@ -309,7 +329,7 @@ public class DataProvider {
                 return null;
             }
         }
-        
+
         return element.isJsonObject() ? element.getAsJsonObject() : null;
     }
 }

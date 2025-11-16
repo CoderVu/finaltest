@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.example.core.control.util.DriverUtils.sanitizeVersion;
+
 public class Edge extends AbstractDriverManager {
 
     public Edge() {
@@ -54,12 +56,5 @@ public class Edge extends AbstractDriverManager {
 
         driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
         return driver;
-    }
-
-    private String sanitizeVersion(String version) {
-        if (version == null) return null;
-        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)+)");
-        Matcher matcher = pattern.matcher(version);
-        return matcher.find() ? matcher.group(1) : version.trim();
     }
 }

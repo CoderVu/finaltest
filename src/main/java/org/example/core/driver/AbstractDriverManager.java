@@ -30,19 +30,31 @@ public abstract class AbstractDriverManager implements IDriver {
         if (driver != null) {
             return;
         }
-        if (Config.isRemoteEnabled() || Config.isGridEnabled()) {
+        // Only use remote if isRemote=true AND remote_url is configured
+        String isRemoteValue = Config.getEnvValue("isRemote");
+        String remoteUrl = Config.getRemoteUrl();
+        
+        // Check isRemote first - if false, never use remote
+        boolean isRemote = isRemoteValue != null && Boolean.parseBoolean(isRemoteValue);
+        boolean hasRemoteUrl = remoteUrl != null && !remoteUrl.trim().isEmpty();
+        boolean useRemote = isRemote && hasRemoteUrl;
+        
+        log.info("Driver init for {}: isRemote={}, remoteUrl={}, useRemote={}", 
+                this.browserType, isRemoteValue, remoteUrl, useRemote);
+        
+        if (useRemote) {
+            log.warn("Using REMOTE driver for {} with URL: {}", this.browserType, remoteUrl);
             initRemoteDriver();
         } else {
+            log.info("Using LOCAL driver for {} (isRemote={}, hasRemoteUrl={})", this.browserType, isRemote, hasRemoteUrl);
             try {
                 setupDriverBinary(this.browserType);
-                initLocalDriver(); // Call method abstractly defined in subclasses Chrome, Firefox, Edge
+                initLocalDriver();
             } catch (SkipException se) {
                 throw se;
             } catch (Throwable t) {
-                String msg = String.format("Failed to init driver for '%s': %s",
-                        this.browserType, t.getMessage());
-                log.error(msg, t);
-                throw new SkipException(msg);
+                log.error("Failed to init driver for '{}': {}", this.browserType, t.getMessage(), t);
+                throw new SkipException("Failed to init driver for '" + this.browserType + "': " + t.getMessage());
             }
         }
     }
@@ -88,7 +100,6 @@ public abstract class AbstractDriverManager implements IDriver {
 
     @Override
     public WebDriver getDriver() {
-        if (driver == null) throw new IllegalStateException("Driver not initialized");
         return driver;
     }
 

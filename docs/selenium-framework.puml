@@ -50,48 +50,99 @@ package "Pages" {
 }
 
 package "Controls" {
+  interface IBaseControl {
+    + click()
+    + doubleClick()
+    + clickByJs()
+    + enter(text)
+    + setText(text)
+    + clear()
+    + getText() : String
+    + getAttribute(name) : String
+    + isVisible() : boolean
+    + isEnabled() : boolean
+    + waitForVisibility([timeout])
+    + waitForElementClickable([timeout])
+    + checkCheckBox()
+    + uncheckCheckBox()
+    + selectComboBox(text)
+    + switchToFrame()
+    + getLinkReference() : String
+    + getTableRowCount() : int
+    + getTableCellText(row, col) : String
+    + ...
+  }
+
   class BaseControl {
     - locator : String
     - byLocator : By
     - dynamicLocator : String
     - parent : BaseControl
+    + click()
+    + doubleClick()
+    + clickByJs()
+    + enter(text)
+    + setText(text)
+    + clear()
     + getText() : String
-    + enterText(text: String)
-    + getChildElement(xpath: String) : WebElement
-    + getChildElements(xpath: String) : List<WebElement>
+    + getAttribute(name) : String
     + isVisible() : boolean
     + isEnabled() : boolean
-    + moveMouseByOffset(x, y)
-    + scrollToView()
     + waitForVisibility([timeout])
     + waitForElementClickable([timeout])
+    + checkCheckBox()
+    + uncheckCheckBox()
+    + selectComboBox(text)
+    + switchToFrame()
+    + getLinkReference() : String
+    + getTableRowCount() : int
+    + getTableCellText(row, col) : String
+    + getElement() : WebElement
+    + getListElements<T>(Class<T>) : List<T>
+    + scrollToView()
+    + dragAndDrop(x, y)
+    + ...
   }
 
   class Element {
-    + getText() : String
-    + click()
-    + waitForElementClickable([timeout])
-    + getChildElements(xpath: String) : List<WebElement>
+    + Element(String locator)
+    + Element(By locator)
+    + Element(String locator, Object... args)
+    + Element(BaseControl parent, String locator)
+    + Element(BaseControl parent, By locator)
+    + Element(BaseControl parent, String locator, Object... args)
+  }
+
+  class ElementFactory {
+    + {static} $(String locator) : Element
+    + {static} $(By locator) : Element
+    + {static} $(String locator, Object... args) : Element
+    + {static} $(BaseControl parent, String locator) : Element
+    + {static} $(BaseControl parent, By locator) : Element
+    + {static} $(BaseControl parent, String locator, Object... args) : Element
+    + {static} $$(String locator) : List<Element>
+    + {static} $$(By locator) : List<Element>
+    + {static} $$(BaseControl parent, String childLocator) : List<Element>
   }
 
   package "Utils (control/util)" {
     class DriverUtils {
-      + getWebDriver() : WebDriver
-      + getDriver() : WebDriver
-      + execJavaScript(script, ...args)
-      + getCurrentUrl() : String
-      + navigateTo(url: String)
-      + switchToWindow(index)
-      + waitForNewWindowOpened(n)
-      + waitForUrlContains(sub, timeout)
-      + delay(seconds: double)
-      + refresh()
-      + deleteCookie()
-      + moveMouseByOffset(x, y)
-      + openNewTab()
-      + waitForAjax()
-      + waitForAngularReady()
-      + setWindowSize(width, height)
+      + {static} getWebDriver() : WebDriver
+      + {static} getDriver() : WebDriver
+      + {static} execJavaScript(script, ...args)
+      + {static} getCurrentUrl() : String
+      + {static} navigateTo(url: String)
+      + {static} switchToWindow(index)
+      + {static} waitForNewWindowOpened(n)
+      + {static} waitForUrlContains(sub, timeout)
+      + {static} delay(seconds: double)
+      + {static} refresh()
+      + {static} deleteCookie()
+      + {static} moveMouseByOffset(x, y)
+      + {static} openNewTab()
+      + {static} waitForAjax()
+      + {static} waitForAngularReady()
+      + {static} setWindowSize(width, height)
       ...
     }
   }
@@ -102,51 +153,72 @@ package "Models" {
     + name : String
     + rating : String
     + location : String
+    + distanceToCenter : String
+    + cashbackReward : String
     + price : String
     + badges : String[]
     + amenities : String[]
     + getName() : String
     + getPrice() : String
     + getLocation() : String
+    + toString() : String
   }
 }
 
 package "Driver & Config" {
-  abstract class DriverManager {
+  class DriverFactory {
+    - DRIVER_MAP : Map<BrowserType, Supplier<AbstractDriverManager>>
+    - THREAD_LOCAL : ThreadLocal<AbstractDriverManager>
+    + {static} createDriver(browserType) : AbstractDriverManager
+    + {static} quitDriver()
+    + {static} getDriverManager(browserType) : AbstractDriverManager
+  }
+
+  abstract class AbstractDriverManager {
     # driver : WebDriver
     # browserType : BrowserType
-    + getInstance(browserType) : DriverManager
+    + initDriver()
+    + initLocalDriver()
+    + initRemoteDriver()
+    + createRemoteDriver(url, version) : WebDriver
+    + setupDriverBinary(browserType)
     + getDriver() : WebDriver
-    + initializeDriver(browserType)
-    + quitWebDriver(browserType)
-    + createWebDriver() : WebDriver
-    # initLocalDriver()
-    # initRemoteDriver()
+    + quitDriver()
+    + getBrowserType() : BrowserType
+  }
+
+  interface IDriver {
+    + initDriver()
+    + initLocalDriver()
+    + initRemoteDriver()
+    + createRemoteDriver(url, version) : WebDriver
+    + setupDriverBinary(browserType)
+    + getDriver() : WebDriver
+    + quitDriver()
+    + getBrowserType() : BrowserType
   }
 
   class Chrome {
     # initLocalDriver()
-    + initDriver()
   }
 
   class Firefox {
     # initLocalDriver()
-    + initDriver()
   }
 
   class Edge {
     # initLocalDriver()
-    + initDriver()
   }
 
   class Config {
-    + getBrowserType() : BrowserType
-    + getBaseUrl() : String
-    + isRemoteEnabled() : boolean
-    + isGridEnabled() : boolean
-    + shouldSkipBrowser() : boolean
-    + setThreadBrowser(browser: String)
-    + getEnvFile() : String
+    + {static} getBrowserType() : BrowserType
+    + {static} getBaseUrl() : String
+    + {static} isRemoteEnabled() : boolean
+    + {static} isGridEnabled() : boolean
+    + {static} shouldSkipBrowser() : boolean
+    + {static} setThreadBrowser(browser: String)
+    + {static} getEnvFile() : String
+    + {static} getRemoteUrl() : String
   }
 
   enum BrowserType {
@@ -154,26 +226,19 @@ package "Driver & Config" {
     FIREFOX
     EDGE
   }
-
-  enum PlatformType {
-    PC_WEB
-    MOBILE_WEB
-  }
-
-  enum PlatformOS {
-    WINDOWS
-    LINUX
-    MACOS
-  }
 }
 
 package "Reporting" {
   class ReportManager {
     - reporterInstance : ITestReporter
-    - strategyInstance : ReportStrategy
-    + getReporter() : ITestReporter
-    + selectStrategy() : ReportStrategy
-    + reset()
+    - strategyInstance : IReportStrategyListener
+    - reporterCache : ConcurrentMap<String, ITestReporter>
+    + {static} getReporter() : ITestReporter
+    + {static} getReporter(reportTypes: String) : ITestReporter
+    + {static} parseReportTypes(reportTypes) : List<ReportType>
+    + {static} selectStrategy() : IReportStrategyListener
+    + {static} reset()
+    - DeduplicatingReporter : class
   }
 
   interface ITestReporter {
@@ -182,10 +247,10 @@ package "Reporting" {
     + logFail(message: String, error: Throwable)
     + attachScreenshot(name: String)
     + childStep(name: String, runnable: Runnable)
-    + childStep(name: String, supplier: Supplier<T>) : T
+    + childStep<T>(name: String, supplier: Supplier<T>) : T
   }
 
-  interface ReportStrategy {
+  interface IReportStrategyListener {
     + onStart(context: ITestContext)
     + onFinish(context: ITestContext)
     + onTestStart(result: ITestResult)
@@ -197,71 +262,85 @@ package "Reporting" {
     + failStep(name: String)
   }
 
-  class ReportHook {
-    - delegate : ReportStrategy
+  class ReportListener {
+    - delegates : List<IReportStrategyListener>
     + onTestStart(result)
     + onTestSuccess(result)
     + onTestFailure(result)
     + onTestSkipped(result)
     + onConfigurationSuccess(result)
     + onConfigurationFailure(result)
+    + onStart(context)
+    + onFinish(context)
+    - ensureInitialized()
+    - forEachDelegate(action)
   }
 
-  class AllureStrategy {
+  class AllureStrategyI {
     + onStart(context)
     + onTestStart(result)
     + onTestSuccess(result)
     + onTestFailure(result)
     + onConfigurationSuccess(result)
+    + onConfigurationFailure(result)
     + failStep(name)
-    - captureScreenshotOnFailure(result, type)
+    + {static} attachScreenshot(name)
   }
 
-  class ExtentStrategy {
+  class ExtentStrategyI {
+    - EXTENT : ExtentReports
+    - CURRENT_TEST : ThreadLocal<ExtentTest>
+    - NAME_TO_TEST : Map<String, ExtentTest>
     + onStart(context)
     + onTestStart(result)
     + onTestSuccess(result)
     + onTestFailure(result)
     + onConfigurationSuccess(result)
-    - getTestForConfiguration(result) : ExtentTest
+    + onConfigurationFailure(result)
+    + failStep(name)
+    + {static} getReportDir() : String
   }
 
-  class JenkinsStrategy {
+  class JenkinsStrategyI {
+    - STEP_BUFFER : ThreadLocal<List<String>>
     + onStart(context)
     + onTestStart(result)
     + onTestSuccess(result)
     + onTestFailure(result)
     + failStep(name)
+    + logStep(name)
+    - writeStepLog(result)
   }
 
-  class AllureTestReporter {
+  class AllureServiceImpl {
     + logStep(message)
     + info(message)
     + logFail(message, error)
     + attachScreenshot(name)
     + childStep(name, runnable)
-    + childStep(name, supplier) : T
+    + childStep<T>(name, supplier) : T
   }
 
-  class ExtentTestReporter {
-    + logStep(message)
-    + info(message)
-    + logFail(message, error)
-    + attachScreenshot(name)
-    + childStep(name, runnable)
-    + childStep(name, supplier) : T
-    - getCurrentTest() : ExtentTest
+  class ExtentServiceImpl {
+    - THREAD_TO_TEST : Map<Long, ExtentTest>
     + setTest(test: ExtentTest)
     + clearTest()
-  }
-
-  class JenkinsTestReporter {
     + logStep(message)
     + info(message)
     + logFail(message, error)
     + attachScreenshot(name)
     + childStep(name, runnable)
-    + childStep(name, supplier) : T
+    + childStep<T>(name, supplier) : T
+    - getCurrentTest() : ExtentTest
+  }
+
+  class JenkinsServiceImpl {
+    + logStep(message)
+    + info(message)
+    + logFail(message, error)
+    + attachScreenshot(name)
+    + childStep(name, runnable)
+    + childStep<T>(name, supplier) : T
   }
 
   class Step <<annotation>> {
@@ -271,23 +350,18 @@ package "Reporting" {
   class StepAspect {
     + aroundStep(joinPoint) : Object
     - buildMessage(step, method, args) : String
+    - getMethod(joinPoint) : Method
   }
 
-  class ConsoleConfig {
+  class ConsoleReport {
     + startTerminalLog()
     + stopTerminalLog()
   }
 
   class SoftAssertConfig {
-    + reset()
-    + assertTrue(condition, message)
-    + assertAll()
-  }
-
-  class FailureTracker {
-    + isHandledForCurrentThread() : boolean
-    + markHandledForCurrentThread()
-    + clearForCurrentThread()
+    + {static} reset()
+    + {static} assertTrue(condition, message)
+    + {static} assertAll()
   }
 
   enum ReportType {
@@ -296,64 +370,64 @@ package "Reporting" {
     JENKINS
   }
 
-  note right of AllureStrategy
+  note right of AllureStrategyI
     Handles Allure report lifecycle.
     Relies on AllureTestNg listener
     (external) to create test cases.
   end note
 
-  note right of ExtentStrategy
-  Handles Extent report lifecycle.
-  Relies on ExtentTestNg listener
-  (external) to create test cases.
+  note right of ExtentStrategyI
+    Handles Extent report lifecycle.
+    Creates ExtentTest instances per test.
+    Manages test context via ThreadLocal.
   end note
 
-   note right of JenkinsStrategy
+  note right of JenkinsStrategyI
     Handles Jenkins report lifecycle.
     Integrates with Jenkins plugins
-    for reporting.
-   end note
+    for reporting. Writes step logs
+    to files for Jenkins integration.
+  end note
 
   note right of StepAspect
     AspectJ AOP aspect that intercepts
     @Step annotations and creates steps
     via ITestReporter.childStep()
   end note
+
+  note right of ReportManager
+    Manages reporter instances with caching.
+    Deduplicates messages when multiple
+    reporters are enabled.
+    Uses DeduplicatingReporter wrapper
+    to prevent duplicate logs.
+  end note
 }
 
 package "Utils (global)" {
   class Constants {
-    + getBrowsers() : List<String>
-    + getBaseUrl() : String
-    + loadEnvironment(envFile: String)
-  }
-
-  class DateUtils {
-    + getNextFriday() : LocalDate
-    + getDateAfterDays(date: LocalDate, days: int) : LocalDate
-  }
-
-  class FormatUtils {
-    + formatPrice(price: String) : double
-    + parseDouble(value: String) : double
+    + {static} getBrowsers() : List<String>
+    + {static} getBaseUrl() : String
+    + {static} getReportTypes() : List<String>
+    + {static} loadEnvironment(envFile: String)
   }
 
   class JsonHelper {
-    + getJsonObject(filePath: String) : JsonObject
-    + getString(data: JsonObject, path: String) : String
-    + getInt(data: JsonObject, path: String) : int
-    + getListData(data: JsonObject, path: String) : List<JsonObject>
+    + {static} getJsonObject(filePath: String) : JsonObject
+    + {static} getString(data: JsonObject, path: String) : String
+    + {static} getInt(data: JsonObject, path: String) : int
+    + {static} getListData(data: JsonObject, path: String) : List<JsonObject>
   }
 }
 
 package "Data Provider" {
   class DataProvider {
-    + auto(method: Method) : Iterator<Object[]>
-    + loadData(testCaseKey: String, dataFile: String) : Iterator<Object[]>
-    + getString(data: JsonObject, path: String, default)
-    + getInt(data: JsonObject, path: String, default)
-    + getBoolean(data: JsonObject, path: String, default)
-    + getObject(data: JsonObject, path: String) : JsonObject
+    + {static} auto(method: Method) : Iterator<Object[]>
+    + {static} loadData(testCaseKey: String, dataFile: String) : Iterator<Object[]>
+    + {static} getString(data: JsonObject, path: String, default) : String
+    + {static} getInt(data: JsonObject, path: String, default) : int
+    + {static} getBoolean(data: JsonObject, path: String, default) : boolean
+    + {static} getObject(data: JsonObject, path: String) : JsonObject
   }
 
   class DataFile <<annotation>> {
@@ -362,14 +436,6 @@ package "Data Provider" {
 
   class DataPath <<annotation>> {
     + value() : String
-  }
-}
-
-package "Browser Config" {
-  class TestNGXmlGenerator {
-    + generate(envFile: String)
-    + generateFromBrowsers(browsers: List<String>)
-    - generateXmlContent(browsers: List<String>) : String
   }
 }
 
@@ -396,9 +462,11 @@ class JenkinsTestNg <<external>> {
 TestBase <|.. TC01AgodaHotelSearch
 BasePage <|-- AgodaHomePage
 
+IBaseControl <|.. BaseControl
 BaseControl <|-- Element
 
-AgodaHomePage ..> Element : uses
+AgodaHomePage ..> Element : uses via $
+AgodaHomePage ..> ElementFactory : uses $() and $$()
 AgodaHomePage ..> DriverUtils : uses
 AgodaHomePage ..> Hotel : returns
 AgodaHomePage ..> Step : <<@Step annotations>>
@@ -406,14 +474,20 @@ AgodaHomePage ..> Step : <<@Step annotations>>
 BasePage ..> DriverUtils : uses
 BasePage ..> ITestReporter : uses
 BaseControl ..> DriverUtils : uses
+ElementFactory ..> Element : creates
 
-DriverManager <|-- Chrome
-DriverManager <|-- Firefox
-DriverManager <|-- Edge
+IDriver <|.. AbstractDriverManager
+AbstractDriverManager <|-- Chrome
+AbstractDriverManager <|-- Firefox
+AbstractDriverManager <|-- Edge
 
-TestBase ..> DriverManager : uses
+DriverFactory ..> AbstractDriverManager : creates/manages
+DriverFactory ..> BrowserType : uses
+DriverFactory ..> ThreadLocal : uses
+
+TestBase ..> DriverFactory : uses
 TestBase ..> Config : uses
-TestBase ..> ConsoleConfig : uses
+TestBase ..> ConsoleReport : uses
 TestBase ..> SoftAssertConfig : uses
 TestBase ..> BrowserType : uses
 
@@ -421,24 +495,33 @@ Config ..> BrowserType : uses
 Config ..> ReportType : uses
 
 ' Reporting relationships
-ReportManager ..> ITestReporter : creates
-ReportManager ..> ReportStrategy : creates
+ReportManager ..> ITestReporter : creates/caches
+ReportManager ..> IReportStrategyListener : creates/caches
 ReportManager ..> ReportType : uses
+ReportManager ..> AllureServiceImpl : creates
+ReportManager ..> ExtentServiceImpl : creates
+ReportManager ..> JenkinsServiceImpl : creates
+ReportManager ..> AllureStrategyI : creates
+ReportManager ..> ExtentStrategyI : creates
+ReportManager ..> JenkinsStrategyI : creates
 
-ReportStrategy <|.. AllureStrategy
-ReportStrategy <|.. ExtentStrategy
-ReportStrategy <|.. JenkinsStrategy
+IReportStrategyListener <|.. AllureStrategyI
+IReportStrategyListener <|.. ExtentStrategyI
+IReportStrategyListener <|.. JenkinsStrategyI
 
-ITestReporter <|.. AllureTestReporter
-ITestReporter <|.. ExtentTestReporter
-ITestReporter <|.. JenkinsTestReporter
+ITestReporter <|.. AllureServiceImpl
+ITestReporter <|.. ExtentServiceImpl
+ITestReporter <|.. JenkinsServiceImpl
 
-ReportHook ..> ReportManager : uses
-ReportHook ..> ReportStrategy : delegates to
+ReportListener ..> ReportManager : uses
+ReportListener ..> IReportStrategyListener : delegates to
+ReportListener ..> AllureStrategyI : creates
+ReportListener ..> ExtentStrategyI : creates
+ReportListener ..> JenkinsStrategyI : creates
 
-AllureStrategy ..> AllureTestReporter : uses (via ReportManager)
-ExtentStrategy ..> ExtentTestReporter : uses (via ReportManager)
-JenkinsStrategy ..> JenkinsTestReporter : uses (via ReportManager)
+AllureStrategyI ..> AllureServiceImpl : uses (via ReportManager)
+ExtentStrategyI ..> ExtentServiceImpl : uses (sets ThreadLocal)
+JenkinsStrategyI ..> JenkinsServiceImpl : uses (via ReportManager)
 
 StepAspect ..> Step : intercepts
 StepAspect ..> ITestReporter : uses (via ReportManager)
@@ -447,12 +530,9 @@ StepAspect ..> ReportManager : uses
 BasePage ..> ReportManager : uses
 AgodaHomePage ..> Step : <<@Step annotations>>
 
-AllureStrategy ..> AllureTestNg : relies on (external listener)
-AllureTestNg ..> AllureStrategy : complements
-ExtentStrategy ..> ExtentTestNg : relies on (external listener)
-JenkinsStrategy ..> JenkinsTestNg : relies on (external listener)
-
-
+AllureStrategyI ..> AllureTestNg : relies on (external listener)
+ExtentStrategyI ..> ExtentTestNg : relies on (external listener)
+JenkinsStrategyI ..> JenkinsTestNg : relies on (external listener)
 
 ' Data-driven relationships
 TC01AgodaHotelSearch ..> DataProvider : <<dataProvider=auto>>
@@ -462,21 +542,35 @@ DataProvider ..> JsonHelper : uses
 
 ' Utils relationships
 AgodaHomePage ..> Constants : uses
-AgodaHomePage ..> DateUtils : uses
-AgodaHomePage ..> FormatUtils : uses
 TestBase ..> Constants : uses
 DataProvider ..> JsonHelper : uses
 
-' Browser Config
-TestNGXmlGenerator ..> Constants : uses
-TestNGXmlGenerator ..> Config : uses
+note right of Controls
+  Control Layer Architecture:
+  - BaseControl: Core implementation with all actions
+  - Element: Simple wrapper extending BaseControl
+  - ElementFactory: Factory pattern ($ and $$) similar to Selenide
+  - All UI actions consolidated in BaseControl
+  - No separate Button, TextBox, etc. classes
+end note
 
 note right of Reporting
   Reporting Architecture:
-  1. ReportHook (TestNG listener) delegates to ReportStrategy
-  2. AllureTestNg (external) creates Allure test cases
-  3. StepAspect intercepts @Step and uses ITestReporter
-  4. ReportManager selects strategy/reporter based on ReportType
+  1. ReportListener (TestNG listener) delegates to IReportStrategyListener implementations
+  2. ReportManager creates and caches ITestReporter instances
+  3. ReportManager creates and caches IReportStrategyListener instances
+  4. StepAspect intercepts @Step and uses ITestReporter.childStep()
+  5. DeduplicatingReporter prevents duplicate logs when multiple reporters enabled
+  6. Strategies handle test lifecycle, Services handle step logging
+end note
+
+note right of DriverFactory
+  Driver Management:
+  - DriverFactory manages driver instances per thread
+  - Uses ThreadLocal for thread-safe access
+  - Creates appropriate AbstractDriverManager subclass
+  - Supports Chrome, Firefox, Edge browsers
+  - Handles local and remote (Grid) driver initialization
 end note
 
 @enduml

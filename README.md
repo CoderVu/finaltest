@@ -41,13 +41,101 @@ Common system properties
 - -Dremote.url=http://host:4444/wd/hub
 - -Dbrowser.version=xxx
 - -Dplatform.name=LINUX|WINDOWS|MAC
+- -Dallure.report.folder={timestamp}|latest|custom-name (default: latest)
 
 Reports
-- Allure (default): run tests then:
-  mvn allure:report
-  mvn allure:serve
 
-- ExtentReports: mvn clean test -DreportType=extent
+## Allure Reports (Default)
+
+Allure reports are saved with timestamps to preserve historical runs. Each test execution can create a unique folder by passing a timestamp parameter.
+
+### Run Tests with Timestamp (Recommended)
+
+**PowerShell (Windows):**
+```powershell
+# Create timestamp and run tests with report generation
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+mvn clean test allure:report "-Dallure.report.folder=$timestamp"
+```
+
+**Bash (Linux/macOS):**
+```bash
+# Create timestamp and run tests with report generation
+export TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+mvn clean test allure:report -Dallure.report.folder=$TIMESTAMP
+```
+
+**One-liner (PowerShell):**
+```powershell
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"; mvn clean test allure:report "-Dallure.report.folder=$timestamp"
+```
+
+**One-liner (Bash):**
+```bash
+TIMESTAMP=$(date +%Y%m%d_%H%M%S) mvn clean test allure:report -Dallure.report.folder=$TIMESTAMP
+```
+
+**Result structure:**
+```
+target/allure-reports/
+  ├── 20241215_143022/  (run 1)
+  ├── 20241215_150530/  (run 2)
+  ├── 20241215_160145/  (run 3)
+  └── latest/            (default if not specified)
+```
+
+### Run Tests with Default Folder (latest)
+
+**Use "latest" folder (overwrites previous):**
+```bash
+mvn clean test allure:report -Dallure.report.folder=latest
+```
+
+Or simply (since "latest" is the default):
+```bash
+mvn clean test allure:report
+```
+
+### Use Custom Folder Name
+
+```bash
+mvn clean test allure:report -Dallure.report.folder=my-custom-name
+```
+
+### View Reports
+
+**View specific timestamped report:**
+```bash
+# Generate and serve report for specific timestamp
+mvn allure:serve -Dallure.results.directory=target/allure-results/20241215_143022
+
+# Or use Allure CLI directly (Windows CMD/PowerShell)
+allure serve target/allure-results/20241215_143022
+
+# Or generate static report
+mvn allure:report "-Dallure.results.directory=target/allure-results/20241215_143022" "-Dallure.report.directory=target/allure-reports/20241215_143022"
+# Then open: target/allure-reports/20241215_143022/index.html
+```
+
+**View latest report:**
+```bash
+# If you used "latest" folder
+mvn allure:serve -Dallure.results.directory=target/allure-results/latest
+```
+
+### Report Locations
+
+- **Results (raw data):** `target/allure-results/{timestamp}/`
+- **Reports (generated HTML):** `target/allure-reports/{timestamp}/`
+- **History:** Automatically merged from `src/test/resources/allure/history/` (if exists)
+
+## ExtentReports
+
+```bash
+mvn clean test -DreportType=extent
+```
+
+Output: `target/extent/index.html`
 
 Troubleshooting (fast)
 - WebDriverManager network/parse errors → run without it: -Duse.wdm=false (Selenium Manager will attempt driver).

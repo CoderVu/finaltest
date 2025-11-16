@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.example.core.control.util.DriverUtils.sanitizeVersion;
+
 public class Firefox extends AbstractDriverManager {
 
     public Firefox() {
@@ -23,7 +25,10 @@ public class Firefox extends AbstractDriverManager {
         options.addPreference("dom.webdriver.enabled", false);
         options.addPreference("useAutomationExtension", false);
 
-        options.addArguments("--start-maximized", "--disable-web-security");
+        options.addArguments("--start-maximized",
+                "--disable-web-security");
+        options.addArguments("--width=1920");
+        options.addArguments("--height=1080");
 
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
@@ -48,12 +53,5 @@ public class Firefox extends AbstractDriverManager {
 
         driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
         return driver;
-    }
-
-    private String sanitizeVersion(String version) {
-        if (version == null) return null;
-        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)+)");
-        Matcher matcher = pattern.matcher(version);
-        return matcher.find() ? matcher.group(1) : version.trim();
     }
 }

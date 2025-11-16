@@ -3,15 +3,10 @@ package org.example.enums;
 import lombok.Getter;
 import org.example.configure.Config;
 
-/**
- * Enum for supported report types.
- * Used to avoid hardcoded strings and improve type safety.
- */
 @Getter
 public enum ReportType {
-    ALLURE("allure", "io.qameta.allure.Allure", "target/allure-results"),
-    EXTENT("extent", "com.aventstack.extentreports.ExtentTest", "target/extent"),
-    JENKINS("jenkins", "org.testng.Reporter", "target/surefire-reports");
+    ALLURE("allure", "io.qameta.allure.Allure", "configured in pom.xml"),
+    EXTENT("extent", "com.aventstack.extentreports.ExtentTest", "target/extent");
 
     private final String key;
     private final String library;
@@ -40,16 +35,12 @@ public enum ReportType {
                 return type;
             }
         }
-        
-        // Fallback aliases
+
         if (normalized.contains("extent")) {
             return EXTENT;
         }
-        if (normalized.contains("jenkins")) {
-            return JENKINS;
-        }
         
-        return ALLURE; // default
+        return ALLURE;
     }
 
     /**
@@ -57,14 +48,12 @@ public enum ReportType {
      */
     public static ReportType getConfigured() {
         String value = System.getProperty("reportType");
-        if (isEmpty(value)) value = System.getProperty("report.strategy");
-        if (isEmpty(value)) value = System.getenv("REPORT_TYPE");
-        if (isEmpty(value)) value = System.getenv("REPORT_STRATEGY");
+
         if (isEmpty(value)) {
-            try { value = Config.getEnvironmentValue("reportType"); } catch (Throwable ignored) { }
+            try { value = Config.getEnvValue("reportType"); } catch (Throwable ignored) { }
         }
         if (isEmpty(value)) {
-            try { value = Config.getEnvironmentValue("report.strategy"); } catch (Throwable ignored) { }
+            try { value = Config.getEnvValue("report.strategy"); } catch (Throwable ignored) { }
         }
         return fromString(value);
     }
@@ -73,10 +62,4 @@ public enum ReportType {
         return s == null || s.trim().isEmpty();
     }
 
-    /**
-     * Check if current configured type matches this enum.
-     */
-    public boolean isConfigured() {
-        return getConfigured() == this;
-    }
 }

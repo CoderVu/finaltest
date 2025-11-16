@@ -6,7 +6,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.example.core.report.annotations.Step;
-import org.example.core.report.ITestReporter;
+import org.example.core.report.IReporter;
 import org.example.core.report.ReportManager;
 
 import java.lang.reflect.Method;
@@ -18,44 +18,33 @@ public class StepAspect {
 
     @Around("@annotation(org.example.core.report.annotations.Step)")
     public Object aroundStep(ProceedingJoinPoint joinPoint) throws Throwable {
-        try {
-            Method method = getMethod(joinPoint);
-            Step step = method.getAnnotation(Step.class);
-            String message = buildMessage(step, method, joinPoint.getArgs());
+        Method method = getMethod(joinPoint);
+        Step step = method.getAnnotation(Step.class);
+        String message = buildMessage(step, method, joinPoint.getArgs());
 
-            // log.info("StepAspect invoked for: {}. Method: {}", message, method.getName());
+        IReporter reporter = ReportManager.getReporter();
+        if (reporter == null) {
+            return joinPoint.proceed();
+        }
 
-            ITestReporter reporter = ReportManager.getReporter();
-
-            // Defensive fallback: if reporter is not ready (no weaving/initialization), execute method directly
-            if (reporter == null) {
-                log.debug("No ITestReporter available — executing method directly: {}", method.getName());
-                return joinPoint.proceed();
-            }
-
-            // Use childStep to create steps in the reporter
-            if (method.getReturnType() == void.class || method.getReturnType() == Void.class) {
-                reporter.childStep(message, () -> {
-                    try {
-                        joinPoint.proceed();
-                    } catch (Throwable throwable) {
-                        rethrowUnchecked(throwable);
-                    }
-                });
-                return null;
-            } else {
-                return reporter.childStep(message, () -> {
-                    try {
-                        return joinPoint.proceed();
-                    } catch (Throwable throwable) {
-                        rethrowUnchecked(throwable);
-                        return null; // unreachable
-                    }
-                });
-            }
-        } catch (Throwable t) {
-            log.debug("@Step execution failed: {}", t.getMessage());
-            throw t;
+        if (method.getReturnType() == void.class || method.getReturnType() == Void.class) {
+            reporter.childStep(message, () -> {
+                try {
+                    joinPoint.proceed();
+                } catch (Throwable throwable) {
+                    rethrowUnchecked(throwable);
+                }
+            });
+            return null;
+        } else {
+            return reporter.childStep(message, () -> {
+                try {
+                    return joinPoint.proceed();
+                } catch (Throwable throwable) {
+                    rethrowUnchecked(throwable);
+                    return null;
+                }
+            });
         }
     }
 

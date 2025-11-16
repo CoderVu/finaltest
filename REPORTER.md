@@ -139,27 +139,30 @@ If you need framework-specific features, you can get the reporter instance:
 ```java
 import org.example.core.report.ReportManager;
 import org.example.core.report.ITestReporter;
+import org.example.core.report.impl.AllureServiceImpl;
 import org.example.core.report.impl.AllureTestReporter;
+import org.example.core.report.impl.ExtentServiceImpl;
 import org.example.core.report.impl.ExtentTestReporter;
+import org.example.core.report.impl.JenkinsServiceImpl;
 import org.example.core.report.impl.JenkinsTestReporter;
 
 // Get the reporter
 ITestReporter reporter = ReportManager.getReporter();
 
 // Check type and use framework-specific features
-if (reporter instanceof AllureTestReporter) {
-    AllureTestReporter allure = (AllureTestReporter) reporter;
-    // Allure-specific methods available
+if(reporter instanceof AllureServiceImpl){
+        AllureServiceImpl allure = (AllureServiceImpl) reporter;
+        // Allure-specific methods available
 }
 
-if (reporter instanceof ExtentTestReporter) {
-    ExtentTestReporter extent = (ExtentTestReporter) reporter;
-    // Extent-specific methods available
+        if(reporter instanceof ExtentServiceImpl){
+        ExtentServiceImpl extent = (ExtentServiceImpl) reporter;
+        // Extent-specific methods available
 }
 
-if (reporter instanceof JenkinsTestReporter) {
-    JenkinsTestReporter jenkins = (JenkinsTestReporter) reporter;
-    // Jenkins-specific methods available
+        if(reporter instanceof JenkinsServiceImpl){
+        JenkinsServiceImpl jenkins = (JenkinsServiceImpl) reporter;
+        // Jenkins-specific methods available
 }
 ```
 
