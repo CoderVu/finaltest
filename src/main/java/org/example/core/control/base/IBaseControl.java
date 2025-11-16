@@ -1,6 +1,6 @@
 package org.example.core.control.base;
 
-import org.example.core.control.base.imp.BaseControl;
+import org.example.core.control.element.Element;
 import org.example.enums.WaitType;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -12,7 +12,7 @@ public interface IBaseControl {
 
     void dragAndDrop(int xOffset, int yOffset);
 
-    void dragAndDrop(BaseControl target);
+    void dragAndDrop(Element target);
 
     void focus();
 

@@ -30,9 +30,8 @@ report/
 ```java
 package org.example.pages;
 
-import org.example.core.report.ReportManager;
 import org.example.core.report.ITestReporter;
-import org.example.core.report.annotations.Step;
+import org.example.core.annotations.Step;
 
 public class LoginPage extends BasePage {
 

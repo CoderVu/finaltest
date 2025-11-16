@@ -4,11 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.core.control.element.Element;
 import org.example.core.control.util.DriverUtils;
-import org.example.core.report.annotations.Step;
+import org.example.core.annotations.Step;
 import org.example.enums.WaitType;
 import org.example.models.Hotel;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.DayOfWeek;
@@ -556,14 +557,14 @@ public class AgodaHomePage extends BasePage {
     @Step("Get size of hotel list in search results")
     public int getHotelListSize() {
         try {
-            List<Element> hotelCards = hotelListContainer.getListElements(Element.class, propertyCardXpath);
-            return hotelCards.size();
+            List<WebElement> webElements = hotelListContainer.getChildElements(propertyCardXpath);
+            return webElements.size();
         } catch (Exception e) {
             log.error("Error getting hotel list size: {}", e.getMessage());
             return 0;
         }
     }
-    @Step("Verify first 5 hotels are sorted by lowest price")
+    @Step("Verify first 5 hotels are sorted by lowest price: {arg0}")
     public boolean verifyHotelsSortedByLowestPrice(List<Hotel> hotels) {
         List<Integer> prices = new ArrayList<>();
         for (int i = 0; i < Math.min(5, hotels.size()); i++) {
@@ -615,18 +616,22 @@ public class AgodaHomePage extends BasePage {
         int timeoutSeconds = 11;
         try {
             hotelListContainer.waitForVisibility(10, WaitType.SOFT);
-
+            
             WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(timeoutSeconds));
-
+            
             boolean sortCompleted = wait.until(driver -> {
                 try {
-                    List<Element> currentCards = hotelListContainer.getListElements(Element.class, propertyCardXpath);
-
-                    if (currentCards.size() != beforeCount) {
-                        log.info("Property card count changed from {} to {}", beforeCount, currentCards.size());
+                    // Avoid using getListElements() (which can use stale WebElement references).
+                    // Use fresh DOM query each time to get current count.
+                    List<org.openqa.selenium.WebElement> currentWebElems =
+                            DriverUtils.getWebDriver().findElements(By.xpath(propertyCardXpath));
+                    
+                    int currentSize = currentWebElems.size();
+                    if (currentSize != beforeCount) {
+                        log.info("Property card count changed from {} to {}", beforeCount, currentSize);
                         return true;
                     }
-
+                    
                     DriverUtils.delay(0.5);
                     return true;
                 } catch (Exception ex) {

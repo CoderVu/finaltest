@@ -48,36 +48,28 @@ public class ExtentStrategyI implements IReportStrategyListener {
             File htmlReport = new File(REPORT_DIR, "index_" + timestamp + ".html");
             ExtentSparkReporter spark = new ExtentSparkReporter(htmlReport.getAbsolutePath());
 
-            try {
-                String suiteName = (context != null && context.getSuite() != null)
-                        ? context.getSuite().getName()
-                        : "Automation Test Suite";
+            String suiteName = (context != null && context.getSuite() != null)
+                    ? context.getSuite().getName()
+                    : "Automation Test Suite";
 
-                spark.config().setDocumentTitle(suiteName);
-                spark.config().setReportName(suiteName);
-                spark.config().setEncoding("utf-8");
+            spark.config().setDocumentTitle(suiteName);
+            spark.config().setReportName(suiteName);
+            spark.config().setEncoding("utf-8");
 
-                EXTENT.attachReporter(spark);
-                EXTENT.setSystemInfo("Suite", suiteName);
-                EXTENT.setSystemInfo("Environment", Config.getEnvFile());
-                EXTENT.setSystemInfo("Browser", EnvUtils.getBrowsers().toString());
-                log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
-            } catch (Throwable t) {
-                log.warn("Failed to initialize ExtentSparkReporter: {}", t.getMessage(), t);
-            } finally {
-                INITIALIZED = true;
-            }
+            EXTENT.attachReporter(spark);
+            EXTENT.setSystemInfo("Suite", suiteName);
+            EXTENT.setSystemInfo("Environment", Config.getEnvFile());
+            EXTENT.setSystemInfo("Browser", EnvUtils.getBrowsers().toString());
+            log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
+            
+            INITIALIZED = true;
         }
     }
 
     @Override
     public void onFinish(ITestContext context) {
-        try {
-            EXTENT.flush();
-            log.info("Extent report generated at {}", REPORT_DIR);
-        } catch (Throwable t) {
-            log.warn("Extent flush failed: {}", t.getMessage());
-        }
+        EXTENT.flush();
+        log.info("Extent report generated at {}", REPORT_DIR);
         ExtentReporter.clearTest();
     }
 
@@ -103,11 +95,7 @@ public class ExtentStrategyI implements IReportStrategyListener {
         String message = getShortErrorMessage(error);
 
         IReporter reporter = ReportManager.getReporter();
-        try {
-            reporter.logFail(message, null);
-        } catch (Throwable t) {
-            log.warn("Reporter handling of failure failed: {}", t.getMessage());
-        }
+        reporter.logFail(message, null);
     }
 
     private String getShortErrorMessage(Throwable error) {
@@ -130,21 +118,13 @@ public class ExtentStrategyI implements IReportStrategyListener {
     @Override
     public void onTestSkipped(ITestResult result) {
         IReporter reporter = ReportManager.getReporter();
-        try {
-            reporter.logStep("Skipped: " + result.getMethod().getMethodName());
-            reporter.attachScreenshot("skipped_" + System.currentTimeMillis() + ".png");
-        } catch (Throwable t) {
-            log.warn("Reporter handling of skipped failed: {}", t.getMessage());
-        }
+        reporter.logStep("Skipped: " + result.getMethod().getMethodName());
+        reporter.attachScreenshot("skipped_" + System.currentTimeMillis() + ".png");
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        // Log for diagnostic purposes (avoids being identical to the super implementation)
-        try {
-            log.debug("onTestFailedButWithinSuccessPercentage called for {}", result.getMethod().getMethodName());
-        } catch (Throwable ignored) {
-        }
+        log.debug("onTestFailedButWithinSuccessPercentage called for {}", result.getMethod().getMethodName());
     }
 
     @Override
@@ -165,39 +145,28 @@ public class ExtentStrategyI implements IReportStrategyListener {
         Throwable t = itr.getThrowable();
         String message = (t == null) ? "Config failed" : "Config failed: " + t.getMessage();
         IReporter reporter = ReportManager.getReporter();
-        try {
-            reporter.logFail(message, t);
-            reporter.attachScreenshot("config_failure_" + System.currentTimeMillis() + ".png");
-        } catch (Throwable tt) {
-            log.warn("Reporter handling of configuration failure failed: {}", tt.getMessage());
-        }
+        reporter.logFail(message, t);
+        reporter.attachScreenshot("config_failure_" + System.currentTimeMillis() + ".png");
     }
 
     @Override
     public void onConfigurationSkip(ITestResult itr) {
-        try {
-            log.debug("onConfigurationSkip called for {}", itr.getMethod().getMethodName());
-        } catch (Throwable ignored) {
-        }
+        log.debug("onConfigurationSkip called for {}", itr.getMethod().getMethodName());
     }
 
     @Override
     public void failStep(String stepName) {
-        try {
-            ExtentTest test = CURRENT_TEST.get();
-            if (test != null) {
-                ExtentTest stepNode = test.createNode(stepName);
-                IReporter reporter = ReportManager.getReporter();
-                if (reporter instanceof ExtentReporter) {
-                    ((ExtentReporter) reporter).attachScreenshotToNode(stepNode, "softassert_" + System.currentTimeMillis());
-                }
-                stepNode.fail("FAILED");
-            } else {
-                IReporter reporter = ReportManager.getReporter();
-                reporter.logFail(stepName, null);
+        ExtentTest test = CURRENT_TEST.get();
+        if (test != null) {
+            ExtentTest stepNode = test.createNode(stepName);
+            IReporter reporter = ReportManager.getReporter();
+            if (reporter instanceof ExtentReporter) {
+                ((ExtentReporter) reporter).attachScreenshotToNode(stepNode, "softassert_" + System.currentTimeMillis());
             }
-        } catch (Throwable t) {
-            log.warn("failStep failed: {}", t.getMessage());
+            stepNode.fail("FAILED");
+        } else {
+            IReporter reporter = ReportManager.getReporter();
+            reporter.logFail(stepName, null);
         }
     }
 
@@ -208,20 +177,16 @@ public class ExtentStrategyI implements IReportStrategyListener {
     }
 
     private ExtentTest getLastTestFromContext(ITestResult itr) {
-        try {
-            var ctx = itr.getTestContext();
-            List<ITestResult> all = new ArrayList<>();
-            all.addAll(ctx.getPassedTests().getAllResults());
-            all.addAll(ctx.getFailedTests().getAllResults());
-            all.addAll(ctx.getSkippedTests().getAllResults());
-            if (all.isEmpty()) return null;
+        var ctx = itr.getTestContext();
+        List<ITestResult> all = new ArrayList<>();
+        all.addAll(ctx.getPassedTests().getAllResults());
+        all.addAll(ctx.getFailedTests().getAllResults());
+        all.addAll(ctx.getSkippedTests().getAllResults());
+        if (all.isEmpty()) return null;
 
-            all.sort(Comparator.comparingLong(ITestResult::getEndMillis).reversed());
-            String lastTestName = all.get(0).getMethod().getMethodName();
-            return NAME_TO_TEST.get(lastTestName);
-        } catch (Throwable t) {
-            return null;
-        }
+        all.sort(Comparator.comparingLong(ITestResult::getEndMillis).reversed());
+        String lastTestName = all.get(0).getMethod().getMethodName();
+        return NAME_TO_TEST.get(lastTestName);
     }
 
     private boolean isSoftAssertHandled(ITestResult result) {

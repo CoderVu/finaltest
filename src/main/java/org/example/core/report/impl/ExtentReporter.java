@@ -88,40 +88,40 @@ public class ExtentReporter extends AbstractReporter {
     @Override
     public void attachScreenshot(String name) {
         ExtentTest test = getCurrentTest();
-        try {
-            WebDriver driver = getWebDriver();
-            if (driver != null && (driver instanceof TakesScreenshot)) {
-                File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        WebDriver driver = getWebDriver();
+        if (driver != null && (driver instanceof TakesScreenshot)) {
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
 
-                // Prefer saving screenshots into the same timestamped report directory if available.
-                // Save into a "screenshots" subfolder so index_*.html can reference "screenshots/<file>" relatively.
-                String reportDirPath = ExtentStrategyI.getReportDir();
-                File screenshotDir;
-                if (reportDirPath != null && !reportDirPath.isEmpty()) {
-                    screenshotDir = new File(reportDirPath, "screenshots");
-                } else {
-                    screenshotDir = new File(System.getProperty("user.dir"), "target/extent-report/screenshots");
-                }
-                if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
-                    log.warn("Could not create screenshot directory: {}", screenshotDir.getAbsolutePath());
-                }
-
-                String filename = (name == null || name.isEmpty()) ? "screenshot_" + System.currentTimeMillis() + ".png" : name;
-                if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
-                File dest = new File(screenshotDir, filename);
-                FileHandler.copy(src, dest);
-
-                // Use relative path for Extent so images display inside the timestamped report folder.
-                String pathForReport = (reportDirPath != null && !reportDirPath.isEmpty())
-                        ? "screenshots/" + filename
-                        : dest.getAbsolutePath();
-
-                if (test != null) {
-                    test.info("Screenshot: " + filename, MediaEntityBuilder.createScreenCaptureFromPath(pathForReport).build());
-                }
+            // Prefer saving screenshots into the same timestamped report directory if available.
+            // Save into a "screenshots" subfolder so index_*.html can reference "screenshots/<file>" relatively.
+            String reportDirPath = ExtentStrategyI.getReportDir();
+            File screenshotDir;
+            if (reportDirPath != null && !reportDirPath.isEmpty()) {
+                screenshotDir = new File(reportDirPath, "screenshots");
+            } else {
+                screenshotDir = new File(System.getProperty("user.dir"), "target/extent-report/screenshots");
             }
-        } catch (Throwable t) {
-            log.warn("Extent attachScreenshot failed: {}", t.getMessage());
+            if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
+                log.warn("Could not create screenshot directory: {}", screenshotDir.getAbsolutePath());
+            }
+
+            String filename = (name == null || name.isEmpty()) ? "screenshot_" + System.currentTimeMillis() + ".png" : name;
+            if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
+            File dest = new File(screenshotDir, filename);
+            try {
+                FileHandler.copy(src, dest);
+            } catch (Throwable e) {
+                log.error("Failed to copy screenshot to destination: {}", e.getMessage());
+            }
+
+            // Use relative path for Extent so images display inside the timestamped report folder.
+            String pathForReport = (reportDirPath != null && !reportDirPath.isEmpty())
+                    ? "screenshots/" + filename
+                    : dest.getAbsolutePath();
+
+            if (test != null) {
+                test.info("Screenshot: " + filename, MediaEntityBuilder.createScreenCaptureFromPath(pathForReport).build());
+            }
         }
     }
 
@@ -185,25 +185,25 @@ public class ExtentReporter extends AbstractReporter {
     public void attachScreenshotToNode(ExtentTest stepNode, String name) {
         WebDriver driver = getWebDriver();
         if (driver instanceof TakesScreenshot) {
-            try {
-                File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-                String reportDirPath = ExtentStrategyI.getReportDir();
-                File screenshotDir = (reportDirPath != null && !reportDirPath.isEmpty())
-                        ? new File(reportDirPath, "screenshots")
-                        : new File(System.getProperty("user.dir"), "target/extent-report/screenshots");
-                if (!screenshotDir.exists()) {
-                    screenshotDir.mkdirs();
-                }
-                String filename = (name == null || name.isEmpty()) ? "screenshot_" + System.currentTimeMillis() + ".png" : name;
-                if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
-                FileHandler.copy(src, new File(screenshotDir, filename));
-                String pathForReport = (reportDirPath != null && !reportDirPath.isEmpty())
-                        ? "screenshots/" + filename
-                        : new File(screenshotDir, filename).getAbsolutePath();
-                stepNode.info("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(pathForReport).build());
-            } catch (Throwable t) {
-                log.warn("Extent attachScreenshotToNode failed: {}", t.getMessage());
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            String reportDirPath = ExtentStrategyI.getReportDir();
+            File screenshotDir = (reportDirPath != null && !reportDirPath.isEmpty())
+                    ? new File(reportDirPath, "screenshots")
+                    : new File(System.getProperty("user.dir"), "target/extent-report/screenshots");
+            if (!screenshotDir.exists()) {
+                screenshotDir.mkdirs();
             }
+            String filename = (name == null || name.isEmpty()) ? "screenshot_" + System.currentTimeMillis() + ".png" : name;
+            if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
+            try {
+                FileHandler.copy(src, new File(screenshotDir, filename));
+            } catch (Throwable e) {
+                log.error("Failed to copy screenshot to destination: {}", e.getMessage());
+            }
+            String pathForReport = (reportDirPath != null && !reportDirPath.isEmpty())
+                    ? "screenshots/" + filename
+                    : new File(screenshotDir, filename).getAbsolutePath();
+            stepNode.info("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(pathForReport).build());
         }
     }
 }

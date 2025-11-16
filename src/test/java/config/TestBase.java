@@ -16,7 +16,6 @@ import static org.example.common.Constants.loadEnvironment;
 public class TestBase {
 
     static {
-        // Initialize report system (Allure config is handled by pom.xml)
         ReportManager.initReport();
     }
 

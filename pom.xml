@@ -61,7 +61,7 @@
             <artifactId>allure-java-commons</artifactId>
             <version>${allure.version}</version>
         </dependency>
-        
+
         <!-- Allure TestNG - Required for Allure to automatically create test cases from TestNG -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
@@ -80,14 +80,14 @@
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        
+
         <!-- Logback Classic (includes Logger class) -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.4.14</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -127,7 +127,7 @@
             <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
-       
+
         <!-- ExtentReports for optional strategy -->
         <dependency>
             <groupId>com.aventstack</groupId>
@@ -135,7 +135,7 @@
             <version>5.1.1</version>
         </dependency>
     </dependencies>
- <build>
+    <build>
         <plugins>
             <!-- Standard Maven compiler with Lombok support -->
             <plugin>
@@ -186,7 +186,7 @@
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <useFile>false</useFile>
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar" 
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar"
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.util=ALL-UNNAMED
                         --add-opens java.base/java.lang.reflect=ALL-UNNAMED

@@ -10,15 +10,23 @@ import org.testng.asserts.SoftAssert;
 import static org.example.common.Constants.DEFAULT_TIMESTAMP_FORMAT;
 import static org.example.utils.DateUtils.getCurrentTimestamp;
 
-import java.util.function.Supplier;
-
 @Slf4j
 public class SoftAssertImpl extends SoftAssert {
 
     private static final ThreadLocal<SoftAssertImpl> SOFT = ThreadLocal.withInitial(SoftAssertImpl::new);
+    private static final ThreadLocal<Boolean> ENABLE_AUTO_RETRY = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Integer> RETRY_COUNT = ThreadLocal.withInitial(() -> 0);
 
     public static SoftAssertImpl get() {
         return SOFT.get();
+    }
+
+    public static void setAutoRetryEnabled(boolean enabled) {
+        ENABLE_AUTO_RETRY.set(enabled);
+    }
+
+    public static void setRetryCount(int count) {
+        RETRY_COUNT.set(Math.max(0, count));
     }
 
     @Override
@@ -27,14 +35,8 @@ public class SoftAssertImpl extends SoftAssert {
 
     @Override
     public void onAssertSuccess(IAssert<?> assertCommand) {
-        // no implementation
     }
 
-    /**
-     * - Notify the selected IReportStrategyListener so that the reporting backend immediately marks a failed step and captures a screenshot.
-     * - Also notify the higher-level IReporter to log the failure and attach screenshot (reporter may implement its own behavior).
-     * - The soft assertion remains soft (super.onAssertFailure records it but does not stop execution).
-     */
     @Override
     public void onAssertFailure(IAssert<?> assertCommand, AssertionError ex) {
         String message = normalizeMessage(assertCommand.getMessage());
@@ -42,26 +44,52 @@ public class SoftAssertImpl extends SoftAssert {
 
         String expected = stringify(assertCommand.getExpected());
         String actual = stringify(assertCommand.getActual());
-        String stepName = "FAIL [" +  getCurrentTimestamp(DEFAULT_TIMESTAMP_FORMAT) + "]: " + message + " | expected=" + expected + " actual=" + actual;
+        
+        boolean shouldRetry = ENABLE_AUTO_RETRY.get() && RETRY_COUNT.get() > 0;
+        boolean retrySucceeded = false;
+        
+        if (shouldRetry) {
+            log.info("Soft assertion failed, attempting auto-retry ({} attempt(s) remaining): {}", 
+                RETRY_COUNT.get(), message);
+            
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+            
+            retrySucceeded = attemptRetry(assertCommand, message);
+            
+            if (retrySucceeded) {
+                log.info("Soft assertion passed after auto-retry: {}", message);
+                IReporter reporter = ReportManager.getReporter();
+                if (reporter != null) {
+                    reporter.info("✓ Assertion passed after auto-retry: " + message);
+                }
+                return;
+            } else {
+                log.warn("Soft assertion failed even after auto-retry: {}", message);
+            }
+        }
+        
+        String stepName = "FAIL [" +  getCurrentTimestamp(DEFAULT_TIMESTAMP_FORMAT) + "]: " + message + 
+            " | expected=" + expected + " actual=" + actual + (shouldRetry ? " (retry failed)" : "");
 
-        // 1) Strategy-level immediate step (marks step failed)
-        IReportStrategyListener strategy = safeGet(() -> ReportManager.selectStrategy(), null, "ReportManager.selectStrategy failed");
+        IReportStrategyListener strategy = ReportManager.selectStrategy();
         if (strategy != null) {
-            safeRun(() -> strategy.failStep(stepName), "IReportStrategyListener.failStep failed");
+            strategy.failStep(stepName);
         }
 
-        // mark current TestNG result so listeners skip duplicate capture at teardown
-        safeRun(() -> {
-            org.testng.ITestResult current = org.testng.Reporter.getCurrentTestResult();
-            if (current != null) {
-                current.setAttribute("soft.assert.handled", Boolean.TRUE);
-            }
-        }, "Could not mark TestResult as handled");
+        org.testng.ITestResult current = org.testng.Reporter.getCurrentTestResult();
+        if (current != null) {
+            current.setAttribute("soft.assert.handled", Boolean.TRUE);
+        }
 
-        // 2) Reporter-level log không cần vì failStep đã tạo step failed với screenshot rồi
-
-        // Record the soft-assert failure (does not throw), so test continues.
         super.onAssertFailure(assertCommand, ex);
+    }
+
+    private boolean attemptRetry(IAssert<?> assertCommand, String message) {
+        return false;
     }
 
     private String normalizeMessage(String message) {
@@ -79,22 +107,12 @@ public class SoftAssertImpl extends SoftAssert {
     public static void reset() {
         SOFT.remove();
         SOFT.set(new SoftAssertImpl());
+        ENABLE_AUTO_RETRY.set(false);
+        RETRY_COUNT.set(0);
     }
 
-    private void safeRun(Runnable action, String debugMessage) {
-        try {
-            action.run();
-        } catch (Throwable t) {
-            log.debug("{}: {}", debugMessage, t.getMessage(), t);
-        }
-    }
-
-    private <T> T safeGet(Supplier<T> supplier, T defaultValue, String debugMessage) {
-        try {
-            return supplier.get();
-        } catch (Throwable t) {
-            log.debug("{}: {}", debugMessage, t.getMessage(), t);
-            return defaultValue;
-        }
+    @Override
+    public void assertAll() {
+        super.assertAll();
     }
 }

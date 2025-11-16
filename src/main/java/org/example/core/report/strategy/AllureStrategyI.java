@@ -31,59 +31,47 @@ public class AllureStrategyI implements IReportStrategyListener {
 
     @Override
     public void onTestStart(ITestResult result) {
-        log.debug("Test started: {}", result.getName());
-        // Ensure Allure test case is created for this test
-        try {
-            String testUuid = Allure.getLifecycle().getCurrentTestCaseOrStep().orElse(null);
-            if (testUuid == null) {
-                // Create test case if not exists
-                String testCaseUuid = java.util.UUID.randomUUID().toString();
-                io.qameta.allure.model.TestResult testResult = new io.qameta.allure.model.TestResult()
-                        .setUuid(testCaseUuid)
-                        .setName(result.getMethod().getMethodName())
-                        .setFullName(result.getTestClass().getName() + "." + result.getMethod().getMethodName())
-                        .setStatus(Status.PASSED);
-                Allure.getLifecycle().scheduleTestCase(testResult);
-                Allure.getLifecycle().startTestCase(testCaseUuid);
-            }
-        } catch (Exception e) {
-            log.debug("Could not create Allure test case: {}", e.getMessage());
-        }
+//        log.debug("Test started: {}", result.getName());
+//        // Ensure Allure test case is created for this test
+//        String testUuid = Allure.getLifecycle().getCurrentTestCaseOrStep().orElse(null);
+//        if (testUuid == null) {
+//            // Create test case if not exists
+//            String testCaseUuid = java.util.UUID.randomUUID().toString();
+//            io.qameta.allure.model.TestResult testResult = new io.qameta.allure.model.TestResult()
+//                    .setUuid(testCaseUuid)
+//                    .setName(result.getMethod().getMethodName())
+//                    .setFullName(result.getTestClass().getName() + "." + result.getMethod().getMethodName())
+//                    .setStatus(Status.PASSED);
+//            Allure.getLifecycle().scheduleTestCase(testResult);
+//            Allure.getLifecycle().startTestCase(testCaseUuid);
+//        }
     }
 
     @Override
     public void onTestSuccess(ITestResult result) {
         log.debug("Test passed: {}", result.getName());
-        try {
-            Allure.getLifecycle().getCurrentTestCaseOrStep().ifPresent(testUuid -> {
-                Allure.getLifecycle().updateTestCase(testUuid, tr -> tr.setStatus(Status.PASSED));
-                Allure.getLifecycle().stopTestCase(testUuid);
-                Allure.getLifecycle().writeTestCase(testUuid);
-            });
-        } catch (Exception e) {
-            log.debug("Could not update Allure test case on success: {}", e.getMessage());
-        }
+        Allure.getLifecycle().getCurrentTestCaseOrStep().ifPresent(testUuid -> {
+            Allure.getLifecycle().updateTestCase(testUuid, tr -> tr.setStatus(Status.PASSED));
+            Allure.getLifecycle().stopTestCase(testUuid);
+            Allure.getLifecycle().writeTestCase(testUuid);
+        });
     }
 
     @Override
     public void onTestFailure(ITestResult result) {
         Throwable t = result.getThrowable();
-        try {
-            Allure.getLifecycle().getCurrentTestCaseOrStep().ifPresent(testUuid -> {
-                Allure.getLifecycle().updateTestCase(testUuid, tr -> {
-                    tr.setStatus(Status.FAILED);
-                    if (t != null) {
-                        tr.setStatusDetails(new io.qameta.allure.model.StatusDetails()
-                                .setMessage(getShortErrorMessage(t))
-                                .setTrace(getStackTrace(t)));
-                    }
-                });
-                Allure.getLifecycle().stopTestCase(testUuid);
-                Allure.getLifecycle().writeTestCase(testUuid);
+        Allure.getLifecycle().getCurrentTestCaseOrStep().ifPresent(testUuid -> {
+            Allure.getLifecycle().updateTestCase(testUuid, tr -> {
+                tr.setStatus(Status.FAILED);
+                if (t != null) {
+                    tr.setStatusDetails(new io.qameta.allure.model.StatusDetails()
+                            .setMessage(getShortErrorMessage(t))
+                            .setTrace(getStackTrace(t)));
+                }
             });
-        } catch (Exception e) {
-            log.debug("Could not update Allure test case on failure: {}", e.getMessage());
-        }
+            Allure.getLifecycle().stopTestCase(testUuid);
+            Allure.getLifecycle().writeTestCase(testUuid);
+        });
         log.debug("Test failed: {}", result.getName());
     }
     
@@ -150,22 +138,16 @@ public class AllureStrategyI implements IReportStrategyListener {
     }
 
     public static void attachScreenshot(String name) {
-        try {
-            byte[] bytes = getScreenshotBytes();
-            if (bytes != null && bytes.length > 0) {
-                Allure.addAttachment(name, "image/png", new ByteArrayInputStream(bytes), "png");
-            }
-        } catch (Throwable ignored) {
+        byte[] bytes = getScreenshotBytes();
+        if (bytes != null && bytes.length > 0) {
+            Allure.addAttachment(name, "image/png", new ByteArrayInputStream(bytes), "png");
         }
     }
 
     private static byte[] getScreenshotBytes() {
-        try {
-            WebDriver driver = getWebDriver();
-            if (driver != null && driver instanceof TakesScreenshot) {
-                return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-            }
-        } catch (Throwable ignored) {
+        WebDriver driver = getWebDriver();
+        if (driver != null && driver instanceof TakesScreenshot) {
+            return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
         }
         return new byte[0];
     }
@@ -173,28 +155,18 @@ public class AllureStrategyI implements IReportStrategyListener {
     @Override
     public void failStep(String name) {
         String stepUuid = java.util.UUID.randomUUID().toString();
-        try {
-            io.qameta.allure.model.StepResult sr = new io.qameta.allure.model.StepResult()
-                    .setName(name)
-                    .setStatus(Status.FAILED);
+        io.qameta.allure.model.StepResult sr = new io.qameta.allure.model.StepResult()
+                .setName(name)
+                .setStatus(Status.FAILED);
 
-            Allure.getLifecycle().startStep(stepUuid, sr);
-            
-            try {
-                byte[] bytes = getScreenshotBytes();
-                if (bytes != null && bytes.length > 0) {
-                    Allure.getLifecycle().addAttachment("Screenshot", "image/png", "png", new ByteArrayInputStream(bytes));
-                }
-            } catch (Throwable t) {
-                log.debug("Failed to capture screenshot for failed step '{}': {}", name, t.getMessage());
-            }
-            
-            Allure.getLifecycle().stopStep(stepUuid);
-        } catch (IllegalStateException | IllegalThreadStateException e) {
-            log.debug("Cannot create Allure failed step (no active lifecycle): {}", name);
-        } catch (Throwable e) {
-            log.debug("Unexpected error while creating Allure failed step '{}': {}", name, e.getMessage());
+        Allure.getLifecycle().startStep(stepUuid, sr);
+        
+        byte[] bytes = getScreenshotBytes();
+        if (bytes != null && bytes.length > 0) {
+            Allure.getLifecycle().addAttachment("Screenshot", "image/png", "png", new ByteArrayInputStream(bytes));
         }
+        
+        Allure.getLifecycle().stopStep(stepUuid);
     }
 
 }

@@ -15,12 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+import static org.example.core.helper.AssertionHelper.*;
+
 @Slf4j
 @Story("Hotel Search and Sort")
 public class TC01AgodaHotelSearch extends TestBase {
 
     AgodaHomePage homePage = new AgodaHomePage();
-    SoftAssertImpl softAssert = new SoftAssertImpl();
 
     @Test(description = "TC01: Search and sort hotel successfully", dataProvider = "auto", dataProviderClass = DataProvider.class)
     @DataFile("tc01.json")
@@ -46,24 +47,57 @@ public class TC01AgodaHotelSearch extends TestBase {
         homePage.switchToSearchResultsTab();
         homePage.waitForSearchResultsToLoad();
 
-        // Step 7: Verify search results
+        // Step 7: Verify search results with auto-retry assertions
         List<Hotel> hotels = homePage.getAllHotelsFromListViewSearch(expectedHotelCount);
-        softAssert.assertTrue(homePage.verifySearchResultsDisplayed(expectedHotelCount),
-                String.format("Verify at least %d hotels are displayed. Found hotels: %d",
-                        expectedHotelCount, homePage.getTotalHotelsCount(hotels)));
+        int actualHotelCount = homePage.getTotalHotelsCount(hotels);
+        
+        // Assert with auto-retry: Verify at least expected number of hotels are displayed
+        assertTrue(
+            () -> homePage.verifySearchResultsDisplayed(expectedHotelCount),
+            String.format("Verify at least %d hotels are displayed. Found hotels: %d", 
+                expectedHotelCount, actualHotelCount)
+        );
+        
+        // Assert with auto-retry: Verify hotel count is greater than or equal to expected
+        assertGreaterThanOrEqual(
+            actualHotelCount, 
+            expectedHotelCount,
+            String.format("Hotel count should be at least %d. Actual: %d", 
+                expectedHotelCount, actualHotelCount)
+        );
 
+        // Step 8: Sort hotels by lowest price
         int beforeSortCount = homePage.getHotelListSize();
         homePage.sortByLowestPrice();
         homePage.waitForPropertyCardCountChange(beforeSortCount);
 
-        // Fix: Get hotels list AFTER sorting to verify correct order
-        List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(Math.min(5, expectedHotelCount));
-        softAssert.assertFalse(homePage.verifyHotelsSortedByLowestPrice(hotelsAfterSort),
-                "Verify hotels are sorted by lowest price after sort operation");
-        softAssert.assertFalse(homePage.verifyHotelsDestination(hotelsAfterSort, destination),
-                "Verify hotels have correct destination after sort");
+        // Step 9: Verify sorting and destination with auto-retry
+        // Note: Supplier will re-fetch data from UI on retry to get fresh data
+        int expectedCount = Math.min(5, expectedHotelCount);
+        
+        // Assert with auto-retry: Verify hotels are sorted by lowest price
+        // Supplier re-fetches hotels from UI on retry to ensure fresh data
+        assertFalse(
+            () -> {
+                List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
+                return homePage.verifyHotelsSortedByLowestPrice(hotelsAfterSort);
+            },
+            "Verify hotels are sorted by lowest price after sort operation"
+        );
+        
+        // Assert with auto-retry: Verify hotels have correct destination
+        // Supplier re-fetches hotels from UI on retry to ensure fresh data
+        assertTrue(
+            () -> {
+                List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
+                return homePage.verifyHotelsDestination(hotelsAfterSort, destination);
+            },
+            "Verify hotels have correct destination after sort"
+        );
 
-        softAssert.assertAll();
+        // Final check: Assert all soft assertions
+        // Use get() to ensure we use the same ThreadLocal instance that was used in assertions
+        SoftAssertImpl.get().assertAll();
     }
 
 }

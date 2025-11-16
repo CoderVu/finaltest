@@ -13,9 +13,15 @@ import java.io.ByteArrayInputStream;
  */
 @Slf4j
 public class AllureReporter extends AbstractReporter {
+    private static final ThreadLocal<Boolean> IN_STEP = ThreadLocal.withInitial(() -> false);
 
     public AllureReporter() {
         super(ReportType.ALLURE);
+    }
+
+    @Override
+    public boolean isInStep() {
+        return IN_STEP.get();
     }
 
     @Override
@@ -37,37 +43,43 @@ public class AllureReporter extends AbstractReporter {
     public void attachScreenshot(String name) {
         byte[] bytes = getScreenshotBytes();
         if (bytes != null && bytes.length > 0) {
-            try {
-                Allure.addAttachment(name != null ? name : "screenshot", "image/png", new ByteArrayInputStream(bytes), "png");
-            } catch (Throwable t) {
-                log.warn("Allure attachScreenshot failed: {}", t.getMessage());
-            }
+            Allure.addAttachment(name != null ? name : "screenshot", "image/png", new ByteArrayInputStream(bytes), "png");
         }
     }
 
     @Override
     public void childStep(String name, Runnable runnable) {
-        Allure.step(name, () -> {
-            try {
-                runnable.run();
-            } catch (Throwable e) {
-                attachScreenshot("step_fail_" + name);
-                throw e;
-            }
-        });
+        IN_STEP.set(true);
+        try {
+            Allure.step(name, () -> {
+                try {
+                    runnable.run();
+                } catch (Throwable e) {
+                    attachScreenshot("step_fail_" + name);
+                    throw e;
+                }
+            });
+        } finally {
+            IN_STEP.set(false);
+        }
     }
 
     @Override
     public <T> T childStep(String name, java.util.function.Supplier<T> supplier) {
         final Object[] holder = new Object[1];
-        Allure.step(name, () -> {
-            try {
-                holder[0] = supplier.get();
-            } catch (Throwable e) {
-                attachScreenshot("step_fail_" + name);
-                throw e;
-            }
-        });
+        IN_STEP.set(true);
+        try {
+            Allure.step(name, () -> {
+                try {
+                    holder[0] = supplier.get();
+                } catch (Throwable e) {
+                    attachScreenshot("step_fail_" + name);
+                    throw e;
+                }
+            });
+        } finally {
+            IN_STEP.set(false);
+        }
         @SuppressWarnings("unchecked")
         T result = (T) holder[0];
         return result;

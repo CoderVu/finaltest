@@ -11,7 +11,7 @@
     </weaver>
     <aspects>
         <!-- Explicitly register the StepAspect -->
-        <aspect name="org.example.core.report.aop.StepAspect"/>
+        <aspect name="org.example.core.aop.StepAspect"/>
     </aspects>
 </aspectj>
 
