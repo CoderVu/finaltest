@@ -2,8 +2,8 @@ package config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
+import org.example.core.assertion.MySoftAssert;
 import org.example.core.driver.DriverFactory;
-import org.example.core.assertion.SoftAssertImpl;
 import org.example.core.report.ReportManager;
 import org.example.enums.BrowserType;
 import org.testng.ITestResult;
@@ -41,7 +41,7 @@ public class TestBase {
 
     @BeforeMethod(alwaysRun = true)
     public void setUpMethod() {
-        SoftAssertImpl.reset();
+        MySoftAssert.reset();
     }
 
     @AfterMethod(alwaysRun = true)

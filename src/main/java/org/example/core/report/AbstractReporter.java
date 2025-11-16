@@ -6,7 +6,7 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
-import static org.example.core.control.util.DriverUtils.getWebDriver;
+import static org.example.core.element.util.DriverUtils.getWebDriver;
 
 @Slf4j
 public abstract class AbstractReporter implements IReporter {

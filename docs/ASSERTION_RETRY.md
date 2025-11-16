@@ -18,7 +18,7 @@ Khi một UI assertion fail, framework sẽ tự động retry 1 lần trước 
 ```java
 
 
-import static org.example.core.control.element.ElementFactory.$;
+import static org.example.core.element.ElementFactory.$;
 
 // Assert text equals
 Element titleElement = $("//h1[@class='title']");
@@ -76,19 +76,25 @@ AssertionHelper.
 `SoftAssertImpl` có built-in auto-retry (mặc định enabled):
 
 ```java
+import org.example.core.assertion.MySoftAssert;
 import org.example.core.assertion.SoftAssertImpl;
-import static org.example.core.control.element.ElementFactory.$;
 
-SoftAssertImpl softAssert = SoftAssertImpl.get();
+import static org.example.core.element.ElementFactory.$;
+
+MySoftAssert softAssert = MySoftAssert.get();
 
 Element element = $("//div[@id='status']");
 String actualText = element.getText();
 
 // Assertion này sẽ tự động retry 1 lần nếu fail
-softAssert.assertEquals(actualText, "Ready", "Status should be 'Ready'");
+softAssert.
+
+assertEquals(actualText, "Ready","Status should be 'Ready'");
 
 // Continue with more assertions...
-softAssert.assertAll(); // Check all assertions at the end
+softAssert.
+
+assertAll(); // Check all assertions at the end
 ```
 
 ### 3. Cấu hình auto-retry

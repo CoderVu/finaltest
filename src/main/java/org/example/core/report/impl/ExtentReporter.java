@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.example.core.control.util.DriverUtils.getWebDriver;
+import static org.example.core.element.util.DriverUtils.getWebDriver;
 
 /**
  * Implementation của IReporter cho Extent reporting.

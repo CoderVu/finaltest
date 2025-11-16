@@ -1,8 +1,7 @@
-package org.example.core.control.util;
+package org.example.core.element.util;
 
 import org.example.configure.Config;
 import org.example.core.driver.DriverFactory;
-import org.example.enums.BrowserType;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;

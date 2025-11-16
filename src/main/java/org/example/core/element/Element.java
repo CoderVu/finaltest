@@ -1,10 +1,8 @@
-package org.example.core.control.element;
+package org.example.core.element;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.core.control.base.IBaseControl;
-import org.example.core.control.util.DriverUtils;
-import org.example.enums.WaitType;
+import org.example.core.element.util.DriverUtils;
 import org.example.utils.WaitUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -14,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.openqa.selenium.support.ui.Select;
-import static org.example.core.control.util.DriverUtils.getWebDriver;
+import static org.example.core.element.util.DriverUtils.getWebDriver;
 
 @Slf4j
-public class Element implements IBaseControl {
+public class Element {
 
     private String locator;
     private By byLocator;
@@ -91,13 +89,11 @@ public class Element implements IBaseControl {
         return parent.getElement();
     }
 
-    @Override
     public void dragAndDrop(int xOffset, int yOffset) {
         Actions actions = new Actions(getWebDriver());
         actions.dragAndDropBy(getElement(), xOffset, yOffset).build().perform();
     }
 
-    @Override
     public void dragAndDrop(Element target) {
         Actions actions = new Actions(getWebDriver());
         actions.dragAndDrop(getElement(), target.getElement()).build().perform();
@@ -107,7 +103,6 @@ public class Element implements IBaseControl {
         DriverUtils.execJavaScript("arguments[0].focus();", getElement());
     }
 
-    @Override
     public String getAttribute(String attributeName) {
         try {
             log.debug(String.format("Get attribute '%s' of element %s", attributeName, getLocator().toString()));
@@ -119,27 +114,22 @@ public class Element implements IBaseControl {
 
     }
 
-    @Override
     public WebElement getChildElement(String xpath) {
         return getElement().findElement(By.xpath(xpath));
     }
 
-    @Override
     public List<WebElement> getChildElements() {
         return getChildElements("./*");
     }
 
-    @Override
     public List<WebElement> getChildElements(String xpath) {
         return getElement().findElements(By.xpath(xpath));
     }
 
-    @Override
     public String getClassName() {
         return getAttribute("class");
     }
 
-    @Override
     public WebElement getElement() {
         WebElement element = null;
         try {
@@ -157,7 +147,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public List<WebElement> getElements() {
         if (parent != null)
             return parent.getElement().findElements(getLocator());
@@ -165,22 +154,18 @@ public class Element implements IBaseControl {
     }
 
 
-    @Override
     public By getLocator() {
         return this.byLocator;
     }
 
-    @Override
     public String getLocatorString() {
         return this.locator;
     }
 
-    @Override
     public String getTagName() {
         return getElement().getTagName();
     }
 
-    @Override
     public String getText() {
         try {
             log.debug(String.format("Get text of element %s", getLocator().toString()));
@@ -191,7 +176,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public void setText(String text) {
         getElement().sendKeys(text);
     }
@@ -206,7 +190,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public String getValue() {
         try {
             log.debug(String.format("Get value of element %s", getLocator().toString()));
@@ -218,7 +201,6 @@ public class Element implements IBaseControl {
 
     }
 
-    @Override
     public boolean isClickable() {
         Duration timeout = DriverUtils.getTimeOut();
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
@@ -236,12 +218,10 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public boolean isDynamicLocator() {
         return this.locator != null && this.locator.toLowerCase().matches("(.*)%[s|d](.*)");
     }
 
-    @Override
     public boolean isEnabled() {
         try {
             log.debug(String.format("is control enabled or not: %s", getLocator().toString()));
@@ -253,7 +233,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public boolean isExist() {
         return isExist(DriverUtils.getTimeOut());
     }
@@ -269,14 +248,12 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     @Deprecated
     public boolean isExist(int timeOutInSeconds) {
         return isExist(Duration.ofSeconds(timeOutInSeconds));
     }
 
 
-    @Override
     public boolean isSelected() {
         try {
             log.debug(String.format("is control selected or not: %s", getLocator().toString()));
@@ -288,7 +265,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public boolean isVisible() {
         return isVisible(DriverUtils.getTimeOut());
     }
@@ -310,26 +286,22 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     @Deprecated
     public boolean isVisible(int timeOutInSeconds) {
         return isVisible(Duration.ofSeconds(timeOutInSeconds));
     }
 
-    @Override
     public void mouseHoverJScript() {
         String mouseOverScript = "if(document.createEvent){var evObj = document.createEvent('MouseEvents');evObj.initEvent('mouseover', true, false); arguments[0].dispatchEvent(evObj);} else if(document.createEventObject) { arguments[0].fireEvent('onmouseover');}";
         jsExecutor().executeScript(mouseOverScript, getElement());
 
     }
 
-    @Override
     public void moveTo() {
         Actions actions = new Actions(getWebDriver());
         actions.moveToElement(getElement()).build().perform();
     }
 
-    @Override
     public void moveTo(int x, int y) {
         WebElement element = getElement();
         int absX = element.getLocation().x + x;
@@ -339,7 +311,6 @@ public class Element implements IBaseControl {
         actions.moveByOffset(absX, absY).build().perform();
     }
 
-    @Override
     public void moveToCenter() {
         WebElement element = getElement();
         int x = element.getLocation().x + element.getSize().width / 2;
@@ -349,7 +320,6 @@ public class Element implements IBaseControl {
         actions.moveByOffset(x, y).build().perform();
     }
 
-    @Override
     public void scrollElementToCenterScreen() {
         DriverUtils.waitForAutoScrollingStopped();
         String js = "Element.prototype.documentOffsetTop=function(){return this.offsetTop+(this.offsetParent?this.offsetParent.documentOffsetTop():0)};var top=arguments[0].documentOffsetTop()-window.innerHeight/2;window.scrollTo(0,top);";
@@ -357,7 +327,6 @@ public class Element implements IBaseControl {
         log.info("Scroll element {} to center of screen", getLocator().toString());
     }
 
-    @Override
     public void scrollToView() {
         try {
             jsExecutor().executeScript("arguments[0].scrollIntoView(true);", getElement());
@@ -370,7 +339,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public void scrollToView(int offsetX, int offsetY) {
         try {
             jsExecutor().executeScript("arguments[0].scrollIntoView(true);", getElement());
@@ -383,7 +351,6 @@ public class Element implements IBaseControl {
         }
     }
 
-    @Override
     public void setAttributeJS(String attributeName, String value) {
         try {
             log.debug(String.format("Set attribute for %s", getLocator().toString()));
@@ -396,23 +363,20 @@ public class Element implements IBaseControl {
 
     }
 
-    @Override
     public void setDynamicValue(Object... args) {
         this.locator = String.format(this.dynamicLocator, args);
         this.byLocator = getByLocator();
     }
 
-    @Override
     public void submit() {
         getElement().submit();
     }
 
-    @Override
     public void waitForDisappear() {
-        waitForDisappear(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForDisappear(DriverUtils.getTimeOut());
     }
 
-    public void waitForDisappear(Duration timeout, WaitType waitType) {
+    public void waitForDisappear(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         WebDriver driver = getWebDriver();
@@ -437,28 +401,22 @@ public class Element implements IBaseControl {
 
         if (!success) {
             String msg = "Element still visible after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
-            if (waitType == WaitType.STRICT) {
-                log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), actualTimeout.getSeconds());
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), actualTimeout.getSeconds());
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForDisappear(int timeOutInSeconds, WaitType waitType) {
-        waitForDisappear(Duration.ofSeconds(timeOutInSeconds), waitType);
+    public void waitForDisappear(int timeOutInSeconds) {
+        waitForDisappear(Duration.ofSeconds(timeOutInSeconds));
     }
 
 
-    @Override
     public void waitForDisplay() {
-        waitForDisplay(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForDisplay(DriverUtils.getTimeOut());
     }
 
-    public void waitForDisplay(Duration timeout, WaitType waitType) {
+    public void waitForDisplay(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -473,33 +431,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = "Element not displayed after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
             log.error("waitForDisplay timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator().toString(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForDisplay(int timeOutInSeconds, WaitType waitType) {
-        waitForDisplay(Duration.ofSeconds(timeOutInSeconds), waitType);
+    public void waitForDisplay(int timeOutInSeconds) {
+        waitForDisplay(Duration.ofSeconds(timeOutInSeconds));
     }
 
     public void waitForElementVisible() {
-        waitForElementVisible(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForElementVisible(DriverUtils.getTimeOut());
     }
 
     public void waitForElementVisible(Duration timeout) {
-        waitForElementVisible(timeout, WaitType.STRICT);
-    }
-
-    public void waitForElementVisible(WaitType waitType) {
-        waitForElementVisible(DriverUtils.getTimeOut(), waitType);
-    }
-
-    public void waitForElementVisible(Duration timeout, WaitType waitType) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -514,38 +459,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = String.format("Element not visible after %d seconds: %s", actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForElementVisible timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
     @Deprecated
     public void waitForElementVisible(int timeOutInSeconds) {
-        waitForElementVisible(Duration.ofSeconds(timeOutInSeconds), WaitType.STRICT);
+        waitForElementVisible(Duration.ofSeconds(timeOutInSeconds));
     }
 
-    @Deprecated
-    public void waitForElementVisible(int timeOutInSeconds, WaitType waitType) {
-        waitForElementVisible(Duration.ofSeconds(timeOutInSeconds), waitType);
-    }
-
-    @Override
     public void waitForElementClickable() {
-        waitForElementClickable(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForElementClickable(DriverUtils.getTimeOut());
     }
 
     public void waitForElementClickable(Duration timeout) {
-        waitForElementClickable(timeout, WaitType.STRICT);
-    }
-
-    public void waitForElementClickable(WaitType waitType) {
-        waitForElementClickable(DriverUtils.getTimeOut(), waitType);
-    }
-
-    public void waitForElementClickable(Duration timeout, WaitType waitType) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -560,39 +487,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = String.format("Element not clickable after %d seconds: %s", actualTimeout.getSeconds(), getLocator().toString());
             log.error("WaitForElementClickable timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator().toString(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
     public void waitForElementClickable(int timeOutInSecond) {
-        waitForElementClickable(Duration.ofSeconds(timeOutInSecond), WaitType.STRICT);
+        waitForElementClickable(Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Deprecated
-    public void waitForElementClickable(int timeOutInSecond, WaitType waitType) {
-        waitForElementClickable(Duration.ofSeconds(timeOutInSecond), waitType);
-    }
-
-    @Override
     public void waitForElementDisabled() {
-        waitForElementDisabled(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForElementDisabled(DriverUtils.getTimeOut());
     }
 
     public void waitForElementDisabled(Duration timeout) {
-        waitForElementDisabled(timeout, WaitType.STRICT);
-    }
-
-    public void waitForElementDisabled(WaitType waitType) {
-        waitForElementDisabled(DriverUtils.getTimeOut(), waitType);
-    }
-
-    public void waitForElementDisabled(Duration timeout, WaitType waitType) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -607,39 +515,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = String.format("Element not disabled after %d seconds: %s", actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForElementDisabled timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator().toString(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
     public void waitForElementDisabled(int timeOutInSecond) {
-        waitForElementDisabled(Duration.ofSeconds(timeOutInSecond), WaitType.STRICT);
+        waitForElementDisabled(Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Deprecated
-    public void waitForElementDisabled(int timeOutInSecond, WaitType waitType) {
-        waitForElementDisabled(Duration.ofSeconds(timeOutInSecond), waitType);
-    }
-
-    @Override
     public void waitForElementEnabled() {
-        waitForElementEnabled(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForElementEnabled(DriverUtils.getTimeOut());
     }
 
     public void waitForElementEnabled(Duration timeout) {
-        waitForElementEnabled(timeout, WaitType.STRICT);
-    }
-
-    public void waitForElementEnabled(WaitType waitType) {
-        waitForElementEnabled(DriverUtils.getTimeOut(), waitType);
-    }
-
-    public void waitForElementEnabled(Duration timeout, WaitType waitType) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -654,31 +543,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = String.format("Element not enabled after %d seconds: %s", actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForElementEnabled timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator().toString(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
     public void waitForElementEnabled(int timeOutInSecond) {
-        waitForElementEnabled(Duration.ofSeconds(timeOutInSecond), WaitType.STRICT);
+        waitForElementEnabled(Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Deprecated
-    public void waitForElementEnabled(int timeOutInSecond, WaitType waitType) {
-        waitForElementEnabled(Duration.ofSeconds(timeOutInSecond), waitType);
-    }
-
-    @Override
     public void waitForInvisibility() {
-        waitForInvisibility(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForInvisibility(DriverUtils.getTimeOut());
     }
 
-    public void waitForInvisibility(Duration timeout, WaitType waitType) {
+    public void waitForInvisibility(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         WebDriver driver = getWebDriver();
@@ -700,29 +578,23 @@ public class Element implements IBaseControl {
         }, actualTimeout, log);
         if (!ok) {
             String msg = "waitForInvisibility timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
-            if (waitType == WaitType.STRICT) {
-                log.warn("waitForInvisibility timeout after {} seconds for control '{}'. Throwing.", actualTimeout.getSeconds(), getLocator().toString());
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            log.warn("waitForInvisibility timeout after {} seconds for control '{}'. Throwing.", actualTimeout.getSeconds(), getLocator().toString());
+            throw new RuntimeException(msg);
         } else {
             log.info("Element {} is now invisible or removed from DOM", getLocator().toString());
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForInvisibility(int timeOutInSeconds, WaitType waitType) {
-        waitForInvisibility(Duration.ofSeconds(timeOutInSeconds), waitType);
+    public void waitForInvisibility(int timeOutInSeconds) {
+        waitForInvisibility(Duration.ofSeconds(timeOutInSeconds));
     }
 
-    @Override
     public void waitForTextToBeNotPresent(String text) {
-        waitForTextToBeNotPresent(text, DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForTextToBeNotPresent(text, DriverUtils.getTimeOut());
     }
 
-    public void waitForTextToBeNotPresent(String text, Duration timeout, WaitType waitType) {
+    public void waitForTextToBeNotPresent(String text, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -738,26 +610,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = "waitForTextToBeNotPresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error(String.format("waitForTextToBeNotPresent: Has error with control '%s'", getLocator().toString()));
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForTextToBeNotPresent(String text, int timeOutInSecond, WaitType waitType) {
-        waitForTextToBeNotPresent(text, Duration.ofSeconds(timeOutInSecond), waitType);
+    public void waitForTextToBeNotPresent(String text, int timeOutInSecond) {
+        waitForTextToBeNotPresent(text, Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Override
     public void waitForTextToBePresent(String text) {
-        waitForTextToBePresent(text, DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForTextToBePresent(text, DriverUtils.getTimeOut());
     }
 
-    public void waitForTextToBePresent(String text, Duration timeout, WaitType waitType) {
+    public void waitForTextToBePresent(String text, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -773,26 +639,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = "waitForTextToBePresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error(String.format("waitForTextToBePresent: Has error with control '%s'", getLocator().toString()));
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForTextToBePresent(String text, int timeOutInSecond, WaitType waitType) {
-        waitForTextToBePresent(text, Duration.ofSeconds(timeOutInSecond), waitType);
+    public void waitForTextToBePresent(String text, int timeOutInSecond) {
+        waitForTextToBePresent(text, Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Override
     public void waitForValueNotPresentInAttribute(String attribute, String value) {
-        waitForValueNotPresentInAttribute(attribute, value, DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForValueNotPresentInAttribute(attribute, value, DriverUtils.getTimeOut());
     }
 
-    public void waitForValueNotPresentInAttribute(String attribute, String value, Duration timeout, WaitType waitType) {
+    public void waitForValueNotPresentInAttribute(String attribute, String value, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -808,26 +668,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = "waitForValueNotPresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error(String.format("waitForValueNotPresentInAttribute: Has error with control '%s'", getLocator().toString()));
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForValueNotPresentInAttribute(String attribute, String value, int timeOutInSecond, WaitType waitType) {
-        waitForValueNotPresentInAttribute(attribute, value, Duration.ofSeconds(timeOutInSecond), waitType);
+    public void waitForValueNotPresentInAttribute(String attribute, String value, int timeOutInSecond) {
+        waitForValueNotPresentInAttribute(attribute, value, Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Override
     public void waitForValuePresentInAttribute(String attribute, String value) {
-        waitForValuePresentInAttribute(attribute, value, DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForValuePresentInAttribute(attribute, value, DriverUtils.getTimeOut());
     }
 
-    public void waitForValuePresentInAttribute(String attribute, String value, Duration timeout, WaitType waitType) {
+    public void waitForValuePresentInAttribute(String attribute, String value, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -843,26 +697,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = "waitForValuePresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error(String.format("waitForValuePresentInAttribute: Has error with control '%s'", getLocator().toString()));
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                log.warn("SOFT wait - continuing despite: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForValuePresentInAttribute(String attribute, String value, int timeOutInSecond, WaitType waitType) {
-        waitForValuePresentInAttribute(attribute, value, Duration.ofSeconds(timeOutInSecond), waitType);
+    public void waitForValuePresentInAttribute(String attribute, String value, int timeOutInSecond) {
+        waitForValuePresentInAttribute(attribute, value, Duration.ofSeconds(timeOutInSecond));
     }
 
-    @Override
     public void waitForVisibility() {
-        waitForVisibility(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForVisibility(DriverUtils.getTimeOut());
     }
 
-    public void waitForVisibility(Duration timeout, WaitType waitType) {
+    public void waitForVisibility(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
@@ -877,27 +725,20 @@ public class Element implements IBaseControl {
         if (!ok) {
             String msg = String.format("Element not visible after %d seconds: %s", actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForVisibility timeout after {} seconds for control '{}': {}", actualTimeout.getSeconds(), getLocator().toString(), msg);
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException(msg);
-            } else {
-                // SOFT: warn and continue
-                log.warn("SOFT wait - continuing despite timeout: {}", msg);
-            }
+            throw new RuntimeException(msg);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForVisibility(int timeOutInSeconds, WaitType waitType) {
-        waitForVisibility(Duration.ofSeconds(timeOutInSeconds), waitType);
+    public void waitForVisibility(int timeOutInSeconds) {
+        waitForVisibility(Duration.ofSeconds(timeOutInSeconds));
     }
 
-    @Override
     public void waitForStalenessOfElement() {
-        waitForStalenessOfElement(DriverUtils.getTimeOut(), WaitType.STRICT);
+        waitForStalenessOfElement(DriverUtils.getTimeOut());
     }
 
-    public void waitForStalenessOfElement(Duration timeout, WaitType waitType) {
+    public void waitForStalenessOfElement(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         WebDriver driver = getWebDriver();
@@ -920,27 +761,18 @@ public class Element implements IBaseControl {
             if (!ok) {
                 String msg = "waitForStalenessOfElement timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
                 log.error(String.format("waitForStalenessOfElement: Has error with control '%s'", getLocator().toString()));
-                if (waitType == WaitType.STRICT) {
-                    throw new RuntimeException(msg);
-                } else {
-                    log.warn("SOFT wait - continuing despite: {}", msg);
-                }
+                throw new RuntimeException(msg);
             }
         } catch (Exception e) {
             log.error(String.format("waitForStalenessOfElement: Has error with control '%s': %s", getLocator().toString(),
                     e.getMessage().split("\n")[0]));
-            if (waitType == WaitType.STRICT) {
-                throw new RuntimeException("waitForStalenessOfElement error for control: " + getLocator().toString(), e);
-            } else {
-                log.warn("SOFT wait - continuing despite exception: {}", e.getMessage().split("\n")[0]);
-            }
+            throw new RuntimeException("waitForStalenessOfElement error for control: " + getLocator().toString(), e);
         }
     }
 
-    @Override
     @Deprecated
-    public void waitForStalenessOfElement(int timeOutInSeconds, WaitType waitType) {
-        waitForStalenessOfElement(Duration.ofSeconds(timeOutInSeconds), waitType);
+    public void waitForStalenessOfElement(int timeOutInSeconds) {
+        waitForStalenessOfElement(Duration.ofSeconds(timeOutInSeconds));
     }
 
     public void click() {
@@ -958,11 +790,11 @@ public class Element implements IBaseControl {
                 log.debug("Click on {}", getLocator());
 
                 if (!isVisible()) {
-                    waitForDisplay(DriverUtils.getTimeOut(), WaitType.STRICT);
+                    waitForDisplay(DriverUtils.getTimeOut());
                 }
 
                 scrollElementToCenterScreen();
-                waitForElementClickable(DriverUtils.getTimeOut(), WaitType.STRICT);
+                waitForElementClickable(DriverUtils.getTimeOut());
 
                 new Actions(getWebDriver())
                         .moveToElement(getElement())

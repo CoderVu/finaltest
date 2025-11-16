@@ -7,10 +7,8 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
 import java.net.URL;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.example.core.control.util.DriverUtils.sanitizeVersion;
+import static org.example.core.element.util.DriverUtils.sanitizeVersion;
 
 public class Edge extends AbstractDriverManager {
 

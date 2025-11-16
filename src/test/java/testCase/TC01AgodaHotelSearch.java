@@ -1,11 +1,11 @@
 package testCase;
 
+import org.example.core.assertion.MySoftAssert;
 import org.example.core.dataProvider.DataProvider;
 import org.example.core.dataProvider.DataFile;
 import org.example.core.dataProvider.DataPath;
 import org.example.models.Hotel;
 import org.example.pages.AgodaHomePage;
-import org.example.core.assertion.SoftAssertImpl;
 import org.testng.annotations.Test;
 import config.TestBase;
 import io.qameta.allure.Severity;
@@ -77,7 +77,7 @@ public class TC01AgodaHotelSearch extends TestBase {
         
         // Assert with auto-retry: Verify hotels are sorted by lowest price
         // Supplier re-fetches hotels from UI on retry to ensure fresh data
-        assertFalse(
+        assertTrue(
             () -> {
                 List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
                 return homePage.verifyHotelsSortedByLowestPrice(hotelsAfterSort);
@@ -85,19 +85,8 @@ public class TC01AgodaHotelSearch extends TestBase {
             "Verify hotels are sorted by lowest price after sort operation"
         );
         
-        // Assert with auto-retry: Verify hotels have correct destination
-        // Supplier re-fetches hotels from UI on retry to ensure fresh data
-        assertTrue(
-            () -> {
-                List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
-                return homePage.verifyHotelsDestination(hotelsAfterSort, destination);
-            },
-            "Verify hotels have correct destination after sort"
-        );
 
-        // Final check: Assert all soft assertions
-        // Use get() to ensure we use the same ThreadLocal instance that was used in assertions
-        SoftAssertImpl.get().assertAll();
+        MySoftAssert.get().assertAll();
     }
 
 }

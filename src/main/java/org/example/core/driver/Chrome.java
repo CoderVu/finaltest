@@ -9,10 +9,8 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.net.URL;
 import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.example.core.control.util.DriverUtils.sanitizeVersion;
+import static org.example.core.element.util.DriverUtils.sanitizeVersion;
 
 public class Chrome extends AbstractDriverManager {
 

@@ -1,6 +1,7 @@
-package org.example.core.control.element;
+package org.example.core.element;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,8 +47,7 @@ public class ElementFactory {
 
     public static List<Element> $$(By locator) {
         Element element = new Element(locator);
-        List<org.openqa.selenium.WebElement> webElements = element.getElements();
-        // For By locator, we need to convert to string first
+        List<WebElement> webElements = element.getElements();
         String locatorStr = locator.toString().replace("By.xpath: ", "");
         return IntStream.range(0, webElements.size())
                 .mapToObj(i -> new Element(String.format("(%s)[%d]", locatorStr, i + 1)))
@@ -55,7 +55,7 @@ public class ElementFactory {
     }
 
     public static List<Element> $$(Element parent, String childLocator) {
-        List<org.openqa.selenium.WebElement> webElements = parent.getChildElements(childLocator);
+        List<WebElement> webElements = parent.getChildElements(childLocator);
         return IntStream.range(0, webElements.size())
                 .mapToObj(i -> new Element(parent, String.format("(%s)[%d]", childLocator, i + 1)))
                 .collect(Collectors.toList());
@@ -63,7 +63,7 @@ public class ElementFactory {
 
     public static List<Element> $$(Element parent, String locator, String childLocator) {
         Element element = new Element(parent, locator);
-        List<org.openqa.selenium.WebElement> webElements = element.getChildElements(childLocator);
+        List<WebElement> webElements = element.getChildElements(childLocator);
         return IntStream.range(0, webElements.size())
                 .mapToObj(i -> new Element(element, String.format("(%s)[%d]", childLocator, i + 1)))
                 .collect(Collectors.toList());

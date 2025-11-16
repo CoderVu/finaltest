@@ -2,10 +2,9 @@ package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.core.control.element.Element;
-import org.example.core.control.util.DriverUtils;
+import org.example.core.element.Element;
+import org.example.core.element.util.DriverUtils;
 import org.example.core.annotations.Step;
-import org.example.enums.WaitType;
 import org.example.models.Hotel;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -19,9 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.time.LocalDate.parse;
-import static org.example.core.control.element.ElementFactory.$;
-import static org.example.core.control.element.ElementFactory.$$;
-import static org.example.core.control.util.DriverUtils.getCurrentUrl;
+import static org.example.core.element.ElementFactory.$;
+import static org.example.core.element.ElementFactory.$$;
+import static org.example.core.element.util.DriverUtils.getCurrentUrl;
 
 @Slf4j
 public class AgodaHomePage extends BasePage {
@@ -81,15 +80,15 @@ public class AgodaHomePage extends BasePage {
     public void enterDestination(String destination) {
         reporter.info("Debug log via reporter :Entering destination by text: " + destination);
         try {
-            destinationSearchInput.waitForVisibility(10, WaitType.SOFT);
-            destinationSearchInput.waitForElementClickable(10, WaitType.SOFT);
+            destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
+            destinationSearchInput.waitForElementClickable(Duration.ofSeconds(10));
             destinationSearchInput.clear();
             destinationSearchInput.setText(destination);
         } catch (Exception e) {
             log.warn("First attempt to enter destination failed, retrying: {}", e.getMessage());
             try {
                 DriverUtils.delay(1);
-                destinationSearchInput.waitForVisibility(10, WaitType.SOFT);
+                destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
                 destinationSearchInput.clear();
                 destinationSearchInput.setText(destination);
             } catch (Exception retryEx) {
@@ -101,7 +100,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select destination from suggestions: {arg0}")
     public void selectDestinationFromSuggestions(String destinationName) {
-        autocompletePanel.waitForVisibility(10, WaitType.SOFT);
+        autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
         $(String.format("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName)).click();
     }
 
@@ -118,7 +117,7 @@ public class AgodaHomePage extends BasePage {
             checkInBox.scrollElementToCenterScreen();
             checkInBox.clickByJs();
             try {
-                calendarContainer.waitForVisibility(10, WaitType.SOFT);
+                calendarContainer.waitForVisibility(Duration.ofSeconds(10));
             } catch (Exception e) {
                 log.warn("Calendar not visible after attempt {}", openAttempts + 1);
             }
@@ -140,7 +139,7 @@ public class AgodaHomePage extends BasePage {
             if ("true".equals(nextMonthBtn.getAttribute("aria-disabled"))) {
                 break;
             }
-            nextMonthBtn.waitForElementClickable(10, WaitType.SOFT);
+            nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
             nextMonthBtn.click();
             DriverUtils.delay(0.5);
             nextTries++;
@@ -154,7 +153,7 @@ public class AgodaHomePage extends BasePage {
             if ("true".equals(prevMonthBtn.getAttribute("aria-disabled"))) {
                 break;
             }
-            prevMonthBtn.waitForElementClickable(10, WaitType.SOFT);
+            prevMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
             prevMonthBtn.click();
             DriverUtils.delay(0.5);
             prevTries++;
@@ -163,7 +162,7 @@ public class AgodaHomePage extends BasePage {
                 String.format("//span[@data-selenium-date='%s']", checkInDate));
         for (int i = 0; i < 3; i++) {
             try {
-                checkInDateElement.waitForElementClickable(10, WaitType.SOFT);
+                checkInDateElement.waitForElementClickable(Duration.ofSeconds(10));
                 checkInDateElement.clickByJs();
                 log.info("Selected check-in date: {}", checkInDate);
                 break;
@@ -171,7 +170,7 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Failed to select check-in date, retry {}", i + 1);
                 checkInBox.click();
                 try {
-                    calendarContainer.waitForVisibility(10, WaitType.SOFT);
+                    calendarContainer.waitForVisibility(Duration.ofSeconds(10));
                 } catch (Exception ex) {
                     log.warn("Calendar not visible during retry");
                 }
@@ -181,7 +180,7 @@ public class AgodaHomePage extends BasePage {
             Element outsideArea = $(By.cssSelector("body"));
             ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
             try {
-                calendarContainer.waitForInvisibility(10, WaitType.SOFT);
+                calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
                 log.info("Closed calendar after selecting check-in date");
             } catch (Exception e) {
                 log.warn("Calendar không tự tắt sau khi click ngoài");
@@ -191,11 +190,11 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select check-out date: {arg0}")
     public void selectCheckOutDate(String checkOutDate) {
-        checkOutBox.waitForElementClickable(10, WaitType.SOFT);
+        checkOutBox.waitForElementClickable(Duration.ofSeconds(10));
         for (int i = 0; i < 3; i++) {
             checkOutBox.click();
             try {
-                calendarContainer.waitForVisibility(10, WaitType.SOFT);
+                calendarContainer.waitForVisibility(Duration.ofSeconds(10));
                 break;
             } catch (Exception e) {
                 log.warn("Calendar not visible after attempt {}", i + 1);
@@ -213,10 +212,10 @@ public class AgodaHomePage extends BasePage {
                 if ("true".equals(prevMonthBtn.getAttribute("aria-disabled"))) {
                     break;
                 }
-                prevMonthBtn.waitForElementClickable(10, WaitType.SOFT);
+                prevMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
                 prevMonthBtn.click();
             } else {
-                nextMonthBtn.waitForElementClickable(10, WaitType.SOFT);
+                nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
                 nextMonthBtn.click();
             }
             DriverUtils.delay(0.5);
@@ -225,7 +224,7 @@ public class AgodaHomePage extends BasePage {
                 String.format("//span[@data-selenium-date='%s']", checkOutDate));
         for (int i = 0; i < 3; i++) {
             try {
-                checkOutDateElement.waitForElementClickable(10, WaitType.SOFT);
+                checkOutDateElement.waitForElementClickable(Duration.ofSeconds(10));
                 checkOutDateElement.clickByJs();
                 log.info("Selected check-out date: {}", checkOutDate);
                 break;
@@ -233,14 +232,14 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Failed to select check-out date, retry {}", i + 1);
                 checkOutBox.click();
                 try {
-                    calendarContainer.waitForVisibility(10, WaitType.SOFT);
+                    calendarContainer.waitForVisibility(Duration.ofSeconds(10));
                 } catch (Exception ex) {
                     log.warn("Calendar not visible during retry");
                 }
             }
         }
         try {
-            calendarContainer.waitForInvisibility(10, WaitType.SOFT);
+            calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
             log.info("Calendar closed automatically after selecting check-out date");
         } catch (Exception e) {
             log.info("Calendar already closed or not found - this is expected behavior");
@@ -249,7 +248,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Click search button")
     public void clickSearchButton() {
-        searchButton.waitForElementClickable(10, WaitType.SOFT);
+        searchButton.waitForElementClickable(Duration.ofSeconds(10));
         searchButton.click();
     }
 
@@ -280,13 +279,13 @@ public class AgodaHomePage extends BasePage {
         Element occupancyPopup = $(occupancyPopupXpathString);
 
         try {
-            occupancyPopup.waitForVisibility(10, WaitType.SOFT);
+            occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
             log.info("Occupancy popup is already open");
         } catch (Exception e) {
             log.info("Occupancy popup not visible, clicking to open");
-            occupancyBox.waitForElementClickable(10, WaitType.SOFT);
+            occupancyBox.waitForElementClickable(Duration.ofSeconds(10));
             occupancyBox.click();
-            occupancyPopup.waitForVisibility(10, WaitType.SOFT);
+            occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
         }
 
         log.info("Configuring occupancy: {} rooms, {} adults, {} children", rooms, adults, children);
@@ -299,7 +298,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Select rooms to: {arg0}")
     private void selectRooms(int targetRooms) {
         Element roomValueElement = $(roomValueXpath);
-        roomValueElement.waitForVisibility(10, WaitType.SOFT);
+        roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
         log.info("Current rooms: {}, Target rooms: {}", currentRooms, targetRooms);
@@ -308,7 +307,7 @@ public class AgodaHomePage extends BasePage {
         Element roomsMinusButton = $(roomsMinusButtonXpath);
 
         while (currentRooms < targetRooms) {
-            roomsPlusButton.waitForElementClickable(10, WaitType.SOFT);
+            roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
             roomsPlusButton.click();
             currentRooms++;
             log.info("Increased rooms to: {}", currentRooms);
@@ -319,7 +318,7 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Cannot decrease rooms further - minimum reached");
                 break;
             }
-            roomsMinusButton.waitForElementClickable(10, WaitType.SOFT);
+            roomsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
             roomsMinusButton.click();
             currentRooms--;
             log.info("Decreased rooms to: {}", currentRooms);
@@ -329,7 +328,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Select adults to: {arg0}")
     private void selectAdults(int targetAdults) {
         Element adultValueElement = $(adultValueXpath);
-        adultValueElement.waitForVisibility(10, WaitType.SOFT);
+        adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
         log.info("Current adults: {}, Target adults: {}", currentAdults, targetAdults);
@@ -338,7 +337,7 @@ public class AgodaHomePage extends BasePage {
         Element adultsMinusButton = $(adultsMinusButtonXpath);
 
         while (currentAdults < targetAdults) {
-            adultsPlusButton.waitForElementClickable(10, WaitType.SOFT);
+            adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
             adultsPlusButton.click();
             currentAdults++;
             log.info("Increased adults to: {}", currentAdults);
@@ -349,7 +348,7 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Cannot decrease adults further - minimum reached");
                 break;
             }
-            adultsMinusButton.waitForElementClickable(10, WaitType.SOFT);
+            adultsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
             adultsMinusButton.click();
             currentAdults--;
             log.info("Decreased adults to: {}", currentAdults);
@@ -359,7 +358,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Select children to: {arg0}")
     private void selectChildren(int targetChildren) {
         Element childrenValueElement = $(childrenValueXpath);
-        childrenValueElement.waitForVisibility(10, WaitType.SOFT);
+        childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
         log.info("Current children: {}, Target children: {}", currentChildren, targetChildren);
@@ -368,7 +367,7 @@ public class AgodaHomePage extends BasePage {
         Element childrenMinusButton = $(childrenMinusButtonXpath);
 
         while (currentChildren < targetChildren) {
-            childrenPlusButton.waitForElementClickable(10, WaitType.SOFT);
+            childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
             childrenPlusButton.click();
             currentChildren++;
             log.info("Increased children to: {}", currentChildren);
@@ -379,7 +378,7 @@ public class AgodaHomePage extends BasePage {
                 log.warn("Cannot decrease children further - minimum reached");
                 break;
             }
-            childrenMinusButton.waitForElementClickable(10, WaitType.SOFT);
+            childrenMinusButton.waitForElementClickable(Duration.ofSeconds(10));
             childrenMinusButton.click();
             currentChildren--;
             log.info("Decreased children to: {}", currentChildren);
@@ -541,7 +540,7 @@ public class AgodaHomePage extends BasePage {
     public void waitForSearchResultsToLoad() {
         try {
             Element firstPropertyCard = $(propertyCardXpath + "[1]");
-            firstPropertyCard.waitForVisibility(10, WaitType.SOFT);
+            firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
 
             log.info("Search results have loaded successfully");
         } catch (Exception e) {
@@ -566,35 +565,114 @@ public class AgodaHomePage extends BasePage {
     }
     @Step("Verify first 5 hotels are sorted by lowest price: {arg0}")
     public boolean verifyHotelsSortedByLowestPrice(List<Hotel> hotels) {
-        List<Integer> prices = new ArrayList<>();
-        for (int i = 0; i < Math.min(5, hotels.size()); i++) {
-            String priceStr = hotels.get(i).getPrice();
-            if (priceStr == null || priceStr.isEmpty()) {
-                continue;
-            }
-
-            String digits = priceStr.replaceAll("[^\\d]", "");
-            if (!digits.isEmpty()) {
-                prices.add(Integer.parseInt(digits));
-            }
-        }
-
-        if (prices.isEmpty()) {
-            log.warn("No valid prices found for first 5 hotels");
+        if (hotels == null || hotels.isEmpty()) {
+            log.error("Hotel list is null or empty");
             return false;
         }
-
+    
+        int hotelCount = Math.min(5, hotels.size());
+        if (hotelCount == 0) {
+            log.error("No hotels to verify");
+            return false;
+        }
+    
+        // Thu thập prices và thông tin chi tiết cho top 5 hotels
+        List<Integer> prices = new ArrayList<>();
+        List<String> hotelNames = new ArrayList<>();
+        List<Boolean> hasValidPrice = new ArrayList<>();
+        
+        for (int i = 0; i < hotelCount; i++) {
+            Hotel hotel = hotels.get(i);
+            String hotelName = hotel.getName() != null ? hotel.getName() : "Unknown";
+            hotelNames.add(hotelName);
+            
+            String priceStr = hotel.getPrice();
+            if (priceStr == null || priceStr.isEmpty() || priceStr.equals("null")) {
+                // Null prices được gán Integer.MAX_VALUE để đảm bảo chúng phải ở cuối sau khi sorted
+                prices.add(Integer.MAX_VALUE);
+                hasValidPrice.add(false);
+                log.warn("Hotel {} (index {}): '{}' has null/empty price", i + 1, i, hotelName);
+            } else {
+                try {
+                    String digits = priceStr.replaceAll("[^\\d]", "");
+                    if (digits.isEmpty()) {
+                        prices.add(Integer.MAX_VALUE);
+                        hasValidPrice.add(false);
+                        log.warn("Hotel {} (index {}): '{}' has invalid price format: '{}'", i + 1, i, hotelName, priceStr);
+                    } else {
+                        int price = Integer.parseInt(digits);
+                        prices.add(price);
+                        hasValidPrice.add(true);
+                        log.debug("Hotel {} (index {}): '{}' has price: {}", i + 1, i, hotelName, price);
+                    }
+                } catch (NumberFormatException e) {
+                    prices.add(Integer.MAX_VALUE);
+                    hasValidPrice.add(false);
+                    log.warn("Hotel {} (index {}): '{}' has unparseable price: '{}'", i + 1, i, hotelName, priceStr);
+                }
+            }
+        }
+    
+        // Tạo sorted version để so sánh
         List<Integer> sorted = new ArrayList<>(prices);
         sorted.sort(Integer::compareTo);
-
-        if (!prices.equals(sorted)) {
-            log.error("Hotels not sorted by lowest price. Actual: {}, Expected: {}", prices, sorted);
+    
+        // Verify: prices phải bằng sorted version
+        boolean isSorted = prices.equals(sorted);
+        
+        if (!isSorted) {
+            // Log chi tiết lỗi
+            log.error("Hotels NOT sorted by lowest price!");
+            log.error("Actual order: {}", prices);
+            log.error("Expected sorted: {}", sorted);
+            log.error("Hotel details:");
+            for (int i = 0; i < hotelCount; i++) {
+                String priceDisplay = hasValidPrice.get(i) 
+                    ? String.valueOf(prices.get(i)) 
+                    : "NULL/INVALID";
+                log.error("  [{}] {} - Price: {}", i + 1, hotelNames.get(i), priceDisplay);
+            }
+            
+            // Kiểm tra thêm: nếu có null prices, chúng phải ở cuối
+            int firstNullIndex = -1;
+            int lastValidIndex = -1;
+            for (int i = 0; i < prices.size(); i++) {
+                if (prices.get(i) == Integer.MAX_VALUE && !hasValidPrice.get(i)) {
+                    if (firstNullIndex == -1) firstNullIndex = i;
+                } else if (hasValidPrice.get(i)) {
+                    lastValidIndex = i;
+                }
+            }
+            
+            if (firstNullIndex != -1 && lastValidIndex != -1 && firstNullIndex <= lastValidIndex) {
+                log.error("CRITICAL: Null/invalid prices found at index {} but valid prices exist at index {} - this violates sorting order!", 
+                    firstNullIndex + 1, lastValidIndex + 1);
+            }
+            
             return false;
         }
-
-        log.info("First {} hotels are sorted by lowest price: {}", prices.size(), prices);
+    
+        // Kiểm tra thêm: nếu có null prices, chúng phải ở cuối (sau tất cả valid prices)
+        int firstNullIndex = -1;
+        int lastValidIndex = -1;
+        for (int i = 0; i < prices.size(); i++) {
+            if (prices.get(i) == Integer.MAX_VALUE && !hasValidPrice.get(i)) {
+                if (firstNullIndex == -1) firstNullIndex = i;
+            } else if (hasValidPrice.get(i)) {
+                lastValidIndex = i;
+            }
+        }
+        
+        if (firstNullIndex != -1 && lastValidIndex != -1 && firstNullIndex <= lastValidIndex) {
+            log.error("Null/invalid prices found before valid prices. First null at index {}, last valid at index {}", 
+                firstNullIndex + 1, lastValidIndex + 1);
+            return false;
+        }
+    
+        log.info("✓ First {} hotels are correctly sorted by lowest price: {}", hotelCount, prices);
         return true;
     }
+    
 
     @Step("Verify first 5 hotels have correct destination: {arg0}")
     public boolean verifyHotelsDestination(List<Hotel> hotels, String expectedDestination) {
@@ -615,7 +693,7 @@ public class AgodaHomePage extends BasePage {
     public void waitForPropertyCardCountChange(int beforeCount) {
         int timeoutSeconds = 11;
         try {
-            hotelListContainer.waitForVisibility(10, WaitType.SOFT);
+            hotelListContainer.waitForVisibility(Duration.ofSeconds(10));
             
             WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(timeoutSeconds));
             

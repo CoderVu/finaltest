@@ -13,7 +13,7 @@ import org.testng.ITestResult;
 import java.io.ByteArrayInputStream;
 
 import static org.example.common.Constants.DEFAULT_TIMESTAMP_FORMAT;
-import static org.example.core.control.util.DriverUtils.getWebDriver;
+import static org.example.core.element.util.DriverUtils.getWebDriver;
 import static org.example.utils.DateUtils.getCurrentTimestamp;
 
 @Slf4j
