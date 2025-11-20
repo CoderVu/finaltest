@@ -24,7 +24,6 @@ public class Constants {
     public static final String CONFIG_PROPERTIES_FILE = "dev-env.properties";
     public static final String DEFAULT_BROWSER = BrowserType.CHROME.toString();
     public static final String DEFAULT_REPORT = "allure";
-    public static final boolean DEFAULT_REMOTE_ENABLED = false;
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(20);
     public static final boolean DEFAULT_HEADLESS = false;
 
@@ -57,8 +56,7 @@ public class Constants {
     }
 
     public static boolean isGridEnabled() {
-        List<String> browsers = getBrowsers();
-        return browsers != null && browsers.size() > 1;
+        return EnvUtils.isGridEnabled();
     }
 
     public static String getRemoteUrl() {
@@ -67,14 +65,6 @@ public class Constants {
 
     public static void loadEnvironment(String envFilePath) {
         EnvUtils.loadEnv(envFilePath);
-    }
-
-    public static boolean isInitialized() {
-        return EnvUtils.isInitialized();
-    }
-
-    public static String getEnvValue(String key) {
-        return EnvUtils.getEnv(key);
     }
 
 }

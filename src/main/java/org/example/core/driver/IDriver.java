@@ -10,7 +10,6 @@ public interface IDriver {
     void initLocalDriver();
     void initRemoteDriver();
     WebDriver createRemoteDriver(URL url, String browserVersion);
-    void setupDriverBinary(BrowserType browserType);
     WebDriver getDriver();
     void quitDriver();
     BrowserType getBrowserType();

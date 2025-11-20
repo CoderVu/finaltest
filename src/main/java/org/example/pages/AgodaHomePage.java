@@ -2,7 +2,7 @@ package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.core.element.Element;
+import org.example.core.element.IElement;
 import org.example.core.element.util.DriverUtils;
 import org.example.core.annotations.Step;
 import org.example.models.Hotel;
@@ -18,27 +18,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.time.LocalDate.parse;
-import static org.example.core.element.ElementFactory.$;
-import static org.example.core.element.ElementFactory.$$;
+import static org.example.core.element.factory.ElementFactory.$;
+import static org.example.core.element.factory.ElementFactory.$$;
 import static org.example.core.element.util.DriverUtils.getCurrentUrl;
 
 @Slf4j
 public class AgodaHomePage extends BasePage {
 
 
-    protected Element destinationSearchInput = $("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
-    protected Element autocompletePanel = $("//div[@data-selenium='autocompletePanel']");
-    protected Element checkInBox = $("//div[@data-element-name='check-in-box']");
-    protected Element checkOutBox = $("//div[@data-element-name='check-out-box']");
-    protected Element calendarContainer = $("//div[@id='DatePicker__AccessibleV2']");
-    protected Element nextMonthButton = $("//button[@data-selenium='calendar-next-month-button']");
-    protected Element occupancyBox = $("//div[@data-element-name='occupancy-box']");
-    protected Element hotelListContainer = $("//ol[contains(@class,'hotel-list-container')]");
-    protected Element monthCaption = $("//div[contains(@class,'DayPicker-Caption')]");
-    protected Element searchButton = $("//button[@data-selenium='searchButton']");
-    protected Element sortPriceButton = $("//button[@data-element-name='search-sort-price']");
-    protected Element nextMonthBtn = $("//button[@data-selenium='calendar-next-month-button']");
-    protected Element prevMonthBtn = $("//button[@data-selenium='calendar-previous-month-button']");
+    protected IElement destinationSearchInput = $("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
+    protected IElement autocompletePanel = $("//div[@data-selenium='autocompletePanel']");
+    protected IElement checkInBox = $("//div[@data-element-name='check-in-box']");
+    protected IElement checkOutBox = $("//div[@data-element-name='check-out-box']");
+    protected IElement calendarContainer = $("//div[@id='DatePicker__AccessibleV2']");
+    protected IElement nextMonthButton = $("//button[@data-selenium='calendar-next-month-button']");
+    protected IElement occupancyBox = $("//div[@data-element-name='occupancy-box']");
+    protected IElement hotelListContainer = $("//ol[contains(@class,'hotel-list-container')]");
+    protected IElement monthCaption = $("//div[contains(@class,'DayPicker-Caption')]");
+    protected IElement searchButton = $("//button[@data-selenium='searchButton']");
+    protected IElement sortPriceButton = $("//button[@data-element-name='search-sort-price']");
+    protected IElement nextMonthBtn = $("//button[@data-selenium='calendar-next-month-button']");
+    protected IElement prevMonthBtn = $("//button[@data-selenium='calendar-previous-month-button']");
 
     protected String occupancyPopupXpathString = "//div[@class='OccupancySelector OccupancySelector--travelWithKids']";
     protected String roomValueXpath = "//div[@data-component='desktop-occ-room-value']//p";
@@ -64,7 +64,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Test function BaseControl")
     public void DraftTestFunction() {
-        Element sampleElement = $("//div[@data-selenium='sample-element']");
+        IElement sampleElement = $("//div[@data-selenium='sample-element']");
         sampleElement.checkCheckBoxByJs();
     }
     @Step("Navigate to home page")
@@ -158,7 +158,7 @@ public class AgodaHomePage extends BasePage {
             DriverUtils.delay(0.5);
             prevTries++;
         }
-        Element checkInDateElement = $(
+        IElement checkInDateElement = $(
                 String.format("//span[@data-selenium-date='%s']", checkInDate));
         for (int i = 0; i < 3; i++) {
             try {
@@ -177,7 +177,7 @@ public class AgodaHomePage extends BasePage {
             }
         }
         if (calendarContainer.isVisible()) {
-            Element outsideArea = $(By.cssSelector("body"));
+            IElement outsideArea = $(By.cssSelector("body"));
             ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
             try {
                 calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
@@ -203,7 +203,7 @@ public class AgodaHomePage extends BasePage {
         String targetMonth = parse(checkOutDate).getMonth().name();
         String targetYear = String.valueOf(parse(checkOutDate).getYear());
         for (int i = 0; i < 12; i++) {
-            Element monthCaption = $(monthStringXpath);
+            IElement monthCaption = $(monthStringXpath);
             String captionText = monthCaption.getText();
             if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
                 break;
@@ -220,7 +220,7 @@ public class AgodaHomePage extends BasePage {
             }
             DriverUtils.delay(0.5);
         }
-        Element checkOutDateElement = $(
+        IElement checkOutDateElement = $(
                 String.format("//span[@data-selenium-date='%s']", checkOutDate));
         for (int i = 0; i < 3; i++) {
             try {
@@ -276,7 +276,7 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select occupancy: {arg0} rooms, {arg1} adults, {arg2} children")
     public void SelectOccupancy(int rooms, int adults, int children) {
-        Element occupancyPopup = $(occupancyPopupXpathString);
+        IElement occupancyPopup = $(occupancyPopupXpathString);
 
         try {
             occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
@@ -297,14 +297,14 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select rooms to: {arg0}")
     private void selectRooms(int targetRooms) {
-        Element roomValueElement = $(roomValueXpath);
+        IElement roomValueElement = $(roomValueXpath);
         roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
         log.info("Current rooms: {}, Target rooms: {}", currentRooms, targetRooms);
 
-        Element roomsPlusButton = $(roomsPlusButtonXpath);
-        Element roomsMinusButton = $(roomsMinusButtonXpath);
+        IElement roomsPlusButton = $(roomsPlusButtonXpath);
+        IElement roomsMinusButton = $(roomsMinusButtonXpath);
 
         while (currentRooms < targetRooms) {
             roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -327,14 +327,14 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select adults to: {arg0}")
     private void selectAdults(int targetAdults) {
-        Element adultValueElement = $(adultValueXpath);
+        IElement adultValueElement = $(adultValueXpath);
         adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
         log.info("Current adults: {}, Target adults: {}", currentAdults, targetAdults);
 
-        Element adultsPlusButton = $(adultsPlusButtonXpath);
-        Element adultsMinusButton = $(adultsMinusButtonXpath);
+        IElement adultsPlusButton = $(adultsPlusButtonXpath);
+        IElement adultsMinusButton = $(adultsMinusButtonXpath);
 
         while (currentAdults < targetAdults) {
             adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -357,14 +357,14 @@ public class AgodaHomePage extends BasePage {
 
     @Step("Select children to: {arg0}")
     private void selectChildren(int targetChildren) {
-        Element childrenValueElement = $(childrenValueXpath);
+        IElement childrenValueElement = $(childrenValueXpath);
         childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
         int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
         log.info("Current children: {}, Target children: {}", currentChildren, targetChildren);
 
-        Element childrenPlusButton = $(childrenPlusButtonXpath);
-        Element childrenMinusButton = $(childrenMinusButtonXpath);
+        IElement childrenPlusButton = $(childrenPlusButtonXpath);
+        IElement childrenMinusButton = $(childrenMinusButtonXpath);
 
         while (currentChildren < targetChildren) {
             childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -389,12 +389,12 @@ public class AgodaHomePage extends BasePage {
     public List<Hotel> getAllHotelsFromListViewSearch(int expectedHotelCount) {
         List<Hotel> hotels = new ArrayList<>();
         try {
-            List<Element> hotelCards = $$(propertyCardXpath);
+            List<IElement> hotelCards = $$(propertyCardXpath);
             log.info("Found {} hotel cards in search results", hotelCards.size());
 
             for (int i = 0; i < hotelCards.size() && i < expectedHotelCount; i++) {
                 try {
-                    Element cardElement = hotelCards.get(i);
+                    IElement cardElement = hotelCards.get(i);
                     cardElement.scrollToView();
                     Hotel hotel = extractHotelFromCard(cardElement);
                     if (hotel != null) {
@@ -415,12 +415,12 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    private Hotel extractHotelFromCard(Element card) {
+    private Hotel extractHotelFromCard(IElement card) {
         try {
             Hotel.HotelBuilder hotelBuilder = Hotel.builder();
 
             try {
-                Element nameElement = $(card, hotelNameXpath);
+                IElement nameElement = $(card, hotelNameXpath);
                 hotelBuilder.name(nameElement.getText().trim());
             } catch (Exception e) {
                 log.warn("Could not find hotel name");
@@ -428,15 +428,15 @@ public class AgodaHomePage extends BasePage {
             }
 
             try {
-                Element ratingContainer = $(card, ratingXpath);
-                List<Element> stars = $$(ratingContainer, starsXpath);
+                IElement ratingContainer = $(card, ratingXpath);
+                List<IElement> stars = $$(ratingContainer, starsXpath);
                 hotelBuilder.rating(stars.size() + " stars");
             } catch (Exception e) {
                 log.debug("Could not find rating");
             }
 
             try {
-                Element locationElement = $(card, locationXpath);
+                IElement locationElement = $(card, locationXpath);
                 String locationText = locationElement.getText().trim();
                 String[] locationParts = locationText.split(" - ");
                 if (locationParts.length >= 2) {
@@ -450,14 +450,14 @@ public class AgodaHomePage extends BasePage {
             }
 
             try {
-                Element cashbackElement = $(card, cashbackXpath);
+                IElement cashbackElement = $(card, cashbackXpath);
                 hotelBuilder.cashbackReward(cashbackElement.getText().trim());
             } catch (Exception e) {
                 log.debug("Could not find cashback");
             }
 
             try {
-                List<Element> amenityElements = $$(card, amenityXpath);
+                List<IElement> amenityElements = $$(card, amenityXpath);
                 String[] amenities = amenityElements.stream()
                         .map(element -> element.getText().trim())
                         .filter(text -> !text.isEmpty() && !text.startsWith("+"))
@@ -468,7 +468,7 @@ public class AgodaHomePage extends BasePage {
             }
 
             try {
-                List<Element> badgeElements = $$(card, badgeXpath);
+                List<IElement> badgeElements = $$(card, badgeXpath);
                 String[] badges = badgeElements.stream()
                         .map(element -> element.getText().trim())
                         .filter(text -> !text.isEmpty())
@@ -479,7 +479,7 @@ public class AgodaHomePage extends BasePage {
             }
 
             try {
-                Element priceElement = $(card, priceXpath);
+                IElement priceElement = $(card, priceXpath);
                 log.info("Found price: {}", priceElement.getText().trim());
                 hotelBuilder.price(priceElement.getText().trim());
             } catch (Exception e) {
@@ -539,7 +539,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Wait for search results to load")
     public void waitForSearchResultsToLoad() {
         try {
-            Element firstPropertyCard = $(propertyCardXpath + "[1]");
+            IElement firstPropertyCard = $(propertyCardXpath + "[1]");
             firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
 
             log.info("Search results have loaded successfully");
@@ -556,7 +556,7 @@ public class AgodaHomePage extends BasePage {
     @Step("Get size of hotel list in search results")
     public int getHotelListSize() {
         try {
-            List<WebElement> webElements = hotelListContainer.getChildElements(propertyCardXpath);
+            List<WebElement> webElements = hotelListContainer.getElements();
             return webElements.size();
         } catch (Exception e) {
             log.error("Error getting hotel list size: {}", e.getMessage());

@@ -1,7 +1,8 @@
 package org.example.enums;
 
 import lombok.Getter;
-import org.example.configure.Config;
+import org.example.common.Constants;
+import org.example.utils.EnvUtils;
 
 @Getter
 public enum ReportType {
@@ -50,10 +51,10 @@ public enum ReportType {
         String value = System.getProperty("reportType");
 
         if (isEmpty(value)) {
-            try { value = Config.getEnvValue("reportType"); } catch (Throwable ignored) { }
+            value = EnvUtils.getEnv(Constants.REPORT_TYPE_PROPERTY);
         }
         if (isEmpty(value)) {
-            try { value = Config.getEnvValue("report.strategy"); } catch (Throwable ignored) { }
+            value = EnvUtils.getEnv("report.strategy");
         }
         return fromString(value);
     }

@@ -28,6 +28,7 @@ public interface IElement {
     void sendKeys(Keys key);
     void submit();
     void focus();
+    void checkCheckBoxByJs();
     
     // Drag & Drop
     void dragAndDrop(int xOffset, int yOffset);

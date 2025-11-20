@@ -2,12 +2,12 @@ package org.example.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.core.helper.TestNGXml;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
 
 @Slf4j
 public final class EnvUtils {
@@ -36,9 +36,6 @@ public final class EnvUtils {
                 String reportsStr = props.getProperty(Constants.REPORT_TYPE_PROPERTY, Constants.DEFAULT_REPORT);
                 reportTypes = splitList(reportsStr);
 
-                if (!browsers.isEmpty()) {
-                    TestNGXml.generateFromBrowsers(browsers);
-                }
                 log.info("Loaded properties from {}", filePath);
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to load: " + filePath, e);
@@ -140,10 +137,6 @@ public final class EnvUtils {
             throw new IllegalStateException("Missing: " + Constants.BASE_URL_PROPERTY);
         }
         return value;
-    }
-
-    public static boolean isInitialized() {
-        return !props.isEmpty();
     }
 
     private static List<String> splitList(String s) {

@@ -3,17 +3,12 @@ package org.example.configure;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.enums.BrowserType;
-import org.example.utils.EnvUtils;
 
 import java.time.Duration;
 import java.util.List;
 
 @Slf4j
 public class Config {
-
-    public static String getEnvValue(String key) {
-        return EnvUtils.getEnv(key);
-    }
 
     public static String getBaseUrl() {
         return Constants.getBaseUrl();
@@ -46,18 +41,14 @@ public class Config {
      * @return BrowserType resolved from properties or default
      */
     public static BrowserType getBrowserType(String browserParameter) {
-        if (browserParameter != null && !browserParameter.trim().isEmpty()) {
-            try {
-                return BrowserType.fromString(browserParameter.trim());
-            } catch (IllegalArgumentException e) {
-                log.warn("Invalid browser parameter '{}', falling back to configured default", browserParameter);
-            }
-        }
-        String browserStr = Constants.getDefaultBrowser();
+        String candidate = (browserParameter != null && !browserParameter.trim().isEmpty())
+                ? browserParameter.trim()
+                : Constants.getDefaultBrowser();
+
         try {
-            return BrowserType.fromString(browserStr);
+            return BrowserType.fromString(candidate);
         } catch (IllegalArgumentException e) {
-            log.warn("Configured browser '{}' is invalid, falling back to CHROME", browserStr);
+            log.warn("Invalid browser '{}', falling back to CHROME", candidate);
             return BrowserType.CHROME;
         }
     }

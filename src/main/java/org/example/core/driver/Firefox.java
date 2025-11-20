@@ -2,13 +2,8 @@ package org.example.core.driver;
 
 import org.example.configure.Config;
 import org.example.enums.BrowserType;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
-
-import java.net.URL;
-
-import static org.example.core.element.util.DriverUtils.sanitizeVersion;
 
 public class Firefox extends AbstractDriverManager {
 
@@ -18,6 +13,15 @@ public class Firefox extends AbstractDriverManager {
 
     @Override
     public void initLocalDriver() {
+        driver = new FirefoxDriver(buildFirefoxOptions(false));
+    }
+
+    @Override
+    protected FirefoxOptions createRemoteOptions() {
+        return buildFirefoxOptions(true);
+    }
+
+    private FirefoxOptions buildFirefoxOptions(boolean forRemote) {
         FirefoxOptions options = new FirefoxOptions();
         options.setCapability("acceptInsecureCerts", true);
         options.addPreference("dom.webdriver.enabled", false);
@@ -31,25 +35,9 @@ public class Firefox extends AbstractDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
-
-        driver = new FirefoxDriver(options);
-    }
-
-    @Override
-    public WebDriver createRemoteDriver(URL url, String version) {
-        FirefoxOptions options = new FirefoxOptions();
-        options.setCapability("browserName", "firefox");
-        options.setCapability("acceptInsecureCerts", true);
-
-        if (Config.isHeadless()) {
-            options.addArguments("--headless=new", "--disable-gpu");
+        if (forRemote) {
+            options.setCapability("browserName", "firefox");
         }
-
-        if (version != null) {
-            options.setBrowserVersion(sanitizeVersion(version));
-        }
-
-        driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
-        return driver;
+        return options;
     }
 }

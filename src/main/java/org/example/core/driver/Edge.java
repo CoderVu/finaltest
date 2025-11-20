@@ -2,13 +2,8 @@ package org.example.core.driver;
 
 import org.example.configure.Config;
 import org.example.enums.BrowserType;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
-
-import java.net.URL;
-
-import static org.example.core.element.util.DriverUtils.sanitizeVersion;
 
 public class Edge extends AbstractDriverManager {
 
@@ -18,6 +13,15 @@ public class Edge extends AbstractDriverManager {
 
     @Override
     public void initLocalDriver() {
+        driver = new EdgeDriver(buildEdgeOptions(false));
+    }
+
+    @Override
+    protected EdgeOptions createRemoteOptions() {
+        return buildEdgeOptions(true);
+    }
+
+    private EdgeOptions buildEdgeOptions(boolean forRemote) {
         EdgeOptions options = new EdgeOptions();
         options.setCapability("acceptInsecureCerts", true);
         options.setCapability("ms:edgeChromium", true);
@@ -34,25 +38,9 @@ public class Edge extends AbstractDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
-
-        driver = new EdgeDriver(options);
-    }
-
-    @Override
-    public WebDriver createRemoteDriver(URL url, String version) {
-        EdgeOptions options = new EdgeOptions();
-        options.setCapability("browserName", "MicrosoftEdge");
-        options.setCapability("acceptInsecureCerts", true);
-
-        if (Config.isHeadless()) {
-            options.addArguments("--headless=new", "--disable-gpu");
+        if (forRemote) {
+            options.setCapability("browserName", "MicrosoftEdge");
         }
-
-        if (version != null) {
-            options.setBrowserVersion(sanitizeVersion(version));
-        }
-
-        driver = new org.openqa.selenium.remote.RemoteWebDriver(url, options);
-        return driver;
+        return options;
     }
 }
