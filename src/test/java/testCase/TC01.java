@@ -8,9 +8,6 @@ import org.example.models.Hotel;
 import org.example.pages.AgodaHomePage;
 import org.testng.annotations.Test;
 import config.TestBase;
-import io.qameta.allure.Severity;
-import io.qameta.allure.SeverityLevel;
-import io.qameta.allure.Story;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -18,14 +15,12 @@ import java.util.List;
 import static org.example.core.helper.AssertionHelper.*;
 
 @Slf4j
-@Story("Hotel Search and Sort")
-public class TC01AgodaHotelSearch extends TestBase {
+public class TC01 extends TestBase {
 
     AgodaHomePage homePage = new AgodaHomePage();
 
     @Test(description = "TC01: Search and sort hotel successfully", dataProvider = "auto", dataProviderClass = DataProvider.class)
     @DataFile("tc01.json")
-    @Severity(SeverityLevel.CRITICAL)
     public void TC01_SearchAndSortHotelSuccessfully(@DataPath("destination") String destination, @DataPath("occupancy.rooms") int rooms, @DataPath("occupancy.adults") int adults, @DataPath("occupancy.children") int children, @DataPath("validation.expectedHotelCount") int expectedHotelCount) {
         // Step 1: Navigate to https://www.agoda.com/
         homePage.navigateToHomePage();

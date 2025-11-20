@@ -1,219 +1,47 @@
 # Reporter Usage Guide
 
-## Structure Overview
+The framework now ships with a single reporting backend: **ExtentReports**. The goal is to keep configuration simple while still providing structured logs, screenshots, and a shareable HTML report.
 
-```
-report/
-  ├── ITestReporter.java           # Interface for all reporters
-  ├── ReportManager.java           # Selects active reporter and strategy globally
-  ├── hook/
-  │   └── ReportHook.java         # TestNG listener that delegates to ReportStrategy
-  ├── strategy/
-  │   ├── ReportStrategy.java     # Strategy interface (extends TestNG listeners)
-  │   ├── AllureStrategy.java      # Allure report strategy
-  │   ├── ExtentStrategy.java     # Extent report strategy
-  │   └── JenkinsStrategy.java    # Jenkins report strategy
-  ├── annotations/
-  │   └── Step.java               # Custom step annotation
-  ├── aop/
-  │   └── StepAspect.java         # Logs @Step via active reporter
-  └── impl/
-      ├── AllureTestReporter.java  # Allure implementation
-      ├── ExtentTestReporter.java  # Extent implementation
-      └── JenkinsTestReporter.java # Jenkins implementation
-```
+## Key Components (`org.example.core.report`)
+- `IReporter`: small API for logging steps/info/failures and attaching screenshots.
+- `AbstractReporter` + `ExtentReporter`: implementation that writes to Extent.
+- `ReportManager`: returns a singleton `IReporter` and caches the active TestNG listener strategy.
+- `ReportListener` → `ExtentStrategyI`: TestNG listener registered in `testng.xml` that listens to suite/test events and feeds the Extent lifecycle (create test, flush report, etc.).
 
-## Basic Usage
+## Configuration
+- `reportType` property/system property/env var now accepts a single value: `extent`.
+- Default is `extent`, so no change is required unless you override it somewhere.
+- Reports are written to `target/extent-report/<timestamp>/index_<timestamp>.html`.
 
-### In Page Objects
+## Typical Usage
 
 ```java
-package org.example.pages;
+import org.example.core.report.IReporter;
+import org.example.core.report.ReportManager;
 
-import org.example.core.report.ITestReporter;
-import org.example.core.annotations.Step;
+public class LoginPage {
+    private final IReporter reporter = ReportManager.getReporter();
 
-public class LoginPage extends BasePage {
-
-    // Already available in BasePage
-    // protected ITestReporter reporter = ReportManager.getReporter();
-
-    @Step("Login with user: {arg0}")
     public void login(String username, String password) {
         reporter.info("Entering username: " + username);
-        enterText(usernameField, username);
+        userField.setText(username);
 
         reporter.info("Entering password");
-        enterText(passwordField, password);
+        passwordField.setText(password);
 
         reporter.logStep("Click login button");
-        clickElement(loginButton);
-    }
-
-    @Step("Verify login successful")
-    public void verifyLoginSuccess() {
-        reporter.info("Expected: Dashboard page");
-        // verification code
+        loginButton.click();
     }
 }
 ```
 
-## Switching Report Types
+Because `ReportManager` caches the reporter, you can safely access it from any page/helper without worrying about lifecycle or threading.
 
-No code changes needed! Configure via properties file or system property.
+## Screenshots
+- `ExtentReporter` automatically captures a screenshot when `logFail` is invoked (e.g., during TestNG failures handled by `ExtentStrategyI`).
+- You can manually call `reporter.attachScreenshot("optional-name")` at any point to embed evidence inside the report.
 
-### Configuration Methods
-
-1. **Properties file** (recommended):
-```properties
-# dev-env.properties
-reportType=allure
-# or
-reportType=extent
-# or
-reportType=jenkins
-```
-
-2. **System property** (runtime override):
-```bash
-mvn test -DreportType=allure
-mvn test -DreportType=extent
-mvn test -DreportType=jenkins
-```
-
-3. **Environment variable**:
-```bash
-export REPORT_TYPE=allure
-mvn test
-```
-
-### Report Types
-
-#### Allure (default)
-```bash
-mvn test
-# or explicitly
-mvn test -DreportType=allure
-```
-- **Output:** `target/allure-results/`
-- **View:** `mvn allure:serve` or `mvn allure:report`
-- **Auto-generate:** Reports automatically generated after successful runs
-
-#### ExtentReports
-```bash
-mvn test -DreportType=extent
-```
-- **Output:** `target/extent/index.html`
-- **View:** Open HTML file in browser
-- **Features:** Interactive dashboard with charts and statistics
-
-#### Jenkins
-```bash
-mvn test -DreportType=jenkins
-```
-- **Output:** `target/surefire-reports/` (XML for Jenkins)
-- **Integration:** Ready for Jenkins CI/CD pipeline
-- **Format:** Surefire XML format
-
-## Report Strategy Pattern
-
-The framework uses **Strategy Pattern** for pluggable report backends:
-
-- **ReportHook**: TestNG listener that receives all test events
-- **ReportStrategy**: Interface that handles test lifecycle events
-- **ReportManager**: Factory that selects appropriate strategy based on `ReportType`
-
-Each strategy automatically:
-- Captures screenshots on test failures
-- Logs test start/success/failure/skip events
-- Handles configuration failures
-- Manages report lifecycle (start/finish)
-
-## Advanced Usage
-
-### Using Reporter Classes Directly
-
-If you need framework-specific features, you can get the reporter instance:
-
-```java
-import org.example.core.report.ReportManager;
-import org.example.core.report.ITestReporter;
-import org.example.core.report.impl.AllureServiceImpl;
-import org.example.core.report.impl.AllureTestReporter;
-import org.example.core.report.impl.ExtentServiceImpl;
-import org.example.core.report.impl.ExtentTestReporter;
-import org.example.core.report.impl.JenkinsServiceImpl;
-import org.example.core.report.impl.JenkinsTestReporter;
-
-// Get the reporter
-ITestReporter reporter = ReportManager.getReporter();
-
-// Check type and use framework-specific features
-if(reporter instanceof AllureServiceImpl){
-        AllureServiceImpl allure = (AllureServiceImpl) reporter;
-        // Allure-specific methods available
-}
-
-        if(reporter instanceof ExtentServiceImpl){
-        ExtentServiceImpl extent = (ExtentServiceImpl) reporter;
-        // Extent-specific methods available
-}
-
-        if(reporter instanceof JenkinsServiceImpl){
-        JenkinsServiceImpl jenkins = (JenkinsServiceImpl) reporter;
-        // Jenkins-specific methods available
-}
-```
-
-## Key Concepts
-
-### logStep() vs info()
-
-- **`logStep()`**: Log main test actions/operations
-  - Example: "Click login button", "Navigate to checkout"
-  - Creates top-level steps in reports
-  
-- **`info()`**: Log nested information or details within steps
-  - Example: "Username: john@example.com", "Total: $150", "Found 5 items"
-  - Creates nested/sub-steps in reports
-
-### Example Flow
-
-```java
-reporter.logStep("Login to application");
-  reporter.info("Username: admin@example.com");
-  reporter.info("Password: ********");
-  enterCredentials();
-  
-reporter.logStep("Verify dashboard loaded");
-  reporter.info("Expected URL: /dashboard");
-  verifyURL();
-```
-
-This creates a hierarchical structure:
-```
-✓ Login to application
-  • Username: admin@example.com
-  • Password: ********
-✓ Verify dashboard loaded
-  • Expected URL: /dashboard
-```
-
-### Screenshots
-
-Screenshots are automatically captured on:
-- Test failures
-- Test skips
-- Test timeouts
-- Configuration failures
-
-No manual intervention needed - handled by `ReportStrategy` implementations.
-
-## Benefits
-
-✅ **Flexible**: Switch between Allure/Extent/Jenkins without code changes  
-✅ **Easy to Use**: Simple API - just `logStep()` and `info()`  
-✅ **Extensible**: Add custom reporters by implementing `ITestReporter` and `ReportStrategy`  
-✅ **Clean**: No hardcoded framework dependencies in page objects  
-✅ **Maintainable**: All reporting logic in one place  
-✅ **Automatic**: Screenshots and error logging handled automatically
+## Tips
+- Keep log messages action-focused (`logStep`) and detail-oriented (`info`).
+- When running parallel tests, each thread receives its own `ExtentTest` node automatically (handled in `ExtentStrategyI`).
+- Open the latest HTML file after each run; screenshots are stored under the sibling `screenshots/` folder.

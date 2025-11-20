@@ -1,7 +1,12 @@
-package org.example.core.driver;
+package org.example.core.driver.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.core.driver.Chrome;
+import org.example.core.driver.Edge;
+import org.example.core.driver.Firefox;
+import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
+
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -22,7 +27,7 @@ public class DriverFactory {
         log.warn("Creating Driver for type {}", type);
         AbstractDriverManager manager = THREAD_LOCAL.get();
         if (manager == null || manager.getBrowserType() != type) {
-            manager = DRIVER_MAP.getOrDefault(type, Chrome::new).get();
+            manager = DRIVER_MAP.getOrDefault(type, DRIVER_MAP.get(BrowserType.CHROME)).get();
             manager.initDriver();
             THREAD_LOCAL.set(manager);
         }

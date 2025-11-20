@@ -22,13 +22,5 @@ public abstract class AbstractReporter implements IReporter {
         return reportType;
     }
 
-    protected byte[] getScreenshotBytes() {
-
-        WebDriver driver = getWebDriver();
-        if (driver != null && driver instanceof TakesScreenshot) {
-            return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-        }
-        return null;
-    }
 }
 

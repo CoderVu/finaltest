@@ -23,7 +23,6 @@ if (Config.isRemoteEnabled() || Config.isGridEnabled()) {
 | **`remote.enabled`** | ❌ (cho Remote) | `true` / `false` | Enable remote execution |
 | **`grid.enabled`** | ❌ (cho Remote) | `true` / `false` | Enable Grid execution (tương tự remote.enabled) |
 | **`remote.url`** | ✅ (nếu Remote) | URL string | URL của Selenium Grid Hub (VD: `http://localhost:4444/wd/hub`) |
-| **`browser.version`** | ❌ | Version string | Chỉ định browser version cho Remote (VD: `120.0.6099.109`) |
 | **`platform.name`** | ❌ | `linux` / `windows` / `mac` | Override platform cho Remote (mặc định: `linux`) |
 | **`headless`** | ❌ | `true` / `false` | Chạy headless mode (dùng cho cả Local và Remote) |
 
@@ -83,7 +82,6 @@ mvn test \
   -Dremote.enabled=true \
   -Dremote.url=http://localhost:4444/wd/hub \
   -Dbrowser=chrome \
-  -Dbrowser.version=120.0.6099.109
 ```
 
 ### Ví dụ 4: Remote với Platform Override
@@ -145,7 +143,6 @@ protected void initRemoteDriver() {
 ### 4. Resolve Browser Version (cho Remote)
 Framework tự động resolve browser version từ:
 1. **TestNG parameter**: `browserVersion` trong testng.xml
-2. **System Property**: `browser.version`
 3. **Mặc định**: `null` (Grid sẽ chọn version available)
 
 ### 5. Resolve Platform Name (cho Remote)

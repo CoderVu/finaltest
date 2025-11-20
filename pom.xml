@@ -16,14 +16,8 @@
         <testng.version>7.9.0</testng.version>
         <slf4j.version>2.0.11</slf4j.version>
         <log4j.version>2.21.1</log4j.version>
-        <allure.version>2.24.0</allure.version>
         <selenide.version>7.2.3</selenide.version>
-        <aspectjweaver.version>1.9.22</aspectjweaver.version>
         <freemarker.version>2.3.32</freemarker.version>
-        <!-- Default to 'latest', can be overridden with -Dallure.report.folder=YYYYMMdd_HHmmss
-             PowerShell: $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"; mvn clean test allure:report "-Dallure.report.folder=$timestamp"
-             Bash: export TIMESTAMP=$(date +%Y%m%d_%H%M%S); mvn clean test allure:report -Dallure.report.folder=$TIMESTAMP -->
-        <allure.report.folder>latest</allure.report.folder>
     </properties>
 
     <dependencies>
@@ -53,20 +47,6 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>
-        </dependency>
-
-        <!-- Allure Java Commons - For annotations like @Story, @Severity -->
-        <dependency>
-            <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-java-commons</artifactId>
-            <version>${allure.version}</version>
-        </dependency>
-
-        <!-- Allure TestNG - Required for Allure to automatically create test cases from TestNG -->
-        <dependency>
-            <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-testng</artifactId>
-            <version>${allure.version}</version>
         </dependency>
 
         <!-- SLF4J Implementation -->
@@ -108,18 +88,6 @@
             <artifactId>selenide</artifactId>
             <version>${selenide.version}</version>
         </dependency>
-        <!-- AspectJ for custom @Step support -->
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>${aspectjweaver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>${aspectjweaver.version}</version>
-        </dependency>
-
         <!--Lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -168,7 +136,6 @@
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <useFile>false</useFile>
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar"
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.util=ALL-UNNAMED
                         --add-opens java.base/java.lang.reflect=ALL-UNNAMED
@@ -177,8 +144,6 @@
                         -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
                     </argLine>
                     <systemPropertyVariables>
-                        <!-- Set allure.results.directory using ${allure.report.folder} property -->
-                        <allure.results.directory>${project.build.directory}/allure-results/${allure.report.folder}</allure.results.directory>
                         <org.slf4j.simpleLogger.defaultLogLevel>info</org.slf4j.simpleLogger.defaultLogLevel>
                         <org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>
                         <org.slf4j.simpleLogger.dateTimeFormat>yyyy-MM-dd HH:mm:ss.SSS</org.slf4j.simpleLogger.dateTimeFormat>
@@ -188,16 +153,6 @@
                         <org.slf4j.simpleLogger.log.org.example>debug</org.slf4j.simpleLogger.log.org.example>
                         <org.slf4j.simpleLogger.log.org.openqa.selenium>warn</org.slf4j.simpleLogger.log.org.openqa.selenium>
                     </systemPropertyVariables>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>io.qameta.allure</groupId>
-                <artifactId>allure-maven</artifactId>
-                <version>2.12.0</version>
-                <configuration>
-                    <reportVersion>${allure.version}</reportVersion>
-                    <reportDirectory>${project.build.directory}/allure-reports/${allure.report.folder}</reportDirectory>
-                    <resultsDirectory>${project.build.directory}/allure-results/${allure.report.folder}</resultsDirectory>
                 </configuration>
             </plugin>
         </plugins>

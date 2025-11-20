@@ -2,11 +2,10 @@ package org.example.enums;
 
 import lombok.Getter;
 import org.example.common.Constants;
-import org.example.utils.EnvUtils;
+import org.example.configure.Config;
 
 @Getter
 public enum ReportType {
-    ALLURE("allure", "io.qameta.allure.Allure", "configured in pom.xml"),
     EXTENT("extent", "com.aventstack.extentreports.ExtentTest", "target/extent");
 
     private final String key;
@@ -23,11 +22,11 @@ public enum ReportType {
      * Parse string to ReportType enum.
      * 
      * @param value string value (case-insensitive)
-     * @return ReportType, defaults to ALLURE if not found
+     * @return ReportType, defaults to EXTENT if not found
      */
     public static ReportType fromString(String value) {
         if (value == null || value.trim().isEmpty()) {
-            return ALLURE;
+            return EXTENT;
         }
         
         String normalized = value.trim().toLowerCase();
@@ -37,24 +36,20 @@ public enum ReportType {
             }
         }
 
-        if (normalized.contains("extent")) {
-            return EXTENT;
-        }
-        
-        return ALLURE;
+        return EXTENT;
     }
 
     /**
-     * Get report type from system properties/env/yaml in that order, fallback to ALLURE.
+     * Get report type from system properties/env/yaml in that order, fallback to EXTENT.
      */
     public static ReportType getConfigured() {
         String value = System.getProperty("reportType");
 
         if (isEmpty(value)) {
-            value = EnvUtils.getEnv(Constants.REPORT_TYPE_PROPERTY);
+            value = Config.getPropertyOrDefault(Constants.REPORT_TYPE_PROPERTY, null);
         }
         if (isEmpty(value)) {
-            value = EnvUtils.getEnv("report.strategy");
+            value = Config.getPropertyOrDefault("report.strategy", null);
         }
         return fromString(value);
     }

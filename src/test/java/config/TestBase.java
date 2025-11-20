@@ -2,14 +2,12 @@ package config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
-import org.example.core.assertion.MySoftAssert;
-import org.example.core.driver.DriverFactory;
-import org.example.core.report.ReportManager;
 import org.example.enums.BrowserType;
+import org.example.core.assertion.MySoftAssert;
+import org.example.core.driver.factory.DriverFactory;
+import org.example.core.report.ReportManager;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
-
-import static org.example.common.Constants.loadEnvironment;
 
 
 @Slf4j
@@ -23,7 +21,7 @@ public class TestBase {
 
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite() {
-        loadEnvironment(Config.getEnvFile());
+
     }
 
     @AfterSuite(alwaysRun = true)

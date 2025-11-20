@@ -1,35 +1,23 @@
 package org.example.enums;
 
+import java.util.Arrays;
+
 public enum BrowserType {
-    CHROME("chrome"),
-    FIREFOX("firefox"),
-    EDGE("edge");
+    CHROME,
+    FIREFOX,
+    EDGE;
 
-    private final String value;
-
-    BrowserType(String value) {
-        this.value = value;
-    }
-
-    public String value() {
-        return value;
-    }
-
-    public static BrowserType fromString(String input) {
-        if (input == null) {
-            throw new IllegalArgumentException("Browser value is null");
-        }
-        String normalized = input.trim().toLowerCase();
-        for (BrowserType t : values()) {
-            if (t.value.equalsIgnoreCase(normalized) || t.name().equalsIgnoreCase(normalized)) {
-                return t;
+    public static BrowserType fromString(String value) {
+        for (BrowserType type : BrowserType.values()) {
+            if (type.name().equalsIgnoreCase(value)) {
+                return type;
             }
         }
-        throw new IllegalArgumentException("Unknown browser: " + input);
+        throw new IllegalArgumentException("Unknown browser: " + value);
     }
 
     @Override
     public String toString() {
-        return value;
+        return name().toLowerCase();
     }
 }

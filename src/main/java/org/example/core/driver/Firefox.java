@@ -1,19 +1,21 @@
 package org.example.core.driver;
 
 import org.example.configure.Config;
+import org.example.core.driver.manager.RemoteDriverManager;
 import org.example.enums.BrowserType;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
-public class Firefox extends AbstractDriverManager {
+public class Firefox extends RemoteDriverManager {
 
     public Firefox() {
         super(BrowserType.FIREFOX);
     }
 
     @Override
-    public void initLocalDriver() {
-        driver = new FirefoxDriver(buildFirefoxOptions(false));
+    protected WebDriver createLocalDriver() {
+        return new FirefoxDriver(buildFirefoxOptions(false));
     }
 
     @Override
@@ -35,6 +37,7 @@ public class Firefox extends AbstractDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
+
         if (forRemote) {
             options.setCapability("browserName", "firefox");
         }

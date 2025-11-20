@@ -1,10 +1,7 @@
 package org.example.core.report.listener;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.report.ReportManager;
-import org.example.core.report.strategy.AllureStrategyI;
 import org.example.core.report.strategy.ExtentStrategyI;
-import org.example.enums.ReportType;
 import org.testng.IConfigurationListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
@@ -23,21 +20,8 @@ public class ReportListener implements ITestListener, IConfigurationListener {
 	private synchronized void ensureInitialized() {
 		if (delegates != null) return;
 
-		ReportType type = ReportManager.parseReportType(null);
-		IReportStrategyListener strategy;
-		
-		switch (type) {
-			case EXTENT:
-				strategy = new ExtentStrategyI();
-				break;
-			case ALLURE:
-			default:
-				strategy = new AllureStrategyI();
-				break;
-		}
-		
-		this.delegates = Collections.singletonList(strategy);
-		log.info("Using report strategy: {}", type.name());
+		this.delegates = Collections.singletonList(new ExtentStrategyI());
+		log.info("Using report strategy: EXTENT");
 	}
 
 	private void forEachDelegate(DelegateAction action) {

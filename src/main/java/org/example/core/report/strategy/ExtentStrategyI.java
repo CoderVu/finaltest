@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.core.report.impl.ExtentReporter;
 import org.example.configure.Config;
 import org.example.core.report.listener.IReportStrategyListener;
-import org.example.utils.EnvUtils;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.example.core.report.ReportManager;
@@ -59,7 +58,7 @@ public class ExtentStrategyI implements IReportStrategyListener {
             EXTENT.attachReporter(spark);
             EXTENT.setSystemInfo("Suite", suiteName);
             EXTENT.setSystemInfo("Environment", Config.getEnvFile());
-            EXTENT.setSystemInfo("Browser", EnvUtils.getBrowsers().toString());
+            EXTENT.setSystemInfo("Browser", Config.getBrowserType().toString());
             log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
             
             INITIALIZED = true;

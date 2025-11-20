@@ -1,10 +1,11 @@
 package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.Constants;
+import org.example.configure.Config;
 import org.example.core.element.IElement;
 import org.example.core.element.util.DriverUtils;
-import org.example.core.annotations.Step;
+import org.example.core.report.IReporter;
+import org.example.core.report.ReportManager;
 import org.example.models.Hotel;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -62,23 +63,22 @@ public class AgodaHomePage extends BasePage {
     protected static String badgeXpath = ".//div[contains(@data-badge-id, 'pct')]//span";
     protected static String priceXpath = ".//span[@data-selenium='display-price']";
 
-    @Step("Test function BaseControl")
+    private final IReporter reporter = ReportManager.getReporter();
     public void DraftTestFunction() {
         IElement sampleElement = $("//div[@data-selenium='sample-element']");
         sampleElement.checkCheckBoxByJs();
     }
-    @Step("Navigate to home page")
     public void navigateToHomePage() {
+        reporter.logStep("Navigating to Agoda home page");
         String current = getCurrentUrl();
-        String base = Constants.getBaseUrl();
+        String base = Config.getBaseUrl();
         if (current == null || !current.startsWith(base)) {
             DriverUtils.navigateTo(base);
         }
     }
 
-    @Step("Enter destination: {arg0}")
     public void enterDestination(String destination) {
-        reporter.info("Debug log via reporter :Entering destination by text: " + destination);
+        reporter.logStep("Entering destination: " + destination);
         try {
             destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
             destinationSearchInput.waitForElementClickable(Duration.ofSeconds(10));
@@ -98,20 +98,20 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select destination from suggestions: {arg0}")
     public void selectDestinationFromSuggestions(String destinationName) {
+        reporter.logStep("Selecting destination from suggestions: " + destinationName);
         autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
         $(String.format("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName)).click();
     }
 
-    @Step("Select check-in date: {arg0} and check-out date: {arg1}")
     public void selectDates(String checkInDate, String checkOutDate) {
+        reporter.logStep("Selecting dates: " + checkInDate + " to " + checkOutDate);
         selectCheckInDate(checkInDate);
         selectCheckOutDate(checkOutDate);
     }
 
-    @Step("Select check-in date: {arg0}")
     public void selectCheckInDate(String checkInDate) {
+        reporter.logStep("Selecting check-in date: " + checkInDate);
         int openAttempts = 0;
         while (!calendarContainer.isVisible() && openAttempts < 5) {
             checkInBox.scrollElementToCenterScreen();
@@ -188,8 +188,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select check-out date: {arg0}")
     public void selectCheckOutDate(String checkOutDate) {
+        reporter.logStep("Selecting check-out date: " + checkOutDate);
         checkOutBox.waitForElementClickable(Duration.ofSeconds(10));
         for (int i = 0; i < 3; i++) {
             checkOutBox.click();
@@ -246,13 +246,12 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Click search button")
     public void clickSearchButton() {
+        reporter.logStep("Clicking search button");
         searchButton.waitForElementClickable(Duration.ofSeconds(10));
         searchButton.click();
     }
 
-    @Step("Calculate and select dates: 3 days from next Friday")
     public void selectDatesFromNextFriday() {
         LocalDate today = LocalDate.now();
 
@@ -274,8 +273,8 @@ public class AgodaHomePage extends BasePage {
         selectDates(checkInDateStr, checkOutDateStr);
     }
 
-    @Step("Select occupancy: {arg0} rooms, {arg1} adults, {arg2} children")
     public void SelectOccupancy(int rooms, int adults, int children) {
+        reporter.logStep("Selecting occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children");
         IElement occupancyPopup = $(occupancyPopupXpathString);
 
         try {
@@ -295,8 +294,8 @@ public class AgodaHomePage extends BasePage {
         selectChildren(children);
     }
 
-    @Step("Select rooms to: {arg0}")
     private void selectRooms(int targetRooms) {
+        reporter.logStep("Selecting rooms: " + targetRooms);
         IElement roomValueElement = $(roomValueXpath);
         roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
@@ -325,8 +324,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select adults to: {arg0}")
     private void selectAdults(int targetAdults) {
+        reporter.logStep("Selecting adults: " + targetAdults);
         IElement adultValueElement = $(adultValueXpath);
         adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
@@ -355,8 +354,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Select children to: {arg0}")
     private void selectChildren(int targetChildren) {
+        reporter.logStep("Selecting children: " + targetChildren);
         IElement childrenValueElement = $(childrenValueXpath);
         childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
@@ -385,8 +384,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Get hotel information from search results")
     public List<Hotel> getAllHotelsFromListViewSearch(int expectedHotelCount) {
+        reporter.logStep("Getting all hotels from list view search: " + expectedHotelCount);
         List<Hotel> hotels = new ArrayList<>();
         try {
             List<IElement> hotelCards = $$(propertyCardXpath);
@@ -416,6 +415,7 @@ public class AgodaHomePage extends BasePage {
     }
 
     private Hotel extractHotelFromCard(IElement card) {
+        reporter.logStep("Extracting hotel from card");
         try {
             Hotel.HotelBuilder hotelBuilder = Hotel.builder();
 
@@ -493,8 +493,8 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Verify search results are displayed correctly with at least {arg0} hotels")
     public boolean verifySearchResultsDisplayed(int expectedCount) {
+        reporter.logStep("Verifying search results displayed: " + expectedCount);
         try {
             List<Hotel> hotels = getAllHotelsFromListViewSearch(expectedCount);
             int actualCount = hotels.size();
@@ -524,20 +524,20 @@ public class AgodaHomePage extends BasePage {
         }
     }
 
-    @Step("Get total hotels count from list")
     public int getTotalHotelsCount(List<Hotel> hotels) {
+        reporter.logStep("Getting total hotels count: " + hotels.size());
         return hotels.size();
     }
 
-    @Step("Switch to search results tab")
     public void switchToSearchResultsTab() {
+        reporter.logStep("Switching to search results tab");
         DriverUtils.waitForNewWindowOpened(2);
         DriverUtils.switchToWindow(1);
         DriverUtils.waitForUrlContains("search", DriverUtils.getTimeOut());
     }
 
-    @Step("Wait for search results to load")
     public void waitForSearchResultsToLoad() {
+        reporter.logStep("Waiting for search results to load");
         try {
             IElement firstPropertyCard = $(propertyCardXpath + "[1]");
             firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
@@ -547,14 +547,14 @@ public class AgodaHomePage extends BasePage {
             log.error("Failed to wait for search results: {}", e.getMessage());
         }
     }
-    @Step("Sort hotels by lowest price")
     public void sortByLowestPrice() {
+        reporter.logStep("Sorting by lowest price");
         sortPriceButton.waitForElementClickable();
         sortPriceButton.click();
     }
 
-    @Step("Get size of hotel list in search results")
     public int getHotelListSize() {
+        reporter.logStep("Getting hotel list size");
         try {
             List<WebElement> webElements = hotelListContainer.getElements();
             return webElements.size();
@@ -563,8 +563,8 @@ public class AgodaHomePage extends BasePage {
             return 0;
         }
     }
-    @Step("Verify first 5 hotels are sorted by lowest price: {arg0}")
     public boolean verifyHotelsSortedByLowestPrice(List<Hotel> hotels) {
+        reporter.logStep("Verifying hotels sorted by lowest price");
         if (hotels == null || hotels.isEmpty()) {
             log.error("Hotel list is null or empty");
             return false;
@@ -674,8 +674,8 @@ public class AgodaHomePage extends BasePage {
     }
     
 
-    @Step("Verify first 5 hotels have correct destination: {arg0}")
     public boolean verifyHotelsDestination(List<Hotel> hotels, String expectedDestination) {
+        reporter.logStep("Verifying hotels destination: " + expectedDestination);
         for (int i = 0; i < Math.min(5, hotels.size()); i++) {
             Hotel hotel = hotels.get(i);
             String location = hotel.getLocation();
@@ -689,8 +689,8 @@ public class AgodaHomePage extends BasePage {
         return true;
     }
 
-    @Step("Wait for property card count to change or sort to complete within {arg0} seconds")
     public void waitForPropertyCardCountChange(int beforeCount) {
+        reporter.logStep("Waiting for property card count change: " + beforeCount);
         int timeoutSeconds = 11;
         try {
             hotelListContainer.waitForVisibility(Duration.ofSeconds(10));

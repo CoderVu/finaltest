@@ -1,21 +1,23 @@
 package org.example.core.driver;
 
 import org.example.configure.Config;
+import org.example.core.driver.manager.RemoteDriverManager;
 import org.example.enums.BrowserType;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.util.Arrays;
 
-public class Chrome extends AbstractDriverManager {
+public class Chrome extends RemoteDriverManager {
 
     public Chrome() {
         super(BrowserType.CHROME);
     }
 
     @Override
-    public void initLocalDriver() {
-        driver = new ChromeDriver(buildChromeOptions(false));
+    protected WebDriver createLocalDriver() {
+        return new ChromeDriver(buildChromeOptions(false));
     }
 
     @Override

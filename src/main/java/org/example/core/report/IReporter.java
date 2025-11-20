@@ -4,7 +4,7 @@ import org.example.enums.ReportType;
 
 /**
  * Interface định nghĩa các phương thức báo cáo test.
- * Tương tự IDriver trong package driver.
+ * Tương tự IDriverManager trong package driver.
  */
 public interface IReporter {
     /**

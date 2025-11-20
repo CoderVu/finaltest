@@ -1,19 +1,21 @@
 package org.example.core.driver;
 
 import org.example.configure.Config;
+import org.example.core.driver.manager.RemoteDriverManager;
 import org.example.enums.BrowserType;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
-public class Edge extends AbstractDriverManager {
+public class Edge extends RemoteDriverManager {
 
     public Edge() {
         super(BrowserType.EDGE);
     }
 
     @Override
-    public void initLocalDriver() {
-        driver = new EdgeDriver(buildEdgeOptions(false));
+    protected WebDriver createLocalDriver() {
+        return new EdgeDriver(buildEdgeOptions(false));
     }
 
     @Override
@@ -38,6 +40,7 @@ public class Edge extends AbstractDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
+
         if (forRemote) {
             options.setCapability("browserName", "MicrosoftEdge");
         }

@@ -1,7 +1,7 @@
 package org.example.core.element.util;
 
 import org.example.configure.Config;
-import org.example.core.driver.DriverFactory;
+import org.example.core.driver.factory.DriverFactory;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
