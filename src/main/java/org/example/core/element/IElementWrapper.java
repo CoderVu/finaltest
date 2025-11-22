@@ -7,10 +7,9 @@ import org.openqa.selenium.WebElement;
 import java.time.Duration;
 import java.util.List;
 
-public interface IElement {
+public interface IElementWrapper {
     // Locator
     By getLocator();
-    String getLocatorString();
     
     // Core element access
     WebElement getElement();
@@ -32,7 +31,7 @@ public interface IElement {
     
     // Drag & Drop
     void dragAndDrop(int xOffset, int yOffset);
-    void dragAndDrop(IElement target);
+    void dragAndDrop(IElementWrapper target);
     
     // Move/Hover
     void moveTo();
@@ -63,7 +62,6 @@ public interface IElement {
     boolean isClickable();
     boolean isExist();
     boolean isExist(Duration timeout);
-    boolean isDynamicLocator();
     
     // Waits
     void waitForVisibility();
@@ -95,7 +93,6 @@ public interface IElement {
     
     // Other
     void setAttributeJS(String attributeName, String value);
-    void setDynamicValue(Object... args);
     org.openqa.selenium.support.ui.Select getSelect();
 }
 
