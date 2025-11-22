@@ -1,13 +1,13 @@
 package org.example.core.driver;
 
 import org.example.configure.Config;
-import org.example.core.driver.manager.RemoteDriverManager;
+import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
-public class Firefox extends RemoteDriverManager {
+public class Firefox extends AbstractDriverManager {
 
     public Firefox() {
         super(BrowserType.FIREFOX);
@@ -15,19 +15,21 @@ public class Firefox extends RemoteDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
-        return new FirefoxDriver(buildFirefoxOptions(false));
+        return new FirefoxDriver(buildFirefoxOptions());
     }
 
     @Override
     protected FirefoxOptions createRemoteOptions() {
-        return buildFirefoxOptions(true);
+        return buildFirefoxOptions();
     }
 
-    private FirefoxOptions buildFirefoxOptions(boolean forRemote) {
+    public static FirefoxOptions buildFirefoxOptions() {
         FirefoxOptions options = new FirefoxOptions();
+        options.setCapability("browserName", "firefox");
         options.setCapability("acceptInsecureCerts", true);
         options.addPreference("dom.webdriver.enabled", false);
         options.addPreference("useAutomationExtension", false);
+        options.addPreference("startup.homepage_override_url", "about:blank");
 
         options.addArguments("--start-maximized",
                 "--disable-web-security");
@@ -37,10 +39,7 @@ public class Firefox extends RemoteDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
-
-        if (forRemote) {
-            options.setCapability("browserName", "firefox");
-        }
         return options;
     }
 }
+

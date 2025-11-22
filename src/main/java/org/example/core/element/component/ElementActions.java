@@ -31,7 +31,7 @@ public class ElementActions {
         
         while (attemptsLeft > 0) {
             try {
-                log.debug("Click on {}", element.getLocator());
+            //    log.debug("Click on {}", element.getLocator());
                 
                 if (!element.isVisible()) {
                     element.waitForDisplay(DriverUtils.getTimeOut());
@@ -58,13 +58,13 @@ public class ElementActions {
                 attemptsLeft--;
                 
                 if (!intercepted) {
-                    log.info("Non-intercepted click error on '{}': {}. Using JS click.", element.getLocator(), msg);
+                    // log.info("Non-intercepted click error on '{}': {}. Using JS click.", element.getLocator(), msg);
                     clickByJs();
                     return;
                 }
                 
                 if (attemptsLeft == 0) {
-                    log.info("Final click attempt failed on '{}': {}. Trying JS click.", element.getLocator(), msg);
+                    // log.info("Final click attempt failed on '{}': {}. Trying JS click.", element.getLocator(), msg);
                     try {
                         clickByJs();
                         return;
@@ -74,7 +74,7 @@ public class ElementActions {
                 }
                 
                 DriverUtils.delay(0.5);
-                log.info("Retry click on '{}': {} ({} attempts left)", element.getLocator(), msg, attemptsLeft);
+                // log.info("Retry click on '{}': {} ({} attempts left)", element.getLocator(), msg, attemptsLeft);
             }
         }
         
@@ -83,7 +83,7 @@ public class ElementActions {
     
     public void click(int x, int y) {
         try {
-            log.debug("Click on {}", element.getLocator().toString());
+        //    log.debug("Click on {}", element.getLocator().toString());
             new Actions(getWebDriver()).moveToElement(element.getElement(), x, y).click().build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -94,7 +94,7 @@ public class ElementActions {
     
     public void clickByJs() {
         try {
-            log.debug("Click by js on {}", element.getLocator().toString());
+         //   log.debug("Click by js on {}", element.getLocator().toString());
             ((org.openqa.selenium.JavascriptExecutor) getWebDriver())
                     .executeScript("arguments[0].click();", element.getElement());
         } catch (Exception e) {
@@ -117,7 +117,7 @@ public class ElementActions {
     
     public void setText(String text) {
         try {
-            log.debug("Set text '{}' for {}", text, element.getLocator().toString());
+       //     log.debug("Set text '{}' for {}", text, element.getLocator().toString());
             element.getElement().sendKeys(text);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -128,7 +128,7 @@ public class ElementActions {
     
     public void clear() {
         try {
-            log.debug("Clean text for {}", element.getLocator().toString());
+          //  log.debug("Clean text for {}", element.getLocator().toString());
             element.getElement().clear();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -139,7 +139,7 @@ public class ElementActions {
     
     public void enter(CharSequence... value) {
         try {
-            log.debug("Enter '{}' for {}", value, element.getLocator().toString());
+          //  log.debug("Enter '{}' for {}", value, element.getLocator().toString());
             element.getElement().sendKeys(value);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -150,7 +150,7 @@ public class ElementActions {
     
     public void sendKeys(Keys key) {
         try {
-            log.debug("Sending key {} to element {}", key, element.getLocator().toString());
+          //  log.debug("Sending key {} to element {}", key, element.getLocator().toString());
             element.getElement().sendKeys(key);
         } catch (Exception e) {
             log.error("Has error sending key to control '{}': {}", element.getLocator().toString(), 
@@ -161,7 +161,7 @@ public class ElementActions {
     
     public void submit() {
         try {
-            log.debug("Submit form for {}", element.getLocator().toString());
+         //   log.debug("Submit form for {}", element.getLocator().toString());
             element.getElement().submit();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 

@@ -136,7 +136,7 @@ public class ElementWaits {
                     actualTimeout.getSeconds(), element.getLocator().toString());
             throw new RuntimeException(msg);
         } else {
-            log.info("Element {} is now invisible or removed from DOM", element.getLocator().toString());
+            // log.info("Element {} is now invisible or removed from DOM", element.getLocator().toString());
         }
     }
     
@@ -148,8 +148,8 @@ public class ElementWaits {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         WebDriver driver = getWebDriver();
-        log.info("Wait for control to disappear {} with timeout {} seconds", 
-                element.getLocator().toString(), actualTimeout.getSeconds());
+        // log.info("Wait for control to disappear {} with timeout {} seconds", 
+        //         element.getLocator().toString(), actualTimeout.getSeconds());
         
         boolean success = WaitUtils.waitForCondition(driver, d -> {
             try {
@@ -330,7 +330,7 @@ public class ElementWaits {
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         WebDriver driver = getWebDriver();
         try {
-            log.info("Wait for control staleness {}", element.getLocator().toString());
+            // log.info("Wait for control staleness {}", element.getLocator().toString());
             boolean ok = WaitUtils.waitForCondition(driver, d -> {
                 try {
                     List<WebElement> els = d.findElements(element.getLocator());

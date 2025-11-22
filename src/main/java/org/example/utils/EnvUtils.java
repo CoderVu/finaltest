@@ -1,62 +1,40 @@
 package org.example.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.enums.Env;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Properties;
-
 @Slf4j
-public final class EnvUtils {
 
-    private static final Properties PROPS = new Properties();
+public final class EnvUtils {
 
     private EnvUtils() {}
 
-    public static void load(String filePath) {
-        synchronized (EnvUtils.class) {
-            PROPS.clear();
-            try (InputStream inputStream = locateResource(filePath)) {
-                if (inputStream == null) {
-                    throw new IllegalStateException("Properties file not found: " + filePath);
-                }
-                PROPS.load(inputStream);
-                log.info("Loaded properties from {}", filePath);
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to load: " + filePath, e);
-            }
-        }
+    public static String readProperty(Env env, String propertyName) {
+        Properties props = loadEnvProperties(env);
+        return props.getProperty(propertyName);
     }
 
-    public static boolean isLoaded() {
-        return !PROPS.isEmpty();
-    }
+    private static Properties loadEnvProperties(Env env) {
+        String fileName = env.name() + ".properties";
 
-    public static String get(String key) {
-        String value = PROPS.getProperty(key);
-        if (value != null) {
-            return value.trim();
-        }
-        value = System.getProperty(key);
-        return value != null ? value.trim() : null;
-    }
-
-    private static InputStream locateResource(String filePath) {
-        InputStream classpathStream = EnvUtils.class.getClassLoader().getResourceAsStream(filePath);
-        if (classpathStream != null) {
-            return classpathStream;
+        InputStream input = EnvUtils.class.getClassLoader().getResourceAsStream(fileName);
+        if (input == null) {
+            throw new IllegalStateException("Missing environment properties file: " + fileName);
         }
 
-        File file = new File("src/test/resources/" + filePath);
-        if (file.exists()) {
-            try {
-                return new FileInputStream(file);
-            } catch (Exception e) {
-                log.warn("Cannot read file: {}", file.getAbsolutePath());
-            }
+        Properties props = new Properties();
+        try {
+            props.load(input);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return null;
+
+        return props;
     }
+
 }
 

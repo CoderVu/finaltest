@@ -1,6 +1,6 @@
 package testCase;
 
-import org.example.core.assertion.MySoftAssert;
+import org.example.core.assertion.MyAssertJ;
 import org.example.core.dataProvider.DataProvider;
 import org.example.core.dataProvider.DataFile;
 import org.example.core.dataProvider.DataPath;
@@ -70,8 +70,7 @@ public class TC01 extends TestBase {
         // Note: Supplier will re-fetch data from UI on retry to get fresh data
         int expectedCount = Math.min(5, expectedHotelCount);
         
-        // Assert with auto-retry: Verify hotels are sorted by lowest price
-        // Supplier re-fetches hotels from UI on retry to ensure fresh data
+        // Assert: Verify hotels are sorted by lowest price
         assertTrue(
             () -> {
                 List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
@@ -79,9 +78,6 @@ public class TC01 extends TestBase {
             },
             "Verify hotels are sorted by lowest price after sort operation"
         );
-        
-
-        MySoftAssert.get().assertAll();
     }
 
 }

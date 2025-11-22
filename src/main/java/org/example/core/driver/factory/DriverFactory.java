@@ -1,6 +1,7 @@
 package org.example.core.driver.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.configure.Config;
 import org.example.core.driver.Chrome;
 import org.example.core.driver.Edge;
 import org.example.core.driver.Firefox;
@@ -24,13 +25,17 @@ public class DriverFactory {
     }
 
     public static void createDriver(BrowserType type) {
-        log.warn("Creating Driver for type {}", type);
+        boolean useRemote = isUseRemote();
+        log.warn("Creating Driver for type {}, useRemote={}", type, useRemote);
         AbstractDriverManager manager = THREAD_LOCAL.get();
-        if (manager == null || manager.getBrowserType() != type) {
+        if (manager == null || manager.getBrowserType() != type || manager.isRemoteSession() != useRemote) {
+            if (manager != null) {
+                manager.quitDriver();
+            }
             manager = DRIVER_MAP.getOrDefault(type, DRIVER_MAP.get(BrowserType.CHROME)).get();
-            manager.initDriver();
             THREAD_LOCAL.set(manager);
         }
+        manager.initDriver();
         log.debug("Driver initialized for browser: {}", type);
     }
 
@@ -44,5 +49,13 @@ public class DriverFactory {
             manager.quitDriver();
             THREAD_LOCAL.remove();
         }
+    }
+
+    private static boolean isUseRemote() {
+        if (!Config.isRemoteEnabled()) {
+            return false;
+        }
+        String remoteUrl = Config.getRemoteUrl();
+        return remoteUrl != null && !remoteUrl.trim().isEmpty();
     }
 }

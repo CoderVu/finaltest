@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
 import org.example.core.element.IElement;
 import org.example.core.element.util.DriverUtils;
-import org.example.core.report.IReporter;
-import org.example.core.report.ReportManager;
 import org.example.models.Hotel;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -63,193 +61,202 @@ public class AgodaHomePage extends BasePage {
     protected static String badgeXpath = ".//div[contains(@data-badge-id, 'pct')]//span";
     protected static String priceXpath = ".//span[@data-selenium='display-price']";
 
-    private final IReporter reporter = ReportManager.getReporter();
     public void DraftTestFunction() {
         IElement sampleElement = $("//div[@data-selenium='sample-element']");
         sampleElement.checkCheckBoxByJs();
     }
     public void navigateToHomePage() {
-        reporter.logStep("Navigating to Agoda home page");
-        String current = getCurrentUrl();
-        String base = Config.getBaseUrl();
-        if (current == null || !current.startsWith(base)) {
-            DriverUtils.navigateTo(base);
-        }
+        step(() -> {
+            String current = getCurrentUrl();
+            String base = Config.getBaseUrl();
+            if (current == null || !current.startsWith(base)) {
+                DriverUtils.navigateTo(base);
+            }
+        });
     }
 
     public void enterDestination(String destination) {
-        reporter.logStep("Entering destination: " + destination);
-        try {
-            destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
-            destinationSearchInput.waitForElementClickable(Duration.ofSeconds(10));
-            destinationSearchInput.clear();
-            destinationSearchInput.setText(destination);
-        } catch (Exception e) {
-            log.warn("First attempt to enter destination failed, retrying: {}", e.getMessage());
+        step("Enter destination: " + destination, () -> {
             try {
-                DriverUtils.delay(1);
                 destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
+                destinationSearchInput.waitForElementClickable(Duration.ofSeconds(10));
                 destinationSearchInput.clear();
                 destinationSearchInput.setText(destination);
-            } catch (Exception retryEx) {
-                log.error("Failed to enter destination after retry: {}", retryEx.getMessage());
-                throw new RuntimeException("Failed to enter destination: " + destination, retryEx);
+            } catch (Exception e) {
+                log.warn("First attempt to enter destination failed, retrying: {}", e.getMessage());
+                try {
+                    DriverUtils.delay(1);
+                    destinationSearchInput.waitForVisibility(Duration.ofSeconds(10));
+                    destinationSearchInput.clear();
+                    destinationSearchInput.setText(destination);
+                } catch (Exception retryEx) {
+                    log.error("Failed to enter destination after retry: {}", retryEx.getMessage());
+                    screenshot("enter_destination_failed");
+                    throw new RuntimeException("Failed to enter destination: " + destination, retryEx);
+                }
             }
-        }
+        });
     }
 
     public void selectDestinationFromSuggestions(String destinationName) {
-        reporter.logStep("Selecting destination from suggestions: " + destinationName);
-        autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
-        $(String.format("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName)).click();
+        step("Select destination: " + destinationName, () -> {
+            autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
+            $(String.format("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName)).click();
+        });
     }
 
     public void selectDates(String checkInDate, String checkOutDate) {
-        reporter.logStep("Selecting dates: " + checkInDate + " to " + checkOutDate);
-        selectCheckInDate(checkInDate);
-        selectCheckOutDate(checkOutDate);
+        step("Select dates: " + checkInDate + " to " + checkOutDate, () -> {
+            selectCheckInDate(checkInDate);
+            selectCheckOutDate(checkOutDate);
+        });
     }
 
     public void selectCheckInDate(String checkInDate) {
-        reporter.logStep("Selecting check-in date: " + checkInDate);
-        int openAttempts = 0;
-        while (!calendarContainer.isVisible() && openAttempts < 5) {
-            checkInBox.scrollElementToCenterScreen();
-            checkInBox.clickByJs();
-            try {
-                calendarContainer.waitForVisibility(Duration.ofSeconds(10));
-            } catch (Exception e) {
-                log.warn("Calendar not visible after attempt {}", openAttempts + 1);
-            }
-            openAttempts++;
-        }
-        if (!calendarContainer.isVisible()) {
-            throw new RuntimeException("Calendar not visible after multiple attempts");
-        }
-       
-        String targetMonth = parse(checkInDate).getMonth().name();
-        String targetYear = String.valueOf(parse(checkInDate).getYear());
-      
-        int nextTries = 0;
-        while (nextTries < 12) {
-            String captionText = monthCaption.getText();
-            if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
-                break;
-            }
-            if ("true".equals(nextMonthBtn.getAttribute("aria-disabled"))) {
-                break;
-            }
-            nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
-            nextMonthBtn.click();
-            DriverUtils.delay(0.5);
-            nextTries++;
-        }
-        int prevTries = 0;
-        while (prevTries < 24) {
-            String captionText = monthCaption.getText();
-            if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
-                break;
-            }
-            if ("true".equals(prevMonthBtn.getAttribute("aria-disabled"))) {
-                break;
-            }
-            prevMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
-            prevMonthBtn.click();
-            DriverUtils.delay(0.5);
-            prevTries++;
-        }
-        IElement checkInDateElement = $(
-                String.format("//span[@data-selenium-date='%s']", checkInDate));
-        for (int i = 0; i < 3; i++) {
-            try {
-                checkInDateElement.waitForElementClickable(Duration.ofSeconds(10));
-                checkInDateElement.clickByJs();
-                log.info("Selected check-in date: {}", checkInDate);
-                break;
-            } catch (Exception e) {
-                log.warn("Failed to select check-in date, retry {}", i + 1);
-                checkInBox.click();
+        step("Select check-in date: " + checkInDate, () -> {
+            int openAttempts = 0;
+            while (!calendarContainer.isVisible() && openAttempts < 5) {
+                checkInBox.scrollElementToCenterScreen();
+                checkInBox.clickByJs();
                 try {
                     calendarContainer.waitForVisibility(Duration.ofSeconds(10));
-                } catch (Exception ex) {
-                    log.warn("Calendar not visible during retry");
+                } catch (Exception e) {
+                    log.warn("Calendar not visible after attempt {}", openAttempts + 1);
                 }
+                openAttempts++;
             }
-        }
-        if (calendarContainer.isVisible()) {
-            IElement outsideArea = $(By.cssSelector("body"));
-            ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
-            try {
-                calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
-                log.info("Closed calendar after selecting check-in date");
-            } catch (Exception e) {
-                log.warn("Calendar không tự tắt sau khi click ngoài");
+            if (!calendarContainer.isVisible()) {
+                screenshot("calendar_not_visible");
+                throw new RuntimeException("Calendar not visible after multiple attempts");
             }
-        }
-    }
-
-    public void selectCheckOutDate(String checkOutDate) {
-        reporter.logStep("Selecting check-out date: " + checkOutDate);
-        checkOutBox.waitForElementClickable(Duration.ofSeconds(10));
-        for (int i = 0; i < 3; i++) {
-            checkOutBox.click();
-            try {
-                calendarContainer.waitForVisibility(Duration.ofSeconds(10));
-                break;
-            } catch (Exception e) {
-                log.warn("Calendar not visible after attempt {}", i + 1);
+           
+            String targetMonth = parse(checkInDate).getMonth().name();
+            String targetYear = String.valueOf(parse(checkInDate).getYear());
+          
+            int nextTries = 0;
+            while (nextTries < 12) {
+                String captionText = monthCaption.getText();
+                if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
+                    break;
+                }
+                if ("true".equals(nextMonthBtn.getAttribute("aria-disabled"))) {
+                    break;
+                }
+                nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
+                nextMonthBtn.click();
+                DriverUtils.delay(0.5);
+                nextTries++;
             }
-        }
-        String targetMonth = parse(checkOutDate).getMonth().name();
-        String targetYear = String.valueOf(parse(checkOutDate).getYear());
-        for (int i = 0; i < 12; i++) {
-            IElement monthCaption = $(monthStringXpath);
-            String captionText = monthCaption.getText();
-            if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
-                break;
-            }
-            if ("true".equals(nextMonthBtn.getAttribute("aria-disabled"))) {
+            
+            int prevTries = 0;
+            while (prevTries < 24) {
+                String captionText = monthCaption.getText();
+                if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
+                    break;
+                }
                 if ("true".equals(prevMonthBtn.getAttribute("aria-disabled"))) {
                     break;
                 }
                 prevMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
                 prevMonthBtn.click();
-            } else {
-                nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
-                nextMonthBtn.click();
+                DriverUtils.delay(0.5);
+                prevTries++;
             }
-            DriverUtils.delay(0.5);
-        }
-        IElement checkOutDateElement = $(
-                String.format("//span[@data-selenium-date='%s']", checkOutDate));
-        for (int i = 0; i < 3; i++) {
-            try {
-                checkOutDateElement.waitForElementClickable(Duration.ofSeconds(10));
-                checkOutDateElement.clickByJs();
-                log.info("Selected check-out date: {}", checkOutDate);
-                break;
-            } catch (Exception e) {
-                log.warn("Failed to select check-out date, retry {}", i + 1);
+            IElement checkInDateElement = $(
+                    String.format("//span[@data-selenium-date='%s']", checkInDate));
+            for (int i = 0; i < 3; i++) {
+                try {
+                    checkInDateElement.waitForElementClickable(Duration.ofSeconds(10));
+                    checkInDateElement.clickByJs();
+                    log("Selected check-in date: " + checkInDate);
+                    break;
+                } catch (Exception e) {
+                    log.warn("Failed to select check-in date, retry {}", i + 1);
+                    checkInBox.click();
+                    try {
+                        calendarContainer.waitForVisibility(Duration.ofSeconds(10));
+                    } catch (Exception ex) {
+                        log.warn("Calendar not visible during retry");
+                    }
+                }
+            }
+            if (calendarContainer.isVisible()) {
+                IElement outsideArea = $(By.cssSelector("body"));
+                ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
+                try {
+                    calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
+                    log("Closed calendar after selecting check-in date");
+                } catch (Exception e) {
+                    log.warn("Calendar không tự tắt sau khi click ngoài");
+                }
+            }
+        });
+    }
+
+    public void selectCheckOutDate(String checkOutDate) {
+        step("Select check-out date: " + checkOutDate, () -> {
+            checkOutBox.waitForElementClickable(Duration.ofSeconds(10));
+            for (int i = 0; i < 3; i++) {
                 checkOutBox.click();
                 try {
                     calendarContainer.waitForVisibility(Duration.ofSeconds(10));
-                } catch (Exception ex) {
-                    log.warn("Calendar not visible during retry");
+                    break;
+                } catch (Exception e) {
+                    log.warn("Calendar not visible after attempt {}", i + 1);
                 }
             }
-        }
-        try {
-            calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
-            log.info("Calendar closed automatically after selecting check-out date");
-        } catch (Exception e) {
-            log.info("Calendar already closed or not found - this is expected behavior");
-        }
+            String targetMonth = parse(checkOutDate).getMonth().name();
+            String targetYear = String.valueOf(parse(checkOutDate).getYear());
+            for (int i = 0; i < 12; i++) {
+                IElement monthCaption = $(monthStringXpath);
+                String captionText = monthCaption.getText();
+                if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
+                    break;
+                }
+                if ("true".equals(nextMonthBtn.getAttribute("aria-disabled"))) {
+                    if ("true".equals(prevMonthBtn.getAttribute("aria-disabled"))) {
+                        break;
+                    }
+                    prevMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
+                    prevMonthBtn.click();
+                } else {
+                    nextMonthBtn.waitForElementClickable(Duration.ofSeconds(10));
+                    nextMonthBtn.click();
+                }
+                DriverUtils.delay(0.5);
+            }
+            IElement checkOutDateElement = $(
+                    String.format("//span[@data-selenium-date='%s']", checkOutDate));
+            for (int i = 0; i < 3; i++) {
+                try {
+                    checkOutDateElement.waitForElementClickable(Duration.ofSeconds(10));
+                    checkOutDateElement.clickByJs();
+                    log("Selected check-out date: " + checkOutDate);
+                    break;
+                } catch (Exception e) {
+                    log.warn("Failed to select check-out date, retry {}", i + 1);
+                    checkOutBox.click();
+                    try {
+                        calendarContainer.waitForVisibility(Duration.ofSeconds(10));
+                    } catch (Exception ex) {
+                        log.warn("Calendar not visible during retry");
+                    }
+                }
+            }
+            try {
+                calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
+                log("Calendar closed automatically after selecting check-out date");
+            } catch (Exception e) {
+                log("Calendar already closed or not found - this is expected behavior");
+            }
+        });
     }
 
     public void clickSearchButton() {
-        reporter.logStep("Clicking search button");
-        searchButton.waitForElementClickable(Duration.ofSeconds(10));
-        searchButton.click();
+        step(() -> {
+            searchButton.waitForElementClickable(Duration.ofSeconds(10));
+            searchButton.click();
+        });
     }
 
     public void selectDatesFromNextFriday() {
@@ -274,150 +281,155 @@ public class AgodaHomePage extends BasePage {
     }
 
     public void SelectOccupancy(int rooms, int adults, int children) {
-        reporter.logStep("Selecting occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children");
-        IElement occupancyPopup = $(occupancyPopupXpathString);
+        step("Select occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children", () -> {
+            IElement occupancyPopup = $(occupancyPopupXpathString);
 
-        try {
-            occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
-            log.info("Occupancy popup is already open");
-        } catch (Exception e) {
-            log.info("Occupancy popup not visible, clicking to open");
-            occupancyBox.waitForElementClickable(Duration.ofSeconds(10));
-            occupancyBox.click();
-            occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
-        }
+            try {
+                occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
+                log("Occupancy popup is already open");
+            } catch (Exception e) {
+                log("Occupancy popup not visible, clicking to open");
+                occupancyBox.waitForElementClickable(Duration.ofSeconds(10));
+                occupancyBox.click();
+                occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
+            }
 
-        log.info("Configuring occupancy: {} rooms, {} adults, {} children", rooms, adults, children);
+            log("Configuring occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children");
 
-        selectRooms(rooms);
-        selectAdults(adults);
-        selectChildren(children);
+            selectRooms(rooms);
+            selectAdults(adults);
+            selectChildren(children);
+        });
     }
 
     private void selectRooms(int targetRooms) {
-        reporter.logStep("Selecting rooms: " + targetRooms);
-        IElement roomValueElement = $(roomValueXpath);
-        roomValueElement.waitForVisibility(Duration.ofSeconds(10));
+        step("Select rooms: " + targetRooms, () -> {
+            IElement roomValueElement = $(roomValueXpath);
+            roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
-        int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
-        log.info("Current rooms: {}, Target rooms: {}", currentRooms, targetRooms);
+            int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
+            log("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
 
-        IElement roomsPlusButton = $(roomsPlusButtonXpath);
-        IElement roomsMinusButton = $(roomsMinusButtonXpath);
+            IElement roomsPlusButton = $(roomsPlusButtonXpath);
+            IElement roomsMinusButton = $(roomsMinusButtonXpath);
 
-        while (currentRooms < targetRooms) {
-            roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
-            roomsPlusButton.click();
-            currentRooms++;
-            log.info("Increased rooms to: {}", currentRooms);
-        }
-
-        while (currentRooms > targetRooms) {
-            if (roomsMinusButton.getAttribute("disabled") != null) {
-                log.warn("Cannot decrease rooms further - minimum reached");
-                break;
+            while (currentRooms < targetRooms) {
+                roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
+                roomsPlusButton.click();
+                currentRooms++;
+                log("Increased rooms to: " + currentRooms);
             }
-            roomsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
-            roomsMinusButton.click();
-            currentRooms--;
-            log.info("Decreased rooms to: {}", currentRooms);
-        }
+
+            while (currentRooms > targetRooms) {
+                if (roomsMinusButton.getAttribute("disabled") != null) {
+                    log.warn("Cannot decrease rooms further - minimum reached");
+                    break;
+                }
+                roomsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
+                roomsMinusButton.click();
+                currentRooms--;
+                log("Decreased rooms to: " + currentRooms);
+            }
+        });
     }
 
     private void selectAdults(int targetAdults) {
-        reporter.logStep("Selecting adults: " + targetAdults);
-        IElement adultValueElement = $(adultValueXpath);
-        adultValueElement.waitForVisibility(Duration.ofSeconds(10));
+        step("Select adults: " + targetAdults, () -> {
+            IElement adultValueElement = $(adultValueXpath);
+            adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
-        int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
-        log.info("Current adults: {}, Target adults: {}", currentAdults, targetAdults);
+            int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
+            log("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
 
-        IElement adultsPlusButton = $(adultsPlusButtonXpath);
-        IElement adultsMinusButton = $(adultsMinusButtonXpath);
+            IElement adultsPlusButton = $(adultsPlusButtonXpath);
+            IElement adultsMinusButton = $(adultsMinusButtonXpath);
 
-        while (currentAdults < targetAdults) {
-            adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
-            adultsPlusButton.click();
-            currentAdults++;
-            log.info("Increased adults to: {}", currentAdults);
-        }
-
-        while (currentAdults > targetAdults) {
-            if (adultsMinusButton.getAttribute("disabled") != null) {
-                log.warn("Cannot decrease adults further - minimum reached");
-                break;
+            while (currentAdults < targetAdults) {
+                adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
+                adultsPlusButton.click();
+                currentAdults++;
+                log("Increased adults to: " + currentAdults);
             }
-            adultsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
-            adultsMinusButton.click();
-            currentAdults--;
-            log.info("Decreased adults to: {}", currentAdults);
-        }
+
+            while (currentAdults > targetAdults) {
+                if (adultsMinusButton.getAttribute("disabled") != null) {
+                    log.warn("Cannot decrease adults further - minimum reached");
+                    break;
+                }
+                adultsMinusButton.waitForElementClickable(Duration.ofSeconds(10));
+                adultsMinusButton.click();
+                currentAdults--;
+                log("Decreased adults to: " + currentAdults);
+            }
+        });
     }
 
     private void selectChildren(int targetChildren) {
-        reporter.logStep("Selecting children: " + targetChildren);
-        IElement childrenValueElement = $(childrenValueXpath);
-        childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
+        step("Select children: " + targetChildren, () -> {
+            IElement childrenValueElement = $(childrenValueXpath);
+            childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
-        int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
-        log.info("Current children: {}, Target children: {}", currentChildren, targetChildren);
+            int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
+            log("Current children: " + currentChildren + ", Target children: " + targetChildren);
 
-        IElement childrenPlusButton = $(childrenPlusButtonXpath);
-        IElement childrenMinusButton = $(childrenMinusButtonXpath);
+            IElement childrenPlusButton = $(childrenPlusButtonXpath);
+            IElement childrenMinusButton = $(childrenMinusButtonXpath);
 
-        while (currentChildren < targetChildren) {
-            childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
-            childrenPlusButton.click();
-            currentChildren++;
-            log.info("Increased children to: {}", currentChildren);
-        }
-
-        while (currentChildren > targetChildren) {
-            if (childrenMinusButton.getAttribute("disabled") != null) {
-                log.warn("Cannot decrease children further - minimum reached");
-                break;
+            while (currentChildren < targetChildren) {
+                childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
+                childrenPlusButton.click();
+                currentChildren++;
+                log("Increased children to: " + currentChildren);
             }
-            childrenMinusButton.waitForElementClickable(Duration.ofSeconds(10));
-            childrenMinusButton.click();
-            currentChildren--;
-            log.info("Decreased children to: {}", currentChildren);
-        }
+
+            while (currentChildren > targetChildren) {
+                if (childrenMinusButton.getAttribute("disabled") != null) {
+                    log.warn("Cannot decrease children further - minimum reached");
+                    break;
+                }
+                childrenMinusButton.waitForElementClickable(Duration.ofSeconds(10));
+                childrenMinusButton.click();
+                currentChildren--;
+                log("Decreased children to: " + currentChildren);
+            }
+        });
     }
 
     public List<Hotel> getAllHotelsFromListViewSearch(int expectedHotelCount) {
-        reporter.logStep("Getting all hotels from list view search: " + expectedHotelCount);
-        List<Hotel> hotels = new ArrayList<>();
-        try {
-            List<IElement> hotelCards = $$(propertyCardXpath);
-            log.info("Found {} hotel cards in search results", hotelCards.size());
+        return step("Get all hotels from list view: " + expectedHotelCount, () -> {
+            List<Hotel> hotels = new ArrayList<>();
+            try {
+                List<IElement> hotelCards = $$(propertyCardXpath);
+                log("Found " + hotelCards.size() + " hotel cards in search results");
 
-            for (int i = 0; i < hotelCards.size() && i < expectedHotelCount; i++) {
-                try {
-                    IElement cardElement = hotelCards.get(i);
-                    cardElement.scrollToView();
-                    Hotel hotel = extractHotelFromCard(cardElement);
-                    if (hotel != null) {
-                        hotels.add(hotel);
-                        log.info("Hotel {}: {}", i + 1, hotel.toString());
+                for (int i = 0; i < hotelCards.size() && i < expectedHotelCount; i++) {
+                    try {
+                        IElement cardElement = hotelCards.get(i);
+                        cardElement.scrollToView();
+                        Hotel hotel = extractHotelFromCard(cardElement);
+                        if (hotel != null) {
+                            hotels.add(hotel);
+                            log("Hotel " + (i + 1) + ": " + hotel.toString());
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error extracting hotel info at index " + i + ": " + e.getMessage());
                     }
-                } catch (Exception e) {
-                    log.warn("Error extracting hotel info at index {}: {}", i, e.getMessage());
                 }
+
+                log("Successfully extracted " + hotels.size() + " hotels information");
+                return hotels;
+
+            } catch (Exception e) {
+                log.error("Error getting hotel information: " + e.getMessage());
+                return hotels;
             }
-
-            log.info("Successfully extracted {} hotels information", hotels.size());
-            return hotels;
-
-        } catch (Exception e) {
-            log.error("Error getting hotel information: {}", e.getMessage());
-            return hotels;
-        }
+        });
     }
 
     private Hotel extractHotelFromCard(IElement card) {
-        reporter.logStep("Extracting hotel from card");
-        try {
-            Hotel.HotelBuilder hotelBuilder = Hotel.builder();
+        return step(() -> {
+            try {
+                Hotel.HotelBuilder hotelBuilder = Hotel.builder();
 
             try {
                 IElement nameElement = $(card, hotelNameXpath);
@@ -480,101 +492,109 @@ public class AgodaHomePage extends BasePage {
 
             try {
                 IElement priceElement = $(card, priceXpath);
-                log.info("Found price: {}", priceElement.getText().trim());
+                log("Found price: " + priceElement.getText().trim());
                 hotelBuilder.price(priceElement.getText().trim());
             } catch (Exception e) {
                 log.debug("Could not find price");
             }
             return hotelBuilder.build();
 
-        } catch (Exception e) {
-            log.error("Error extracting hotel info: {}", e.getMessage());
-            return null;
-        }
+            } catch (Exception e) {
+                log.error("Error extracting hotel info: " + e.getMessage());
+                return null;
+            }
+        });
     }
 
     public boolean verifySearchResultsDisplayed(int expectedCount) {
-        reporter.logStep("Verifying search results displayed: " + expectedCount);
-        try {
-            List<Hotel> hotels = getAllHotelsFromListViewSearch(expectedCount);
-            int actualCount = hotels.size();
+        return step("Verify search results displayed: " + expectedCount, () -> {
+            try {
+                List<Hotel> hotels = getAllHotelsFromListViewSearch(expectedCount);
+                int actualCount = hotels.size();
 
-            log.info("Found {} hotels in search results", actualCount);
+                log("Found " + actualCount + " hotels in search results");
 
-            if (actualCount < expectedCount) {
-                log.error("Expected at least {} hotels, but found only {}", expectedCount, actualCount);
+                if (actualCount < expectedCount) {
+                    log.error("Expected at least " + expectedCount + " hotels, but found only " + actualCount);
+                    screenshot("insufficient_hotels");
+                    return false;
+                }
+
+                long validHotels = hotels.stream()
+                        .filter(hotel -> hotel.getName() != null && !hotel.getName().isEmpty())
+                        .count();
+
+                if (validHotels < expectedCount) {
+                    log.error("Expected at least " + expectedCount + " valid hotels, but found only " + validHotels);
+                    screenshot("invalid_hotels");
+                    return false;
+                }
+
+                log("Search results validation successful: " + validHotels + " valid hotels");
+                return true;
+
+            } catch (Exception e) {
+                log.error("Error verifying search results: " + e.getMessage());
+                screenshot("verify_search_results_error");
                 return false;
             }
-
-            long validHotels = hotels.stream()
-                    .filter(hotel -> hotel.getName() != null && !hotel.getName().isEmpty())
-                    .count();
-
-            if (validHotels < expectedCount) {
-                log.error("Expected at least {} valid hotels, but found only {}", expectedCount, validHotels);
-                return false;
-            }
-
-            log.info("Search results validation successful: {} valid hotels", validHotels);
-            return true;
-
-        } catch (Exception e) {
-            log.error("Error verifying search results: {}", e.getMessage());
-            return false;
-        }
+        });
     }
 
     public int getTotalHotelsCount(List<Hotel> hotels) {
-        reporter.logStep("Getting total hotels count: " + hotels.size());
-        return hotels.size();
+        return step("Get total hotels count: " + hotels.size(), () -> hotels.size());
     }
 
     public void switchToSearchResultsTab() {
-        reporter.logStep("Switching to search results tab");
-        DriverUtils.waitForNewWindowOpened(2);
-        DriverUtils.switchToWindow(1);
-        DriverUtils.waitForUrlContains("search", DriverUtils.getTimeOut());
+        step(() -> {
+            DriverUtils.waitForNewWindowOpened(2);
+            DriverUtils.switchToWindow(1);
+            DriverUtils.waitForUrlContains("search", DriverUtils.getTimeOut());
+        });
     }
 
     public void waitForSearchResultsToLoad() {
-        reporter.logStep("Waiting for search results to load");
-        try {
-            IElement firstPropertyCard = $(propertyCardXpath + "[1]");
-            firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
-
-            log.info("Search results have loaded successfully");
-        } catch (Exception e) {
-            log.error("Failed to wait for search results: {}", e.getMessage());
-        }
+        step(() -> {
+            try {
+                IElement firstPropertyCard = $(propertyCardXpath + "[1]");
+                firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
+                log("Search results have loaded successfully");
+            } catch (Exception e) {
+                log.error("Failed to wait for search results: " + e.getMessage());
+                screenshot("search_results_load_failed");
+            }
+        });
     }
     public void sortByLowestPrice() {
-        reporter.logStep("Sorting by lowest price");
-        sortPriceButton.waitForElementClickable();
-        sortPriceButton.click();
+        step(() -> {
+            sortPriceButton.waitForElementClickable();
+            sortPriceButton.click();
+        });
     }
 
     public int getHotelListSize() {
-        reporter.logStep("Getting hotel list size");
-        try {
-            List<WebElement> webElements = hotelListContainer.getElements();
-            return webElements.size();
-        } catch (Exception e) {
-            log.error("Error getting hotel list size: {}", e.getMessage());
-            return 0;
-        }
+        return step(() -> {
+            try {
+                List<WebElement> webElements = hotelListContainer.getElements();
+                return webElements.size();
+            } catch (Exception e) {
+                log.error("Error getting hotel list size: " + e.getMessage());
+                return 0;
+            }
+        });
     }
     public boolean verifyHotelsSortedByLowestPrice(List<Hotel> hotels) {
-        reporter.logStep("Verifying hotels sorted by lowest price");
-        if (hotels == null || hotels.isEmpty()) {
-            log.error("Hotel list is null or empty");
-            return false;
-        }
+        return step("Verify hotels sorted by lowest price", () -> {
+            if (hotels == null || hotels.isEmpty()) {
+                log.error("Hotel list is null or empty");
+                return false;
+            }
     
-        int hotelCount = Math.min(5, hotels.size());
-        if (hotelCount == 0) {
-            log.error("No hotels to verify");
-            return false;
-        }
+            int hotelCount = Math.min(5, hotels.size());
+            if (hotelCount == 0) {
+                log.error("No hotels to verify");
+                return false;
+            }
     
         // Thu thập prices và thông tin chi tiết cho top 5 hotels
         List<Integer> prices = new ArrayList<>();
@@ -669,63 +689,65 @@ public class AgodaHomePage extends BasePage {
             return false;
         }
     
-        log.info("✓ First {} hotels are correctly sorted by lowest price: {}", hotelCount, prices);
-        return true;
+            log("✓ First " + hotelCount + " hotels are correctly sorted by lowest price: " + prices);
+            return true;
+        });
     }
     
 
     public boolean verifyHotelsDestination(List<Hotel> hotels, String expectedDestination) {
-        reporter.logStep("Verifying hotels destination: " + expectedDestination);
-        for (int i = 0; i < Math.min(5, hotels.size()); i++) {
-            Hotel hotel = hotels.get(i);
-            String location = hotel.getLocation();
-            if (location == null || !location.toLowerCase().contains(expectedDestination.toLowerCase())) {
-                log.error("Hotel {} destination mismatch. Actual: {}, Expected to contain: {}",
-                        i + 1, location, expectedDestination);
-                return false;
+        return step("Verify hotels destination: " + expectedDestination, () -> {
+            for (int i = 0; i < Math.min(5, hotels.size()); i++) {
+                Hotel hotel = hotels.get(i);
+                String location = hotel.getLocation();
+                if (location == null || !location.toLowerCase().contains(expectedDestination.toLowerCase())) {
+                    log.error("Hotel " + (i + 1) + " destination mismatch. Actual: " + location + ", Expected to contain: " + expectedDestination);
+                    return false;
+                }
             }
-        }
-        log.info("First 5 hotels have correct destination: {}", expectedDestination);
-        return true;
+            log("First 5 hotels have correct destination: " + expectedDestination);
+            return true;
+        });
     }
 
     public void waitForPropertyCardCountChange(int beforeCount) {
-        reporter.logStep("Waiting for property card count change: " + beforeCount);
-        int timeoutSeconds = 11;
-        try {
-            hotelListContainer.waitForVisibility(Duration.ofSeconds(10));
-            
-            WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(timeoutSeconds));
-            
-            boolean sortCompleted = wait.until(driver -> {
-                try {
-                    // Avoid using getListElements() (which can use stale WebElement references).
-                    // Use fresh DOM query each time to get current count.
-                    List<org.openqa.selenium.WebElement> currentWebElems =
-                            DriverUtils.getWebDriver().findElements(By.xpath(propertyCardXpath));
-                    
-                    int currentSize = currentWebElems.size();
-                    if (currentSize != beforeCount) {
-                        log.info("Property card count changed from {} to {}", beforeCount, currentSize);
+        step("Wait for property card count change: " + beforeCount, () -> {
+            int timeoutSeconds = 11;
+            try {
+                hotelListContainer.waitForVisibility(Duration.ofSeconds(10));
+                
+                WebDriverWait wait = new WebDriverWait(DriverUtils.getWebDriver(), Duration.ofSeconds(timeoutSeconds));
+                
+                boolean sortCompleted = wait.until(driver -> {
+                    try {
+                        // Avoid using getListElements() (which can use stale WebElement references).
+                        // Use fresh DOM query each time to get current count.
+                        List<org.openqa.selenium.WebElement> currentWebElems =
+                                DriverUtils.getWebDriver().findElements(By.xpath(propertyCardXpath));
+                        
+                        int currentSize = currentWebElems.size();
+                        if (currentSize != beforeCount) {
+                            log("Property card count changed from " + beforeCount + " to " + currentSize);
+                            return true;
+                        }
+                        
+                        DriverUtils.delay(0.5);
                         return true;
+                    } catch (Exception ex) {
+                        log.debug("Error checking sort completion: " + ex.getMessage());
+                        return false;
                     }
-                    
-                    DriverUtils.delay(0.5);
-                    return true;
-                } catch (Exception ex) {
-                    log.debug("Error checking sort completion: {}", ex.getMessage());
-                    return false;
-                }
-            });
+                });
 
-            if (sortCompleted) {
-                log.info("Sort operation completed (or timeout reached)");
-            } else {
-                log.warn("Sort operation may not have completed within {} seconds", timeoutSeconds);
+                if (sortCompleted) {
+                    log("Sort operation completed (or timeout reached)");
+                } else {
+                    log.warn("Sort operation may not have completed within " + timeoutSeconds + " seconds");
+                }
+            } catch (Exception e) {
+                log.error("Error waiting for property card count change: " + e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("Error waiting for property card count change: {}", e.getMessage());
-        }
+        });
     }
       
 }

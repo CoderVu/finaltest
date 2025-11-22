@@ -1,13 +1,13 @@
 package org.example.core.driver;
 
 import org.example.configure.Config;
-import org.example.core.driver.manager.RemoteDriverManager;
+import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
-public class Edge extends RemoteDriverManager {
+public class Edge extends AbstractDriverManager {
 
     public Edge() {
         super(BrowserType.EDGE);
@@ -15,16 +15,17 @@ public class Edge extends RemoteDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
-        return new EdgeDriver(buildEdgeOptions(false));
+        return new EdgeDriver(buildEdgeOptions());
     }
 
     @Override
     protected EdgeOptions createRemoteOptions() {
-        return buildEdgeOptions(true);
+        return buildEdgeOptions();
     }
 
-    private EdgeOptions buildEdgeOptions(boolean forRemote) {
+    public static EdgeOptions buildEdgeOptions() {
         EdgeOptions options = new EdgeOptions();
+        options.setCapability("browserName", "MicrosoftEdge");
         options.setCapability("acceptInsecureCerts", true);
         options.setCapability("ms:edgeChromium", true);
 
@@ -40,10 +41,7 @@ public class Edge extends RemoteDriverManager {
         if (Config.isHeadless()) {
             options.addArguments("--headless=new", "--disable-gpu");
         }
-
-        if (forRemote) {
-            options.setCapability("browserName", "MicrosoftEdge");
-        }
         return options;
     }
 }
+

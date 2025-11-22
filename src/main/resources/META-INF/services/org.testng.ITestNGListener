@@ -1,2 +1,2 @@
-org.example.core.report.listener.ReportListener
+org.example.core.reporting.listeners.ReportingListener
 

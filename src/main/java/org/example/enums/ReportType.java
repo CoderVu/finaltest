@@ -1,8 +1,6 @@
 package org.example.enums;
 
 import lombok.Getter;
-import org.example.common.Constants;
-import org.example.configure.Config;
 
 @Getter
 public enum ReportType {
@@ -18,12 +16,6 @@ public enum ReportType {
         this.outputPath = outputPath;
     }
 
-    /**
-     * Parse string to ReportType enum.
-     * 
-     * @param value string value (case-insensitive)
-     * @return ReportType, defaults to EXTENT if not found
-     */
     public static ReportType fromString(String value) {
         if (value == null || value.trim().isEmpty()) {
             return EXTENT;
@@ -38,22 +30,6 @@ public enum ReportType {
 
         return EXTENT;
     }
-
-    /**
-     * Get report type from system properties/env/yaml in that order, fallback to EXTENT.
-     */
-    public static ReportType getConfigured() {
-        String value = System.getProperty("reportType");
-
-        if (isEmpty(value)) {
-            value = Config.getPropertyOrDefault(Constants.REPORT_TYPE_PROPERTY, null);
-        }
-        if (isEmpty(value)) {
-            value = Config.getPropertyOrDefault("report.strategy", null);
-        }
-        return fromString(value);
-    }
-
     private static boolean isEmpty(String s) {
         return s == null || s.trim().isEmpty();
     }

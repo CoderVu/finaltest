@@ -40,7 +40,7 @@ public class ClickElementOfVu extends WebElementWrapper {
 
     @Override
     public void click() {
-        log.info("Click element of vu");
+        // log.info("Click element of vu");
     }
 }
 

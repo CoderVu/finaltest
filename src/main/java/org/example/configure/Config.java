@@ -3,6 +3,7 @@ package org.example.configure;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.enums.BrowserType;
+import org.example.enums.Env;
 import org.example.utils.EnvUtils;
 
 import java.time.Duration;
@@ -10,20 +11,17 @@ import java.time.Duration;
 @Slf4j
 public final class Config {
 
+    private static final Env ACTIVE_ENV = Env.from(Constants.ACTIVE_ENV_NAME);
+
+
     private Config() {}
-
-    private static String loadedEnvFile = Constants.CONFIG_PROPERTIES_FILE;
-
-    static {
-        EnvUtils.load(loadedEnvFile);
-    }
 
     public static String getBaseUrl() {
         return getProperty(Constants.BASE_URL_PROPERTY);
     }
 
     public static boolean isRemoteEnabled() {
-        boolean remoteFlag = getBoolean(Constants.IS_REMOTE_PROPERTY, Constants.DEFAULT_REMOTE_ENABLED);
+        boolean remoteFlag = getBooleanPropertyOrDefault(Constants.IS_REMOTE_PROPERTY, Constants.DEFAULT_REMOTE_ENABLED);
         if (!remoteFlag) {
             return false;
         }
@@ -31,7 +29,7 @@ public final class Config {
     }
 
     public static String getRemoteUrl() {
-        return getPropertyOrDefault(Constants.REMOTE_URL_PROPERTY, "");
+        return getProperty(Constants.REMOTE_URL_PROPERTY);
     }
 
     /**
@@ -71,30 +69,45 @@ public final class Config {
     }
 
     public static boolean isHeadless() {
-        return getBoolean(Constants.HEADLESS_PROPERTY, Constants.DEFAULT_HEADLESS);
+        return getBooleanPropertyOrDefault(Constants.HEADLESS_PROPERTY, Constants.DEFAULT_HEADLESS);
     }
 
     public static String getEnvFile() {
-        return loadedEnvFile;
+        return ACTIVE_ENV + ".properties";
     }
 
-
-
-    public static boolean getBoolean(String key, boolean defaultValue) {
-        String value = EnvUtils.get(key);
+    public static boolean getBooleanPropertyOrDefault(String key, boolean defaultValue) {
+        String value = readEnvProperty(key);
         return value != null ? Boolean.parseBoolean(value.trim()) : defaultValue;
     }
 
+    public static int getIntPropertyOrDefault(String key, int defaultValue) {
+        String value = readEnvProperty(key);
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Invalid integer for property {}: '{}'. Fallback to {}", key, value, defaultValue);
+            return defaultValue;
+        }
+    }
+
     public static String getPropertyOrDefault(String key, String defaultValue) {
-        String value = EnvUtils.get(key);
+        String value = readEnvProperty(key);
         return value != null ? value.trim() : defaultValue;
     }
 
     public static String getProperty(String key) {
-        String value = EnvUtils.get(key);
+        String value = readEnvProperty(key);
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalStateException("Missing required property: " + key);
+            throw new IllegalStateException("Missing required property: " + key + " for env " + ACTIVE_ENV);
         }
         return value.trim();
+    }
+
+    private static String readEnvProperty(String key) {
+        return EnvUtils.readProperty(ACTIVE_ENV, key);
     }
 }

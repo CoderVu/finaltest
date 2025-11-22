@@ -18,7 +18,7 @@ public class ElementGetters {
     
     public String getText() {
         try {
-            log.debug("Get text of element {}", element.getLocator().toString());
+        //    log.debug("Get text of element {}", element.getLocator().toString());
             return element.getElement().getText();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -29,7 +29,7 @@ public class ElementGetters {
     
     public String getValue() {
         try {
-            log.debug("Get value of element {}", element.getLocator().toString());
+       //     log.debug("Get value of element {}", element.getLocator().toString());
             return element.getElement().getAttribute("value");
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
@@ -40,7 +40,7 @@ public class ElementGetters {
     
     public String getAttribute(String attributeName) {
         try {
-            log.debug("Get attribute '{}' of element {}", attributeName, element.getLocator().toString());
+        //    log.debug("Get attribute '{}' of element {}", attributeName, element.getLocator().toString());
             return element.getElement().getAttribute(attributeName);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", element.getLocator().toString(), 
