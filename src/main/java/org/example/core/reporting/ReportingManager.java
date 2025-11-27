@@ -3,7 +3,7 @@ package org.example.core.reporting;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.configure.Config;
-import org.example.core.reporting.lifecycle.ReportingLifecycleListener;
+import org.example.core.reporting.listeners.CoreReportingListener;
 import org.example.core.reporting.plugin.ReportPlugin;
 import org.example.enums.ReportType;
 
@@ -11,7 +11,7 @@ import org.example.enums.ReportType;
 public final class ReportingManager {
 
     private static volatile ReportClient reportClient;
-    private static volatile ReportingLifecycleListener lifecycleListener;
+    private static volatile CoreReportingListener lifecycleListener;
     private static volatile ReportPlugin activePlugin;
 
     private ReportingManager() {}
@@ -35,7 +35,7 @@ public final class ReportingManager {
         return reportClient;
     }
 
-    public static ReportingLifecycleListener getLifecycleListener() {
+    public static CoreReportingListener getLifecycleListener() {
         if (lifecycleListener == null) {
             ReportPlugin plugin = getActivePlugin();
             lifecycleListener = plugin.createLifecycleListener();

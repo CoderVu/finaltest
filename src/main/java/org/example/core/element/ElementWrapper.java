@@ -3,12 +3,12 @@ package org.example.core.element;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.core.element.util.DriverUtils;
-import org.example.utils.WaitUtils;
+import org.example.core.element.util.WaitUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.pagefactory.ByChained;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,45 +16,23 @@ import java.util.List;
 import static org.example.core.element.util.DriverUtils.getWebDriver;
 
 @Slf4j
-public class ElementWrapperWrapper implements IElementWrapper {
+public class ElementWrapper implements IElementWrapper {
     
-    protected By byLocator;
+    protected final By byLocator;
     
-    public ElementWrapperWrapper(By byLocator) {
+    public ElementWrapper(By byLocator) {
         this.byLocator = byLocator;
     }
     
-    public ElementWrapperWrapper(String locator, Object... args) {
-        // Default to xpath if type not specified
-        this(locator, "xpath", args);
+    public ElementWrapper(String xpathLocator, Object... args) {
+        this(By.xpath(formatLocator(xpathLocator, args)));
     }
     
-    public ElementWrapperWrapper(String locator, String locatorType, Object... args) {
-        String formattedLocator = String.format(locator, args);
-        this.byLocator = createBy(locatorType, formattedLocator);
-    }
-    
-    private By createBy(String locatorType, String formattedLocator) {
-        switch (locatorType.toLowerCase()) {
-            case "xpath":
-                return By.xpath(formattedLocator);
-            case "id":
-                return By.id(formattedLocator);
-            case "cssselector":
-                return By.cssSelector(formattedLocator);
-            case "classname":
-                return By.className(formattedLocator);
-            case "name":
-                return By.name(formattedLocator);
-            case "tagname":
-                return By.tagName(formattedLocator);
-            case "linktext":
-                return By.linkText(formattedLocator);
-            case "partiallinktext":
-                return By.partialLinkText(formattedLocator);
-            default:
-                return By.xpath(formattedLocator);
+    private static String formatLocator(String locator, Object... args) {
+        if (args == null || args.length == 0) {
+            return locator;
         }
+        return String.format(locator, args);
     }
     
     @Override
@@ -65,22 +43,15 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public WebElement getElement() {
         try {
-            return getWebDriver().findElement(getLocator());
-        } catch (StaleElementReferenceException e) {
-            log.error("StaleElementReferenceException '{}': {}", getLocator().toString(), 
-                    e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
-            return getElement();
+            return getWebDriver().findElement(byLocator);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get element: " + byLocator, e);
         }
     }
     
     @Override
     public List<WebElement> getElements() {
-        return getWebDriver().findElements(getLocator());
-    }
-    
-    // Helper method for auto wait
-    private WebDriverWait getWait() {
-        return new WebDriverWait(getWebDriver(), DriverUtils.getTimeOut());
+        return getWebDriver().findElements(byLocator);
     }
     
     protected JavascriptExecutor jsExecutor() {
@@ -91,67 +62,39 @@ public class ElementWrapperWrapper implements IElementWrapper {
     
     @Override
     public void click() {
-        click(1);
-    }
-    
-    @Override
-    public void click(int times) {
-        if (times <= 0) return;
-        
-        int attemptsLeft = times;
-        Exception lastException = null;
-        
-        while (attemptsLeft > 0) {
-            try {
-                if (!isVisible()) {
-                    waitForDisplay(DriverUtils.getTimeOut());
-                }
-                
-                scrollElementToCenterScreen();
-                waitForElementClickable(DriverUtils.getTimeOut());
-                
-                new Actions(getWebDriver())
-                        .moveToElement(getElement())
-                        .pause(Duration.ofMillis(100))
-                        .click()
-                        .build()
-                        .perform();
-                return;
-            } catch (Exception e) {
-                lastException = e;
-                String msg = e.getMessage() == null ? "" : e.getMessage().split("\n")[0];
-                
-                boolean intercepted = msg.contains("Other element would receive the click")
-                        || msg.contains("Element is not clickable at point")
-                        || msg.contains("element click intercepted");
-                
-                attemptsLeft--;
-                
-                if (!intercepted) {
-                    clickByJs();
-                    return;
-                }
-                
-                if (attemptsLeft == 0) {
-                    try {
-                        clickByJs();
-                        return;
-                    } catch (Exception jsEx) {
-                        throw new RuntimeException("Click failed after retries on: " + getLocator(), lastException);
-                    }
-                }
-                
-                DriverUtils.delay(0.5);
+        try {
+            if (!isVisible()) {
+                waitForDisplay(DriverUtils.getTimeOut());
+            }
+
+            scrollElementToCenterScreen();
+            waitForElementClickable(DriverUtils.getTimeOut());
+
+            new Actions(getWebDriver())
+                    .moveToElement(getElement())
+                    .pause(Duration.ofMillis(100))
+                    .click()
+                    .build()
+                    .perform();
+        } catch (Exception e) {
+            String msg = e.getMessage() == null ? "" : e.getMessage().split("\n")[0];
+
+            boolean intercepted = msg.contains("Other element would receive the click")
+                    || msg.contains("Element is not clickable at point")
+                    || msg.contains("element click intercepted");
+
+            if (intercepted) {
+                clickByJs();
+            } else {
+                throw new RuntimeException("Click failed on: " + getLocator(), e);
             }
         }
-        
-        throw new RuntimeException("Click failed after retries on: " + getLocator(), lastException);
     }
     
     @Override
     public void click(int x, int y) {
         try {
-            WebElement element = getWait().until(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             new Actions(getWebDriver()).moveToElement(element, x, y).click().build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -175,7 +118,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void doubleClick() {
         try {
             log.debug("Double click on {}", getLocator().toString());
-            WebElement element = getWait().until(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             new Actions(getWebDriver()).doubleClick(element).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -187,7 +130,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public void setText(String text) {
         try {
-            WebElement element = getWait().until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(text);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -199,7 +142,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public void clear() {
         try {
-            WebElement element = getWait().until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.clear();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -211,7 +154,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public void enter(CharSequence... value) {
         try {
-            WebElement element = getWait().until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(value);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -223,7 +166,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public void sendKeys(Keys key) {
         try {
-            WebElement element = getWait().until(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(key);
         } catch (Exception e) {
             log.error("Has error sending key to control '{}': {}", getLocator().toString(), 
@@ -235,7 +178,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public void submit() {
         try {
-            WebElement element = getWait().until(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             element.submit();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
@@ -449,7 +392,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public WebElement getChildElement(String xpath) {
         try {
-            return getElement().findElement(By.xpath(xpath));
+            return getElement().findElement(buildChildLocator(xpath));
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -465,7 +408,7 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public List<WebElement> getChildElements(String xpath) {
         try {
-            return getElement().findElements(By.xpath(xpath));
+            return getElement().findElements(buildChildLocator(xpath));
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -485,15 +428,10 @@ public class ElementWrapperWrapper implements IElementWrapper {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            return WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-                try {
-                    return e.isDisplayed();
-                } catch (StaleElementReferenceException ex) {
-                    return false;
-                }
-            }, actualTimeout, log);
-        } catch (Exception e) {
-            log.debug("isVisible() error for locator '{}': {}", getLocator(), e.getMessage());
+            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
+            return true;
+        } catch (TimeoutException e) {
+            log.debug("isVisible() timeout for locator '{}': {}", getLocator(), e.getMessage());
             return false;
         }
     }
@@ -528,14 +466,9 @@ public class ElementWrapperWrapper implements IElementWrapper {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            return WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-                try {
-                    return e.isDisplayed() && e.isEnabled();
-                } catch (StaleElementReferenceException ex) {
-                    return false;
-                }
-            }, actualTimeout, log);
-        } catch (Exception e) {
+            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()), actualTimeout);
+            return true;
+        } catch (TimeoutException e) {
             return false;
         }
     }
@@ -550,9 +483,10 @@ public class ElementWrapperWrapper implements IElementWrapper {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            return WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> true, actualTimeout, log);
-        } catch (Exception e) {
-            log.debug("isExist() - Exception for locator '{}': {}", getLocator(), e.getMessage());
+            WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()), actualTimeout);
+            return true;
+        } catch (TimeoutException e) {
+            log.debug("isExist() - timeout for locator '{}'", getLocator());
             return false;
         }
     }
@@ -568,21 +502,14 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForVisibility(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                return e.isDisplayed();
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = String.format("Element not visible after %d seconds: %s", 
                     actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForVisibility timeout after {} seconds for control '{}': {}", 
                     actualTimeout.getSeconds(), getLocator().toString(), msg);
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -605,21 +532,14 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForElementClickable(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                return e.isDisplayed() && e.isEnabled();
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
-            String msg = String.format("Element not clickable after %d seconds: %s", 
+        try {
+            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()), actualTimeout);
+        } catch (TimeoutException e) {
+            String msg = String.format("Element not clickable after %d seconds: %s",
                     actualTimeout.getSeconds(), getLocator().toString());
-            log.error("WaitForElementClickable timeout after {} seconds for control '{}': {}", 
+            log.error("WaitForElementClickable timeout after {} seconds for control '{}': {}",
                     actualTimeout.getSeconds(), getLocator().toString(), msg);
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -632,20 +552,13 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForDisplay(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                return e.isDisplayed();
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "Element not displayed after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
             log.error("waitForDisplay timeout after {} seconds for control '{}': {}", 
                     actualTimeout.getSeconds(), getLocator().toString(), msg);
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -658,28 +571,13 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForInvisibility(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        WebDriver driver = getWebDriver();
-        boolean ok = WaitUtils.waitForCondition(driver, d -> {
-            try {
-                List<WebElement> els = d.findElements(getLocator());
-                if (els.isEmpty()) return true;
-                for (WebElement el : els) {
-                    try {
-                        if (el.isDisplayed()) return false;
-                    } catch (StaleElementReferenceException sre) {
-                        return true;
-                    }
-                }
-                return true;
-            } catch (Exception ex) {
-                return true;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(getLocator()), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "waitForInvisibility timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.warn("waitForInvisibility timeout after {} seconds for control '{}'. Throwing.", 
                     actualTimeout.getSeconds(), getLocator().toString());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -692,29 +590,12 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForDisappear(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        WebDriver driver = getWebDriver();
-        
-        boolean success = WaitUtils.waitForCondition(driver, d -> {
-            try {
-                List<WebElement> els = d.findElements(getLocator());
-                if (els.isEmpty()) return true;
-                for (WebElement el : els) {
-                    try {
-                        if (el.isDisplayed()) return false;
-                    } catch (StaleElementReferenceException sre) {
-                        return true;
-                    }
-                }
-                return true;
-            } catch (Exception ex) {
-                return true;
-            }
-        }, actualTimeout, log);
-        
-        if (!success) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(getLocator()), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "Element still visible after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
             log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), actualTimeout.getSeconds());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -727,21 +608,20 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForElementEnabled(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                return e.isEnabled();
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(driver -> {
+                try {
+                    return driver.findElement(getLocator()).isEnabled();
+                } catch (NoSuchElementException | StaleElementReferenceException ex) {
+                    return false;
+                }
+            }, actualTimeout);
+        } catch (TimeoutException e) {
             String msg = String.format("Element not enabled after %d seconds: %s", 
                     actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForElementEnabled timeout after {} seconds for control '{}': {}", 
                     actualTimeout.getSeconds(), getLocator().toString(), msg);
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -754,21 +634,20 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForElementDisabled(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                return !e.isEnabled();
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(driver -> {
+                try {
+                    return !driver.findElement(getLocator()).isEnabled();
+                } catch (NoSuchElementException | StaleElementReferenceException ex) {
+                    return false;
+                }
+            }, actualTimeout);
+        } catch (TimeoutException e) {
             String msg = String.format("Element not disabled after %d seconds: %s", 
                     actualTimeout.getSeconds(), getLocator().toString());
             log.error("waitForElementDisabled timeout after {} seconds for control '{}': {}", 
                     actualTimeout.getSeconds(), getLocator().toString(), msg);
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -781,20 +660,12 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForTextToBePresent(String text, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                String t = e.getText();
-                return t != null && t.contains(text);
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.textToBePresentInElementLocated(getLocator(), text), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "waitForTextToBePresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForTextToBePresent: Has error with control '{}'", getLocator().toString());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -807,20 +678,12 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForTextToBeNotPresent(String text, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                String t = e.getText();
-                return t == null || !t.contains(text);
-            } catch (NoSuchElementException ex) {
-                return true;
-            } catch (StaleElementReferenceException ex) {
-                return true;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.not(ExpectedConditions.textToBePresentInElementLocated(getLocator(), text)), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "waitForTextToBeNotPresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForTextToBeNotPresent: Has error with control '{}'", getLocator().toString());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -833,20 +696,12 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForValuePresentInAttribute(String attribute, String value, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                String attr = e.getAttribute(attribute);
-                return attr != null && attr.contains(value);
-            } catch (NoSuchElementException ex) {
-                return false;
-            } catch (StaleElementReferenceException ex) {
-                return false;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(ExpectedConditions.attributeContains(getLocator(), attribute, value), actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "waitForValuePresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForValuePresentInAttribute: Has error with control '{}'", getLocator().toString());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -859,20 +714,14 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForValueNotPresentInAttribute(String attribute, String value, Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        boolean ok = WaitUtils.waitForCondition(getWebDriver(), getLocator(), e -> {
-            try {
-                String attr = e.getAttribute(attribute);
-                return attr == null || !attr.contains(value);
-            } catch (NoSuchElementException ex) {
-                return true;
-            } catch (StaleElementReferenceException ex) {
-                return true;
-            }
-        }, actualTimeout, log);
-        if (!ok) {
+        try {
+            WaitUtils.waitFor(
+                    ExpectedConditions.not(ExpectedConditions.attributeContains(getLocator(), attribute, value)),
+                    actualTimeout);
+        } catch (TimeoutException e) {
             String msg = "waitForValueNotPresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForValueNotPresentInAttribute: Has error with control '{}'", getLocator().toString());
-            throw new RuntimeException(msg);
+            throw new RuntimeException(msg, e);
         }
     }
     
@@ -885,27 +734,13 @@ public class ElementWrapperWrapper implements IElementWrapper {
     public void waitForStalenessOfElement(Duration timeout) {
         Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0 
                 ? timeout : Constants.DEFAULT_TIMEOUT;
-        WebDriver driver = getWebDriver();
         try {
-            boolean ok = WaitUtils.waitForCondition(driver, d -> {
-                try {
-                    List<WebElement> els = d.findElements(getLocator());
-                    if (els.isEmpty()) return true;
-                    try {
-                        els.get(0).isDisplayed();
-                        return false;
-                    } catch (StaleElementReferenceException se) {
-                        return true;
-                    }
-                } catch (NoSuchElementException ne) {
-                    return true;
-                }
-            }, actualTimeout, log);
-            if (!ok) {
-                String msg = "waitForStalenessOfElement timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
-                log.error("waitForStalenessOfElement: Has error with control '{}'", getLocator().toString());
-                throw new RuntimeException(msg);
-            }
+            WebElement element = getElement();
+            WaitUtils.waitFor(ExpectedConditions.stalenessOf(element), actualTimeout);
+        } catch (TimeoutException e) {
+            String msg = "waitForStalenessOfElement timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            log.error("waitForStalenessOfElement: Has error with control '{}'", getLocator().toString());
+            throw new RuntimeException(msg, e);
         } catch (Exception e) {
             log.error("waitForStalenessOfElement: Has error with control '{}': {}", 
                     getLocator().toString(), e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -918,6 +753,10 @@ public class ElementWrapperWrapper implements IElementWrapper {
     @Override
     public Select getSelect() {
         return new Select(getElement());
+    }
+    
+    private By buildChildLocator(String xpath) {
+        return new ByChained(By.xpath("."), By.xpath(xpath));
     }
 }
 

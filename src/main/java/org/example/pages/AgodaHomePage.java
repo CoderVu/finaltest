@@ -2,7 +2,7 @@ package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
-import org.example.core.element.IElementWrapper;
+import org.example.core.element.ElementWrapper;
 import org.example.core.element.util.DriverUtils;
 import org.example.models.Hotel;
 import org.openqa.selenium.By;
@@ -25,21 +25,21 @@ import static org.example.core.element.util.DriverUtils.getCurrentUrl;
 public class AgodaHomePage extends BasePage {
 
 
-    protected IElementWrapper destinationSearchInput = $(By.xpath("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']"));
-    protected IElementWrapper autocompletePanel = $(By.xpath("//div[@data-selenium='autocompletePanel']"));
-    protected IElementWrapper checkInBox = $(By.xpath("//div[@data-element-name='check-in-box']"));
-    protected IElementWrapper checkOutBox = $(By.xpath("//div[@data-element-name='check-out-box']"));
-    protected IElementWrapper calendarContainer = $(By.xpath("//div[@id='DatePicker__AccessibleV2']"));
-    protected IElementWrapper nextMonthButton = $(By.xpath("//button[@data-selenium='calendar-next-month-button']"));
-    protected IElementWrapper occupancyBox = $(By.xpath("//div[@data-element-name='occupancy-box']"));
-    protected IElementWrapper hotelListContainer = $(By.xpath("//ol[contains(@class,'hotel-list-container')]"));
-    protected IElementWrapper monthCaption = $(By.xpath("//div[contains(@class,'DayPicker-Caption')]"));
-    protected IElementWrapper searchButton = $(By.xpath("//button[@data-selenium='searchButton']"));
-    protected IElementWrapper sortPriceButton = $(By.xpath("//button[@data-element-name='search-sort-price']"));
-    protected IElementWrapper nextMonthBtn = $(By.xpath("//button[@data-selenium='calendar-next-month-button']"));
-    protected IElementWrapper prevMonthBtn = $(By.xpath("//button[@data-selenium='calendar-previous-month-button']"));
+    protected ElementWrapper destinationSearchInput = $("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
+    protected ElementWrapper autocompletePanel = $("//div[@data-selenium='autocompletePanel']");
+    protected ElementWrapper checkInBox = $("//div[@data-element-name='check-in-box']");
+    protected ElementWrapper checkOutBox = $("//div[@data-element-name='check-out-box']");
+    protected ElementWrapper calendarContainer = $("//div[@id='DatePicker__AccessibleV2']");
+    protected ElementWrapper nextMonthButton = $("//button[@data-selenium='calendar-next-month-button']");
+    protected ElementWrapper occupancyBox = $("//div[@data-element-name='occupancy-box']");
+    protected ElementWrapper hotelListContainer = $("//ol[contains(@class,'hotel-list-container')]");
+    protected ElementWrapper monthCaption = $("//div[contains(@class,'DayPicker-Caption')]");
+    protected ElementWrapper searchButton = $("//button[@data-selenium='searchButton']");
+    protected ElementWrapper sortPriceButton = $("//button[@data-element-name='search-sort-price']");
+    protected ElementWrapper nextMonthBtn = $("//button[@data-selenium='calendar-next-month-button']");
+    protected ElementWrapper prevMonthBtn = $("//button[@data-selenium='calendar-previous-month-button']");
 
-    protected String occupancyPopupXpathString = "//div[@class='OccupancySelector OccupancySelector--travelWithKids']";
+    protected String occupancyPopupXpath = "//div[@class='OccupancySelector OccupancySelector--travelWithKids']";
     protected String roomValueXpath = "//div[@data-component='desktop-occ-room-value']//p";
     protected String adultValueXpath = "//div[@data-component='desktop-occ-adult-value']//p";
     protected String childrenValueXpath = "//div[@data-component='desktop-occ-children-value']//p";
@@ -62,7 +62,7 @@ public class AgodaHomePage extends BasePage {
     protected static String priceXpath = ".//span[@data-selenium='display-price']";
 
     public void DraftTestFunction() {
-        IElementWrapper sampleElement = $(By.xpath("//div[@data-selenium='sample-element']"));
+        ElementWrapper sampleElement = $("//div[@data-selenium='sample-element']");
         sampleElement.checkCheckBoxByJs();
     }
     public void navigateToHomePage() {
@@ -101,7 +101,7 @@ public class AgodaHomePage extends BasePage {
     public void selectDestinationFromSuggestions(String destinationName) {
         step("Select destination: " + destinationName, () -> {
             autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
-            $(By.xpath("//li[@data-selenium='autosuggest-item'][@data-text='%s']"), destinationName).click();
+            $("//li[@data-selenium='autosuggest-item'][@data-text='%s']", destinationName).click();
         });
     }
 
@@ -162,7 +162,7 @@ public class AgodaHomePage extends BasePage {
                 DriverUtils.delay(0.5);
                 prevTries++;
             }
-            IElementWrapper checkInDateElement = $(By.xpath("//span[@data-selenium-date='%s']"), checkInDate);
+            ElementWrapper checkInDateElement = $("//span[@data-selenium-date='%s']", checkInDate);
             for (int i = 0; i < 3; i++) {
                 try {
                     checkInDateElement.waitForElementClickable(Duration.ofSeconds(10));
@@ -180,7 +180,7 @@ public class AgodaHomePage extends BasePage {
                 }
             }
             if (calendarContainer.isVisible()) {
-                IElementWrapper outsideArea = $(By.cssSelector("body"));
+                ElementWrapper outsideArea = $("//body");
                 ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
                 try {
                     calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
@@ -207,7 +207,7 @@ public class AgodaHomePage extends BasePage {
             String targetMonth = parse(checkOutDate).getMonth().name();
             String targetYear = String.valueOf(parse(checkOutDate).getYear());
             for (int i = 0; i < 12; i++) {
-                IElementWrapper monthCaption = $(By.xpath(monthStringXpath));
+                ElementWrapper monthCaption = $(monthStringXpath);
                 String captionText = monthCaption.getText();
                 if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
                     break;
@@ -224,7 +224,7 @@ public class AgodaHomePage extends BasePage {
                 }
                 DriverUtils.delay(0.5);
             }
-            IElementWrapper checkOutDateElement = $(By.xpath("//span[@data-selenium-date='%s']"), checkOutDate);
+            ElementWrapper checkOutDateElement = $("//span[@data-selenium-date='%s']", checkOutDate);
             for (int i = 0; i < 3; i++) {
                 try {
                     checkOutDateElement.waitForElementClickable(Duration.ofSeconds(10));
@@ -280,7 +280,7 @@ public class AgodaHomePage extends BasePage {
 
     public void SelectOccupancy(int rooms, int adults, int children) {
         step("Select occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children", () -> {
-            IElementWrapper occupancyPopup = $(By.xpath(occupancyPopupXpathString));
+            ElementWrapper occupancyPopup = $(occupancyPopupXpath);
 
             try {
                 occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
@@ -302,14 +302,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectRooms(int targetRooms) {
         step("Select rooms: " + targetRooms, () -> {
-            IElementWrapper roomValueElement = $(By.xpath(roomValueXpath));
+            ElementWrapper roomValueElement = $(roomValueXpath);
             roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
             log("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
 
-            IElementWrapper roomsPlusButton = $(By.xpath(roomsPlusButtonXpath));
-            IElementWrapper roomsMinusButton = $(By.xpath(roomsMinusButtonXpath));
+            ElementWrapper roomsPlusButton = $(roomsPlusButtonXpath);
+            ElementWrapper roomsMinusButton = $(roomsMinusButtonXpath);
 
             while (currentRooms < targetRooms) {
                 roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -333,14 +333,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectAdults(int targetAdults) {
         step("Select adults: " + targetAdults, () -> {
-            IElementWrapper adultValueElement = $(By.xpath(adultValueXpath));
+            ElementWrapper adultValueElement = $(adultValueXpath);
             adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
             log("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
 
-            IElementWrapper adultsPlusButton = $(By.xpath(adultsPlusButtonXpath));
-            IElementWrapper adultsMinusButton = $(By.xpath(adultsMinusButtonXpath));
+            ElementWrapper adultsPlusButton = $(adultsPlusButtonXpath);
+            ElementWrapper adultsMinusButton = $(adultsMinusButtonXpath);
 
             while (currentAdults < targetAdults) {
                 adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -364,14 +364,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectChildren(int targetChildren) {
         step("Select children: " + targetChildren, () -> {
-            IElementWrapper childrenValueElement = $(By.xpath(childrenValueXpath));
+            ElementWrapper childrenValueElement = $(childrenValueXpath);
             childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
             log("Current children: " + currentChildren + ", Target children: " + targetChildren);
 
-            IElementWrapper childrenPlusButton = $(By.xpath(childrenPlusButtonXpath));
-            IElementWrapper childrenMinusButton = $(By.xpath(childrenMinusButtonXpath));
+            ElementWrapper childrenPlusButton = $(childrenPlusButtonXpath);
+            ElementWrapper childrenMinusButton = $(childrenMinusButtonXpath);
 
             while (currentChildren < targetChildren) {
                 childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -397,12 +397,14 @@ public class AgodaHomePage extends BasePage {
         return step("Get all hotels from list view: " + expectedHotelCount, () -> {
             List<Hotel> hotels = new ArrayList<>();
             try {
-                List<IElementWrapper> hotelCards = $$(By.xpath(propertyCardXpath));
-                log("Found " + hotelCards.size() + " hotel cards in search results");
+                ElementWrapper hotelCardLocator = $$(propertyCardXpath);
+                List<WebElement> hotelCardElements = hotelCardLocator.getElements();
+                log("Found " + hotelCardElements.size() + " hotel cards in search results");
 
-                for (int i = 0; i < hotelCards.size() && i < expectedHotelCount; i++) {
+                int totalCards = Math.min(hotelCardElements.size(), expectedHotelCount);
+                for (int i = 0; i < totalCards; i++) {
                     try {
-                        IElementWrapper cardElement = hotelCards.get(i);
+                        ElementWrapper cardElement = $("(" + propertyCardXpath + ")[" + (i + 1) + "]");
                         cardElement.scrollToView();
                         Hotel hotel = extractHotelFromCard(cardElement);
                         if (hotel != null) {
@@ -424,7 +426,7 @@ public class AgodaHomePage extends BasePage {
         });
     }
 
-    private Hotel extractHotelFromCard(IElementWrapper card) {
+    private Hotel extractHotelFromCard(ElementWrapper card) {
         return step(() -> {
             try {
                 Hotel.HotelBuilder hotelBuilder = Hotel.builder();
@@ -553,7 +555,7 @@ public class AgodaHomePage extends BasePage {
     public void waitForSearchResultsToLoad() {
         step(() -> {
             try {
-                IElementWrapper firstPropertyCard = $(By.xpath(propertyCardXpath + "[1]"));
+                ElementWrapper firstPropertyCard = $(propertyCardXpath + "[1]");
                 firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
                 log("Search results have loaded successfully");
             } catch (Exception e) {

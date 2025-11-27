@@ -1,5 +1,7 @@
 package org.example.core.driver;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
+import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
 import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
@@ -7,6 +9,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
+@Slf4j
 public class Edge extends AbstractDriverManager {
 
     public Edge() {
@@ -15,6 +18,7 @@ public class Edge extends AbstractDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
+        WebDriverManager.edgedriver().setup();
         return new EdgeDriver(buildEdgeOptions());
     }
 
@@ -28,9 +32,10 @@ public class Edge extends AbstractDriverManager {
         options.setCapability("browserName", "MicrosoftEdge");
         options.setCapability("acceptInsecureCerts", true);
         options.setCapability("ms:edgeChromium", true);
-
         options.addArguments(
                 "--start-maximized",
+                "--width=1920",
+                "--height=1080",
                 "--disable-web-security",
                 "--disable-features=VizDisplayCompositor",
                 "--disable-extensions",

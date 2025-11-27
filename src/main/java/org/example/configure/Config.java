@@ -7,6 +7,9 @@ import org.example.enums.Env;
 import org.example.utils.EnvUtils;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 public final class Config {
@@ -39,20 +42,42 @@ public final class Config {
      * @return BrowserType resolved from properties or default
      */
     public static BrowserType getBrowserType(String browserParameter) {
-        String candidate = (browserParameter != null && !browserParameter.trim().isEmpty())
-                ? browserParameter.trim()
-                : getPropertyOrDefault(Constants.BROWSER_PROPERTY, Constants.DEFAULT_BROWSER);
-
-        try {
-            return BrowserType.fromString(candidate);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid browser '{}', falling back to CHROME", candidate);
-            return BrowserType.CHROME;
+        if (browserParameter != null && !browserParameter.trim().isEmpty()) {
+            try {
+                return BrowserType.fromString(browserParameter.trim());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid browser parameter '{}', falling back to configured browsers", browserParameter);
+            }
         }
+
+        List<BrowserType> configured = getBrowserTypes();
+        return configured.isEmpty() ? BrowserType.fromString(Constants.DEFAULT_BROWSER) : configured.get(0);
     }
 
-    public static BrowserType getBrowserType() {
-        return getBrowserType(null);
+    /**
+     * Returns the list of BrowserTypes specified by the 'browsers' property.
+     * If the property is missing or invalid, returns a single-element list with DEFAULT_BROWSER.
+     */
+    public static List<BrowserType> getBrowserTypes() {
+        String raw = getPropertyOrDefault(Constants.BROWSERS_PROPERTY, Constants.DEFAULT_BROWSER);
+        if (raw == null || raw.trim().isEmpty()) {
+            return List.of(BrowserType.fromString(Constants.DEFAULT_BROWSER));
+        }
+        List<BrowserType> result = new ArrayList<>();
+        Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .forEach(s -> {
+                    try {
+                        result.add(BrowserType.fromString(s));
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Ignoring unknown browser '{}' in property '{}'", s, Constants.BROWSERS_PROPERTY);
+                    }
+                });
+        if (result.isEmpty()) {
+            result.add(BrowserType.fromString(Constants.DEFAULT_BROWSER));
+        }
+        return result;
     }
 
     public static Duration getTimeout() {
@@ -71,6 +96,7 @@ public final class Config {
     public static boolean isHeadless() {
         return getBooleanPropertyOrDefault(Constants.HEADLESS_PROPERTY, Constants.DEFAULT_HEADLESS);
     }
+
 
     public static String getEnvFile() {
         return ACTIVE_ENV + ".properties";

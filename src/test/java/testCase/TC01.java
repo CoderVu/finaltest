@@ -1,6 +1,5 @@
 package testCase;
 
-import org.example.core.assertion.MyAssertJ;
 import org.example.core.dataProvider.DataProvider;
 import org.example.core.dataProvider.DataFile;
 import org.example.core.dataProvider.DataPath;

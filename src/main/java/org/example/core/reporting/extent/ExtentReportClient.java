@@ -284,12 +284,15 @@ public class ExtentReportClient implements ReportClient {
         if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
             log.warn("Could not create screenshot directory: {}", screenshotDir.getAbsolutePath());
         }
-        String filename = (name == null || name.isEmpty())
-                ? "screenshot_" + System.currentTimeMillis() + ".png"
-                : name;
-        if (!filename.toLowerCase().endsWith(".png")) {
-            filename += ".png";
-        }
+        
+        // Sanitize name: replace spaces and special characters with underscores, similar to assert_fail pattern
+        String sanitizedName = (name == null || name.isEmpty())
+                ? "step_fail"
+                : name.replaceAll("[^a-zA-Z0-9_]", "_").replaceAll("_+", "_");
+        
+        // Add timestamp and ensure .png extension (same pattern as assert_fail)
+        String filename = sanitizedName + "_" + System.currentTimeMillis() + ".png";
+        
         try {
             FileHandler.copy(src, new File(screenshotDir, filename));
         } catch (Throwable e) {

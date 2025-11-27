@@ -1,18 +1,13 @@
 package testCase;
 
-import org.example.core.assertion.MyAssertJ;
+import org.example.core.assertion.Assertions;
 import org.example.core.dataProvider.DataProvider;
 import org.example.core.dataProvider.DataFile;
 import org.example.core.dataProvider.DataPath;
-import org.example.models.Hotel;
 import org.example.pages.AgodaHomePage;
 import org.testng.annotations.Test;
 import config.TestBase;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-
-import static org.example.core.helper.AssertionHelper.*;
 
 @Slf4j
 public class TC02 extends TestBase {
@@ -39,7 +34,7 @@ public class TC02 extends TestBase {
         homePage.clickSearchButton();
 
         //assertion helper usage
-        MyAssertJ.get().assertEquals(homePage.getHotelListSize(), expectedHotelCount, "Hotel count does not match expected value.");
+        Assertions.get().assertEquals(homePage.getHotelListSize(), expectedHotelCount, "Hotel count does not match expected value.");
     }
 
 }

@@ -1,5 +1,6 @@
 package org.example.core.driver;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.example.configure.Config;
 import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
@@ -17,6 +18,7 @@ public class Chrome extends AbstractDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
+        WebDriverManager.chromedriver().setup();
         return new ChromeDriver(buildChromeOptions());
     }
 
@@ -31,7 +33,6 @@ public class Chrome extends AbstractDriverManager {
         options.setCapability("acceptInsecureCerts", true);
         options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
         options.setExperimentalOption("useAutomationExtension", false);
-
         options.addArguments(
                 "--start-maximized",
                 "--remote-allow-origins=*",

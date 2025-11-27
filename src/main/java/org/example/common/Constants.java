@@ -14,7 +14,6 @@ public class Constants {
 
     // ==================== PROPERTY KEYS ====================
     public static final String BASE_URL_PROPERTY = "base_url";
-    public static final String BROWSER_PROPERTY = "browser";
     public static final String REPORT_TYPE_PROPERTY = "reportType";
     public static final String REMOTE_URL_PROPERTY = "remote_url";
     public static final String IS_REMOTE_PROPERTY = "isRemote";
@@ -22,6 +21,7 @@ public class Constants {
     public static final String TIMEOUT_PROPERTY = "timeout";
     public static final String PAGE_LOAD_TIMEOUT_PROPERTY = "page_load_timeout";
     public static final String MAX_NUM_OF_ATTEMPTS_PROPERTY = "max_num_of_attempts";
+    public static final String BROWSERS_PROPERTY = "browsers";
 
     // ==================== DEFAULT VALUES ====================
     public static final String DEFAULT_BROWSER = BrowserType.CHROME.toString();

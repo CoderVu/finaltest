@@ -2,7 +2,7 @@ package org.example.core.assertion;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.reporting.ReportingManager;
-import org.example.core.reporting.lifecycle.ReportingLifecycleListener;
+import org.example.core.reporting.ReportClient;
 
 import java.util.function.Supplier;
 
@@ -17,17 +17,17 @@ import static org.example.utils.DateUtils.getCurrentTimestamp;
  * Uses AssertJ Exception Assertions for exception handling.
  */
 @Slf4j
-public class MyAssertJ {
+public class Assertions {
 
-    private static final ThreadLocal<MyAssertJ> INSTANCE = ThreadLocal.withInitial(MyAssertJ::new);
+    private static final ThreadLocal<Assertions> INSTANCE = ThreadLocal.withInitial(Assertions::new);
 
-    public static MyAssertJ get() {
+    public static Assertions get() {
         return INSTANCE.get();
     }
 
     public static void reset() {
         INSTANCE.remove();
-        INSTANCE.set(new MyAssertJ());
+        INSTANCE.set(new Assertions());
     }
 
     /**
@@ -223,9 +223,14 @@ public class MyAssertJ {
         String stepName = "[" + getCurrentTimestamp(DEFAULT_TIMESTAMP_FORMAT) + "]: " + message +
                 " | expected=" + expectedStr + " actual=" + actualStr;
 
-        ReportingLifecycleListener strategy = ReportingManager.getLifecycleListener();
-        if (strategy != null) {
-            strategy.failStep(stepName);
+        ReportClient client = ReportingManager.getReportClient();
+        if (client != null) {
+            client.logFail(stepName, error);
+            try {
+                client.attachScreenshot("assert_fail_" + System.currentTimeMillis());
+            } catch (Exception e) {
+                log.debug("Unable to attach screenshot for assertion failure: {}", e.getMessage());
+            }
         }
     }
 }

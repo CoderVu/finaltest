@@ -11,26 +11,22 @@ import org.openqa.selenium.By;
  * button.click(); // Will use overridden click() logic
  */
 @Slf4j
-public class DraftAction extends ElementWrapperWrapper {
+public class DraftAction extends ElementWrapper implements IElementWrapper {
     
     public DraftAction(By byLocator) {
         super(byLocator);
     }
-    
-    public DraftAction(By byLocator, Object... args) {
-        super(byLocator, args);
+
+    public DraftAction(String locator, Object... args) {
+        super(locator, args);
     }
     
     /**
-     * Override click() - Viết lại logic click theo nhu cầu
+     * Override click()s
      */
     @Override
     public void click() {
         // TODO: Write your custom click logic here
-        // Ví dụ:
-        // scrollToView();
-        // clickByJs();
-        super.click();
     }
     
     // Can override other actions as needed

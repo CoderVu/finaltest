@@ -5,10 +5,8 @@ import org.example.core.driver.factory.DriverFactory;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -37,13 +35,6 @@ public final class DriverUtils {
         return manager.getDriver();
     }
 
-    public static String sanitizeVersion(String version) {
-        if (version == null) return null;
-        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)+)");
-        Matcher matcher = pattern.matcher(version);
-        return matcher.find() ? matcher.group(1) : version.trim();
-    }
-
     public static void deleteCookie() {
         getWebDriver().manage().deleteAllCookies();
     }
@@ -65,8 +56,8 @@ public final class DriverUtils {
     }
 
     public static void waitForUrlContains(String expectedUrlPart, Duration timeout) {
-        WebDriverWait wait = new WebDriverWait(getWebDriver(), timeout);
-        wait.until(driver -> driver.getCurrentUrl().contains(expectedUrlPart));
+        Duration effective = timeout == null ? getTimeOut() : timeout;
+        WaitUtils.waitFor(driver -> driver.getCurrentUrl().contains(expectedUrlPart), effective);
     }
 
     public static void waitForUrlContains(String expectedUrlPart, int timeoutInSeconds) {
@@ -113,8 +104,7 @@ public final class DriverUtils {
     }
 
     public static void waitForNewWindowOpened(int expectedNumberOfWindows) {
-        WebDriverWait wait = new WebDriverWait(getWebDriver(), getTimeOut());
-        wait.until(ExpectedConditions.numberOfWindowsToBe(expectedNumberOfWindows));
+        WaitUtils.waitFor(driver -> driver.getWindowHandles().size() == expectedNumberOfWindows);
     }
 
     public static void moveMouseByOffset(int x, int y) {
@@ -155,27 +145,25 @@ public final class DriverUtils {
 
     public static void waitForJavaScriptIdle() {
         try {
-            WebDriverWait wait = new WebDriverWait(getWebDriver(), getTimeOut());
-            wait.until(driver -> {
+            WaitUtils.waitFor(driver -> {
                 JavascriptExecutor executor = (JavascriptExecutor) driver;
                 Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
                 return Boolean.TRUE.equals(domIsComplete);
             });
-        } catch (Exception ignored) {
+        } catch (TimeoutException ignored) {
         }
     }
 
     public static void waitForAjax() {
         try {
-            WebDriverWait wait = new WebDriverWait(getWebDriver(), getTimeOut());
-            wait.until(driver -> {
+            WaitUtils.waitFor(driver -> {
                 JavascriptExecutor executor = (JavascriptExecutor) driver;
                 Object ajaxIsComplete = executor.executeScript(
                         "if (typeof jQuery != 'undefined') { return jQuery.active == 0; } else {  return true; }");
                 Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
                 return Boolean.TRUE.equals(ajaxIsComplete) && Boolean.TRUE.equals(domIsComplete);
             });
-        } catch (Exception ignored) {
+        } catch (TimeoutException ignored) {
         }
     }
 
@@ -213,6 +201,7 @@ public final class DriverUtils {
         waitForEventTriggered(eventRegex, Duration.ofSeconds(inputTimeOut));
     }
 
+    @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> getXmlHttpRequestList() {
         List<Map<String, Object>> requestList = (List<Map<String, Object>>) DriverUtils.execJavaScript("return window.performance.getEntries()");
         return requestList == null ? new ArrayList<>() : requestList.stream()

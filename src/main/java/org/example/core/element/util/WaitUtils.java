@@ -1,7 +1,7 @@
-package org.example.utils;
+package org.example.core.element.util;
 
 import java.time.Duration;
-import org.example.core.element.util.DriverUtils;
+
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
 

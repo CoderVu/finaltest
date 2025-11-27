@@ -1,5 +1,6 @@
 package org.example.core.driver;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.example.configure.Config;
 import org.example.core.driver.manager.AbstractDriverManager;
 import org.example.enums.BrowserType;
@@ -15,6 +16,7 @@ public class Firefox extends AbstractDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
+        WebDriverManager.firefoxdriver().setup();
         return new FirefoxDriver(buildFirefoxOptions());
     }
 
@@ -30,7 +32,6 @@ public class Firefox extends AbstractDriverManager {
         options.addPreference("dom.webdriver.enabled", false);
         options.addPreference("useAutomationExtension", false);
         options.addPreference("startup.homepage_override_url", "about:blank");
-
         options.addArguments("--start-maximized",
                 "--disable-web-security");
         options.addArguments("--width=1920");

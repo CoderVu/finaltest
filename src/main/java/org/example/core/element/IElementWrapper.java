@@ -17,7 +17,6 @@ public interface IElementWrapper {
     
     // Actions
     void click();
-    void click(int times);
     void click(int x, int y);
     void clickByJs();
     void doubleClick();

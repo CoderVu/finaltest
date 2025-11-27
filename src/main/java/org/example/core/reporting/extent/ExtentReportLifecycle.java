@@ -9,10 +9,10 @@ import org.example.common.Constants;
 import org.example.configure.Config;
 import org.example.core.reporting.ReportClient;
 import org.example.core.reporting.ReportingManager;
-import org.example.core.reporting.lifecycle.ReportingLifecycleListener;
+import org.example.core.reporting.listeners.CoreReportingListener;
 import org.example.core.element.util.DriverUtils;
+import org.example.core.testng.retryTCs.NoRetry;
 import org.openqa.selenium.WebDriver;
-import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 
@@ -24,12 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-public class ExtentReportLifecycle implements ReportingLifecycleListener {
+public class ExtentReportLifecycle implements CoreReportingListener {
 
     public static final String TEST_ATTRIBUTE = "reporting.extent.test";
     public static final String STEP_STACK_ATTRIBUTE = "reporting.extent.stepStack";
     public static final String ATTEMPT_NODE_ATTRIBUTE = "reporting.extent.attemptNode";
 
+    // Single combined Extent report for all browsers / tests
     private static final ExtentReports EXTENT = new ExtentReports();
     private static final Map<String, ExtentTest> NAME_TO_TEST = new ConcurrentHashMap<>();
     private static final Map<String, AtomicInteger> TEST_ATTEMPT_COUNTERS = new ConcurrentHashMap<>();
@@ -44,8 +45,14 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         return reportDir;
     }
 
+    // =======================================================================
+    // CoreReportingListener (engine-agnostic) API
+    // These methods are invoked by engine-specific adapters such as
+    // org.example.core.testng.listeners.TestNgReportingListener
+    // =======================================================================
+
     @Override
-    public void onStart(ITestContext context) {
+    public void onStart(String suiteName) {
         if (!INITIALIZED.compareAndSet(false, true)) {
             return;
         }
@@ -60,9 +67,9 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         File htmlReport = new File(reportDir, "index_" + timestamp + ".html");
         ExtentSparkReporter spark = new ExtentSparkReporter(htmlReport.getAbsolutePath());
 
-        String suiteName = (context != null && context.getSuite() != null)
-                ? context.getSuite().getName()
-                : "Automation Test Suite";
+        if (suiteName == null || suiteName.isBlank()) {
+            suiteName = "Automation Test Suite";
+        }
 
         spark.config().setDocumentTitle(suiteName);
         spark.config().setReportName(suiteName);
@@ -71,12 +78,12 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         EXTENT.attachReporter(spark);
         EXTENT.setSystemInfo("Suite", suiteName);
         EXTENT.setSystemInfo("Environment", Config.getEnvFile());
-        EXTENT.setSystemInfo("Browser", Config.getBrowserType().toString());
+        EXTENT.setSystemInfo("Browsers", Config.getBrowserTypes().toString());
         log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
     }
 
     @Override
-    public void onFinish(ITestContext context) {
+    public void onFinish(String suiteName) {
         // Log test execution summary
         if (!FAILED_TESTS.isEmpty()) {
             StringBuilder summary = new StringBuilder("\n");
@@ -89,13 +96,8 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
                 summary.append("  ").append(index++).append(". ").append(failedTest).append("\n");
             }
             summary.append("═══════════════════════════════════════════════════════════════\n");
-            log.info(summary.toString());
         } else {
-            log.info("\n═══════════════════════════════════════════════════════════════\n" +
-                    "                    TEST EXECUTION SUMMARY\n" +
-                    "═══════════════════════════════════════════════════════════════\n" +
-                    "All tests passed successfully!\n" +
-                    "═══════════════════════════════════════════════════════════════\n");
+          log.info("All tests passed");
         }
         
         EXTENT.flush();
@@ -103,14 +105,121 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
     }
 
     @Override
+    public void onTestStart(String testName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.warn("onTestStart(String) called but Reporter.getCurrentTestResult() is null for {}", testName);
+            return;
+        }
+        onTestStart(result);
+    }
+
+    @Override
+    public void onTestSuccess(String testName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.warn("onTestSuccess(String) called but Reporter.getCurrentTestResult() is null for {}", testName);
+            return;
+        }
+        onTestSuccess(result);
+    }
+
+    @Override
+    public void onTestFailure(String testName, Throwable error) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.warn("onTestFailure(String, Throwable) called but Reporter.getCurrentTestResult() is null for {}", testName);
+            // still log via ReportClient so failure is not lost
+            ReportClient reporter = ReportingManager.getReportClient();
+            reporter.logFail("Test failed: " + testName, error);
+            return;
+        }
+        // Prefer the Throwable from TestNG result if available
+        if (result.getThrowable() == null && error != null) {
+            result.setThrowable(error);
+        }
+        onTestFailure(result);
+    }
+
+    @Override
+    public void onTestSkipped(String testName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.warn("onTestSkipped(String) called but Reporter.getCurrentTestResult() is null for {}", testName);
+            return;
+        }
+        onTestSkipped(result);
+    }
+
+    @Override
+    public void onConfigurationSuccess(String configName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.debug("onConfigurationSuccess(String) called but Reporter.getCurrentTestResult() is null for {}", configName);
+            return;
+        }
+        onConfigurationSuccess(result);
+    }
+
+    @Override
+    public void onConfigurationFailure(String configName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.debug("onConfigurationFailure(String) called but Reporter.getCurrentTestResult() is null for {}", configName);
+            // fall back to generic logging
+            ReportingManager.getReportClient().logFail("Config failed: " + configName, null);
+            return;
+        }
+        onConfigurationFailure(result);
+    }
+
+    @Override
+    public void onConfigurationSkip(String configName) {
+        ITestResult result = Reporter.getCurrentTestResult();
+        if (result == null) {
+            log.debug("onConfigurationSkip(String) called but Reporter.getCurrentTestResult() is null for {}", configName);
+            return;
+        }
+        onConfigurationSkip(result);
+    }
+
+    // =======================================================================
+    // Legacy TestNG-specific handlers (kept as helpers, now called via above)
+    // =======================================================================
+
     public void onTestStart(ITestResult result) {
         String testName = result.getMethod().getMethodName();
         String testClass = result.getTestClass() != null ? result.getTestClass().getName() : "<unknown>";
-        String fullTestName = testClass + "." + testName;
+        // Add browser info into test name to distinguish runs
+        String browser = "<browser>";
+        try {
+            String param = result.getTestContext()
+                    .getCurrentXmlTest()
+                    .getParameter("browser");
+            if (param != null && !param.isBlank()) {
+                browser = param;
+            }
+        } catch (Exception ignored) {}
         
-        // Get maxAttempts from config (same as RetryAnalyzer)
-        int maxAttempts = Math.max(1, 
-                Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_PROPERTY, 1));
+        // Add data index if available (for data-driven tests)
+        // Note: We don't include data index in fullTestName to ensure all data sets of the same test
+        // share the same attempt counter. Each data set will have its own test node but share attempts.
+        String dataIndex = "";
+        // Removed data index from fullTestName to fix counter issues
+        // All data sets of the same test method will share the same attempt counter
+        
+        String fullTestName = "[" + browser + "] " + testClass + "." + testName + dataIndex;
+        
+        // Check if test has @NoRetry annotation - if so, don't create attempt nodes
+        boolean hasNoRetry = false;
+        try {
+            if (result.getMethod() != null) {
+                java.lang.reflect.Method method = result.getMethod().getConstructorOrMethod().getMethod();
+                if (method != null) {
+                    hasNoRetry = method.isAnnotationPresent(NoRetry.class);
+                }
+            }
+        } catch (Exception ignored) {}
         
         // Get or create main test node
         ExtentTest test = NAME_TO_TEST.get(fullTestName);
@@ -120,39 +229,56 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
             NAME_TO_TEST.put(fullTestName, test);
         }
         
-        // Check if attempt node already exists (to avoid duplicate nodes if onTestStart is called multiple times)
-        ExtentTest existingAttemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
-        if (existingAttemptNode != null) {
-            // Attempt node already exists - reuse it
-            Integer existingAttempt = (Integer) result.getAttribute("retry.attempt");
-            if (existingAttempt != null) {
-                log.debug("Reusing existing attempt node for {} - Attempt {}", fullTestName, existingAttempt);
-                return;
-            }
+        // If @NoRetry annotation is present, skip attempt node creation and use test node directly
+        if (hasNoRetry) {
+            result.setAttribute(TEST_ATTRIBUTE, test);
+            result.setAttribute(STEP_STACK_ATTRIBUTE, new ArrayDeque<ExtentTest>());
+            log.info("📋 [EXTENT] Starting test (NoRetry): {}", fullTestName);
+            return;
         }
         
-        // Get attempt counter - reset ONLY if this is a new test or if counter was cleaned up
+        // Get maxAttempts from config (same as RetryAnalyzer)
+        int maxAttempts = Math.max(1, 
+                Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_PROPERTY, 1));
+        
+        // Check if attempt node already exists for this specific test result (to avoid duplicate nodes)
+        ExtentTest existingAttemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
+        Integer existingAttempt = (Integer) result.getAttribute("retry.attempt");
+        if (existingAttemptNode != null && existingAttempt != null) {
+            // Attempt node already exists for this result - reuse it (this happens during retry)
+            log.debug("Reusing existing attempt node for {} - Attempt {}", fullTestName, existingAttempt);
+            return;
+        }
+        
+        // Get attempt counter - reset ONLY if this is a completely new test (never seen before)
         AtomicInteger attemptCounter = TEST_ATTEMPT_COUNTERS.get(fullTestName);
         
-        if (isNewTest || attemptCounter == null) {
-            // New test or counter was cleaned up - start fresh
+        if (isNewTest) {
+            // Completely new test - start fresh counter
             attemptCounter = new AtomicInteger(0);
             TEST_ATTEMPT_COUNTERS.put(fullTestName, attemptCounter);
+            TEST_ATTEMPT_NUMBERS.put(fullTestName, ConcurrentHashMap.newKeySet());
             log.info("🔄 [EXTENT] Starting test: {} (maxAttempts: {})", fullTestName, maxAttempts);
+        } else if (attemptCounter == null) {
+            // Test node exists but counter was cleaned up (shouldn't happen, but handle gracefully)
+            attemptCounter = new AtomicInteger(0);
+            TEST_ATTEMPT_COUNTERS.put(fullTestName, attemptCounter);
+            TEST_ATTEMPT_NUMBERS.put(fullTestName, ConcurrentHashMap.newKeySet());
+            log.warn("[EXTENT] Test node exists but counter was missing for {} - resetting counter", fullTestName);
         }
-        
-        // Get current attempt number BEFORE incrementing
-        int currentValue = attemptCounter.get();
         
         // Get set of attempt numbers already created for this test
         Set<Integer> createdAttempts = TEST_ATTEMPT_NUMBERS.computeIfAbsent(fullTestName, k -> ConcurrentHashMap.newKeySet());
+        
+        // Get current attempt number BEFORE incrementing
+        int currentValue = attemptCounter.get();
         
         // Calculate next attempt number
         int nextAttemptNumber = currentValue + 1;
         
         // Safety check: if nextAttemptNumber would exceed maxAttempts, don't create new attempt
         if (nextAttemptNumber > maxAttempts) {
-            log.warn("⚠ [EXTENT] Attempt counter for {} would exceed maxAttempts {}/{} - not creating new attempt.", 
+            log.warn("[EXTENT] Attempt counter for {} would exceed maxAttempts {}/{} - not creating new attempt.",
                     fullTestName, nextAttemptNumber, maxAttempts);
             // Try to find existing attempt node for maxAttempts
             String maxAttemptKey = fullTestName + "_Attempt_" + maxAttempts;
@@ -175,7 +301,7 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
             return;
         }
         
-        // Check if this attempt number was already created
+        // Check if this attempt number was already created (to avoid duplicates)
         if (createdAttempts.contains(nextAttemptNumber)) {
             // Attempt node already created - reuse it and DON'T increment counter
             String attemptNodeKey = fullTestName + "_Attempt_" + nextAttemptNumber;
@@ -225,7 +351,6 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         // Don't log "Attempt X execution started" - let the steps speak for themselves
     }
 
-    @Override
     public void onTestSuccess(ITestResult result) {
         ExtentTest attemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
         if (attemptNode != null) {
@@ -238,7 +363,6 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         cleanupAttemptCounter(result);
     }
 
-    @Override
     public void onTestFailure(ITestResult result) {
         Throwable error = result.getThrowable();
         String message = getShortErrorMessage(error);
@@ -274,7 +398,6 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         }
     }
 
-    @Override
     public void onTestSkipped(ITestResult result) {
         // If test has a throwable (especially AssertionError from SoftAssert), 
         // it's actually a failure, not a skip. Let onTestFailure handle it.
@@ -306,21 +429,29 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
                 test.log(Status.SKIP, throwable);
             }
         }
-        // Reset attempt counter when test is skipped (implies retry exhausted or test was intentionally skipped)
-        cleanupAttemptCounter(result);
+        
+        // Only cleanup counter if retry is exhausted (don't cleanup on temporary skip during retry)
+        Integer retryAttempt = (Integer) result.getAttribute("retry.attempt");
+        if (retryAttempt != null) {
+            int maxAttempts = Math.max(1, 
+                    Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_PROPERTY, 1));
+            if (retryAttempt >= maxAttempts) {
+                cleanupAttemptCounter(result);
+            }
+        } else {
+            // No retry attempt info - assume retry exhausted or intentional skip
+            cleanupAttemptCounter(result);
+        }
     }
 
-    @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
         log.debug("onTestFailedButWithinSuccessPercentage called for {}", result.getMethod().getMethodName());
     }
 
-    @Override
     public void onTestFailedWithTimeout(ITestResult result) {
         onTestFailure(result);
     }
 
-    @Override
     public void onConfigurationSuccess(ITestResult itr) {
         ExtentTest test = getLastTestFromContext(itr);
         if (test != null) {
@@ -330,7 +461,6 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         }
     }
 
-    @Override
     public void onConfigurationFailure(ITestResult itr) {
         Throwable t = itr.getThrowable();
         String message = (t == null) ? "Config failed" : "Config failed: " + t.getMessage();
@@ -347,66 +477,8 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
         }
     }
 
-    @Override
     public void onConfigurationSkip(ITestResult itr) {
         log.debug("onConfigurationSkip called for {}", itr.getMethod().getMethodName());
-    }
-
-    @Override
-    public void failStep(String stepName) {
-        ITestResult current = Reporter.getCurrentTestResult();
-        if (current == null) {
-            ReportingManager.getReportClient().logFail(stepName, null);
-            return;
-        }
-        
-        // Get the active node (attempt node if available, otherwise test node)
-        // This ensures the failed step is logged inside the attempt node
-        ExtentTest activeNode = getActiveNodeForStep(current);
-        if (activeNode != null) {
-            ExtentTest stepNode = activeNode.createNode(stepName);
-            ReportClient reporter = ReportingManager.getReportClient();
-            if (reporter instanceof ExtentReportClient extentClient) {
-                // Take screenshot for each failed step
-                try {
-                    WebDriver driver = DriverUtils.getWebDriver();
-                    if (driver != null) {
-                        extentClient.attachScreenshotToNode(stepNode, "softassert_" + System.currentTimeMillis());
-                    }
-                } catch (Exception e) {
-                    log.debug("Skipping screenshot for failed step (driver unavailable): {}", e.getMessage());
-                }
-            }
-            stepNode.fail("FAILED");
-        } else {
-            ReportingManager.getReportClient().logFail(stepName, null);
-        }
-    }
-    
-    /**
-     * Get the active node for logging steps.
-     * Prioritizes attempt node over test node to ensure steps are logged inside attempts.
-     */
-    @SuppressWarnings("unchecked")
-    private ExtentTest getActiveNodeForStep(ITestResult result) {
-        if (result == null) {
-            return null;
-        }
-        
-        // Check if there's a step stack (nested steps)
-        Deque<ExtentTest> stack = (Deque<ExtentTest>) result.getAttribute(STEP_STACK_ATTRIBUTE);
-        if (stack != null && !stack.isEmpty()) {
-            return stack.peek();
-        }
-        
-        // Prioritize attempt node - this ensures steps are logged inside attempt nodes
-        ExtentTest attemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
-        if (attemptNode != null) {
-            return attemptNode;
-        }
-        
-        // Fall back to main test node
-        return getCurrentExtentTest();
     }
 
     private Optional<ExtentTest> getTest(ITestResult result) {
@@ -467,12 +539,31 @@ public class ExtentReportLifecycle implements ReportingLifecycleListener {
     }
 
     /**
+     * Builds full test name including browser (same logic as onTestStart).
+     * Note: Data index is NOT included to ensure all data sets share the same attempt counter.
+     */
+    private String buildFullTestName(ITestResult result) {
+        String testName = result.getMethod().getMethodName();
+        String testClass = result.getTestClass() != null ? result.getTestClass().getName() : "<unknown>";
+        String browser = "<browser>";
+        try {
+            String param = result.getTestContext()
+                    .getCurrentXmlTest()
+                    .getParameter("browser");
+            if (param != null && !param.isBlank()) {
+                browser = param;
+            }
+        } catch (Exception ignored) {}
+        
+        // Don't include data index - all data sets share the same attempt counter
+        return "[" + browser + "] " + testClass + "." + testName;
+    }
+
+    /**
      * Cleans up attempt counter for a test when it finishes (pass or retry exhausted).
      */
     private void cleanupAttemptCounter(ITestResult result) {
-        String testName = result.getMethod().getMethodName();
-        String testClass = result.getTestClass() != null ? result.getTestClass().getName() : "<unknown>";
-        String fullTestName = testClass + "." + testName;
+        String fullTestName = buildFullTestName(result);
         TEST_ATTEMPT_COUNTERS.remove(fullTestName);
         TEST_ATTEMPT_NUMBERS.remove(fullTestName);
         // Clean up attempt nodes for this test (remove all keys starting with fullTestName + "_Attempt_")
