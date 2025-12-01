@@ -14,14 +14,13 @@ public class Hotel {
     private String rating;
     private String location;
     private String distanceToCenter;
-    private String cashbackReward;
     private String price;
     private String[] amenities;
     private String[] badges;
     
     @Override
     public String toString() {
-        return String.format("Hotel{name='%s', rating='%s', location='%s', distance='%s', cashback='%s', price='%s'}", 
-                name, rating, location, distanceToCenter, cashbackReward, price);
+        return String.format("Hotel{name='%s', rating='%s', location='%s', distance='%s', price='%s'}",
+                name, rating, location, distanceToCenter, price);
     }
 }

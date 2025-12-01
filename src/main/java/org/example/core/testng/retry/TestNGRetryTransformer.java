@@ -1,6 +1,7 @@
-package org.example.core.testng.retryTCs;
+package org.example.core.testng.retry;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.core.retry.NoRetry;
 import org.testng.IAnnotationTransformer;
 import org.testng.IRetryAnalyzer;
 import org.testng.annotations.ITestAnnotation;
@@ -9,10 +10,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 /**
- * Injects {@link RetryAnalyzer} into TestNG tests based on configuration and {@link NoRetry} annotation.
+ * TestNG adapter for injecting RetryService via TestNGRetryAnalyzer.
+ * Bridges TestNG IAnnotationTransformer interface to framework-agnostic retry mechanism.
  */
 @Slf4j
-public class RetryAnnotationTransformer implements IAnnotationTransformer {
+public class TestNGRetryTransformer implements IAnnotationTransformer {
 
     @Override
     @SuppressWarnings("rawtypes")
@@ -25,14 +27,16 @@ public class RetryAnnotationTransformer implements IAnnotationTransformer {
         String testMethodName = testMethod != null ? testMethod.getName() : "<unknown>";
         String fullTestName = testClassName + "." + testMethodName;
 
+        // Skip if test has @NoRetry annotation
         if (testMethod != null && testMethod.isAnnotationPresent(NoRetry.class)) {
+            log.info("[TRANSFORM] Test {} has @NoRetry annotation - skipping retry injection", fullTestName);
             return;
         }
 
         Class<? extends IRetryAnalyzer> configuredRetry = annotation.getRetryAnalyzerClass();
         String existingRetryName = configuredRetry != null ? configuredRetry.getSimpleName() : "null";
 
-        // Force inject RetryAnalyzer if:
+        // Force inject TestNGRetryAnalyzer if:
         // 1. No retry analyzer configured (null)
         // 2. Default IRetryAnalyzer.class
         // 3. DisabledRetryAnalyzer (TestNG default when no retry is configured)
@@ -41,8 +45,8 @@ public class RetryAnnotationTransformer implements IAnnotationTransformer {
                 || "DisabledRetryAnalyzer".equals(existingRetryName);
 
         if (shouldInject) {
-            annotation.setRetryAnalyzer(RetryAnalyzer.class);
-            log.info("[TRANSFORM] Injected RetryAnalyzer into test: {} (replaced: {})",
+            annotation.setRetryAnalyzer(TestNGRetryAnalyzer.class);
+            log.info("[TRANSFORM] Injected TestNGRetryAnalyzer into test: {} (replaced: {})",
                     fullTestName, existingRetryName);
         } else {
             log.info("[TRANSFORM] Test {} already has custom retry analyzer: {} (keeping it)",
@@ -50,5 +54,4 @@ public class RetryAnnotationTransformer implements IAnnotationTransformer {
         }
     }
 }
-
 

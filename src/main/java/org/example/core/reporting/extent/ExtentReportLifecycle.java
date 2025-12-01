@@ -11,7 +11,7 @@ import org.example.core.reporting.ReportClient;
 import org.example.core.reporting.ReportingManager;
 import org.example.core.reporting.listeners.CoreReportingListener;
 import org.example.core.element.util.DriverUtils;
-import org.example.core.testng.retryTCs.NoRetry;
+import org.example.core.retry.NoRetry;
 import org.openqa.selenium.WebDriver;
 import org.testng.ITestResult;
 import org.testng.Reporter;
@@ -48,7 +48,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
     // =======================================================================
     // CoreReportingListener (engine-agnostic) API
     // These methods are invoked by engine-specific adapters such as
-    // org.example.core.testng.listeners.TestNgReportingListener
+    // org.example.core.testng.listeners.TestNGReporter
     // =======================================================================
 
     @Override
@@ -56,8 +56,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         if (!INITIALIZED.compareAndSet(false, true)) {
             return;
         }
-
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timestamp = new SimpleDateFormat(Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT).format(new Date());
         reportDir = "target/extent-report/" + timestamp;
         File reportDirFile = new File(reportDir);
         if (!reportDirFile.exists() && !reportDirFile.mkdirs()) {
@@ -67,10 +66,6 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         File htmlReport = new File(reportDir, "index_" + timestamp + ".html");
         ExtentSparkReporter spark = new ExtentSparkReporter(htmlReport.getAbsolutePath());
 
-        if (suiteName == null || suiteName.isBlank()) {
-            suiteName = "Automation Test Suite";
-        }
-
         spark.config().setDocumentTitle(suiteName);
         spark.config().setReportName(suiteName);
         spark.config().setEncoding("utf-8");
@@ -79,29 +74,11 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         EXTENT.setSystemInfo("Suite", suiteName);
         EXTENT.setSystemInfo("Environment", Config.getEnvFile());
         EXTENT.setSystemInfo("Browsers", Config.getBrowserTypes().toString());
-        log.info("ExtentReports initialized at {}", htmlReport.getAbsolutePath());
     }
 
     @Override
     public void onFinish(String suiteName) {
-        // Log test execution summary
-        if (!FAILED_TESTS.isEmpty()) {
-            StringBuilder summary = new StringBuilder("\n");
-            summary.append("═══════════════════════════════════════════════════════════════\n");
-            summary.append("                    TEST EXECUTION SUMMARY\n");
-            summary.append("═══════════════════════════════════════════════════════════════\n");
-            summary.append("Failed Tests (").append(FAILED_TESTS.size()).append("):\n");
-            int index = 1;
-            for (String failedTest : FAILED_TESTS) {
-                summary.append("  ").append(index++).append(". ").append(failedTest).append("\n");
-            }
-            summary.append("═══════════════════════════════════════════════════════════════\n");
-        } else {
-          log.info("All tests passed");
-        }
-        
         EXTENT.flush();
-        log.info("Extent report generated at {}", reportDir);
     }
 
     @Override
@@ -233,7 +210,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         if (hasNoRetry) {
             result.setAttribute(TEST_ATTRIBUTE, test);
             result.setAttribute(STEP_STACK_ATTRIBUTE, new ArrayDeque<ExtentTest>());
-            log.info("📋 [EXTENT] Starting test (NoRetry): {}", fullTestName);
+            log.info("[EXTENT] Starting test (NoRetry): {}", fullTestName);
             return;
         }
         
@@ -258,7 +235,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
             attemptCounter = new AtomicInteger(0);
             TEST_ATTEMPT_COUNTERS.put(fullTestName, attemptCounter);
             TEST_ATTEMPT_NUMBERS.put(fullTestName, ConcurrentHashMap.newKeySet());
-            log.info("🔄 [EXTENT] Starting test: {} (maxAttempts: {})", fullTestName, maxAttempts);
+            log.info("[EXTENT] Starting test: {} (maxAttempts: {})", fullTestName, maxAttempts);
         } else if (attemptCounter == null) {
             // Test node exists but counter was cleaned up (shouldn't happen, but handle gracefully)
             attemptCounter = new AtomicInteger(0);
@@ -321,7 +298,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         
         // Double-check: if attemptNumber exceeds maxAttempts after increment, something went wrong
         if (attemptNumber > maxAttempts) {
-            log.error("❌ [EXTENT] Attempt number {} exceeds maxAttempts {} for {} - resetting to maxAttempts.", 
+            log.error("[EXTENT] Attempt number {} exceeds maxAttempts {} for {} - resetting to maxAttempts.",
                     attemptNumber, maxAttempts, fullTestName);
             attemptCounter.set(maxAttempts);
             attemptNumber = maxAttempts;
@@ -333,7 +310,7 @@ public class ExtentReportLifecycle implements CoreReportingListener {
         // Store attempt number in result for reference
         result.setAttribute("retry.attempt", attemptNumber);
         
-        log.info("📊 [EXTENT] Test case: {} - Running Attempt {}/{}", fullTestName, attemptNumber, maxAttempts);
+        log.info("[EXTENT] Test case: {} - Running Attempt {}/{}", fullTestName, attemptNumber, maxAttempts);
         
         // Create unique key for this attempt node
         String attemptNodeKey = fullTestName + "_Attempt_" + attemptNumber;
@@ -352,10 +329,19 @@ public class ExtentReportLifecycle implements CoreReportingListener {
     }
 
     public void onTestSuccess(ITestResult result) {
+        // Check if test actually passed - if there's a throwable, it's actually a failure
+        Throwable throwable = result.getThrowable();
+        if (throwable != null) {
+            // Test has throwable but TestNG called onTestSuccess - this shouldn't happen, but handle it
+            log.warn("onTestSuccess called but test has throwable: {} - treating as failure", throwable.getMessage());
+            onTestFailure(result);
+            return;
+        }
+        
         ExtentTest attemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
         if (attemptNode != null) {
-            // Don't set status here - ExtentReports will automatically set status based on steps inside
-            // Only set status for main test node if no attempt node exists
+            // If there's an attempt node, ExtentReports will automatically set test status based on attempt node status
+            // Don't manually set status here - let ExtentReports determine based on child nodes
         } else {
             getTest(result).ifPresent(t -> t.log(Status.PASS, "Test Passed"));
         }
@@ -369,7 +355,13 @@ public class ExtentReportLifecycle implements CoreReportingListener {
 
         ExtentTest attemptNode = (ExtentTest) result.getAttribute(ATTEMPT_NODE_ATTRIBUTE);
         if (attemptNode != null) {
-         // the failed step already logged the failure
+            // Ensure attempt node is marked as failed if it hasn't been already
+            // The failed step may have already logged the failure, but we ensure status is set
+            if (error != null) {
+                attemptNode.fail(error);
+            } else {
+                attemptNode.fail(message);
+            }
         } else {
             ExtentTest test = getTest(result).orElse(null);
             if (test != null) {
@@ -442,10 +434,6 @@ public class ExtentReportLifecycle implements CoreReportingListener {
             // No retry attempt info - assume retry exhausted or intentional skip
             cleanupAttemptCounter(result);
         }
-    }
-
-    public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        log.debug("onTestFailedButWithinSuccessPercentage called for {}", result.getMethod().getMethodName());
     }
 
     public void onTestFailedWithTimeout(ITestResult result) {

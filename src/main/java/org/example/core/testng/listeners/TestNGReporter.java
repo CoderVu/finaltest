@@ -18,42 +18,29 @@ import java.util.List;
  * contracts remain engine-agnostic.
  */
 @Slf4j
-public class TestNgReportingListener implements ITestListener, IConfigurationListener {
+public class TestNGReporter implements ITestListener, IConfigurationListener {
 
     private volatile List<CoreReportingListener> delegates;
 
-    private void ensureInitialized() {
+    private void forEach(DelegateAction action) {
         if (delegates == null) {
-            // ReportingManager.getLifecycleListener() returns a CoreReportingListener.
             CoreReportingListener lifecycleListener = (CoreReportingListener) ReportingManager.getLifecycleListener();
             this.delegates = Collections.singletonList(lifecycleListener);
-            log.info("TestNgReportingListener wired {}", lifecycleListener.getClass().getSimpleName());
+            log.info("TestNGReporter wired {}", lifecycleListener.getClass().getSimpleName());
         }
-    }
-
-    private void forEach(DelegateAction action) {
-        ensureInitialized();
         for (CoreReportingListener delegate : delegates) {
-            try {
-                action.apply(delegate);
-            } catch (Throwable t) {
-                log.warn("Lifecycle listener {} threw exception: {}", delegate.getClass().getSimpleName(), t.getMessage(), t);
-            }
+            action.apply(delegate);
         }
     }
 
     @FunctionalInterface
     private interface DelegateAction {
-        void apply(CoreReportingListener listener) throws Throwable;
+        void apply(CoreReportingListener listener);
     }
 
     private String extractTestName(ITestResult result) {
         if (result == null) return "<unknown>";
-        try {
-            return result.getTestClass().getName() + "." + result.getMethod().getMethodName();
-        } catch (Exception e) {
-            return result.getMethod() != null ? result.getMethod().getMethodName() : result.getName();
-        }
+        return result.getTestClass().getName() + "." + result.getMethod().getMethodName();
     }
 
     @Override
@@ -123,5 +110,3 @@ public class TestNgReportingListener implements ITestListener, IConfigurationLis
         forEach(d -> d.onConfigurationSkip(name));
     }
 }
-
-

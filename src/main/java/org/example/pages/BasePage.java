@@ -4,32 +4,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.core.reporting.ReportClient;
 import org.example.core.reporting.ReportingManager;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
- * Base class cho tất cả PageObject.
- * 
- * Sử dụng đơn giản như Allure.step():
- * - step(() -> { ... }) - Tự động lấy tên method
- * - step("Step name", () -> { ... }) - Tên tùy chỉnh
- * - Nếu method A gọi method B, B tự động trở thành child step của A
+ * - step(() -> { ... }) -  Create step using calling method name
+ * - step("Step name", () -> { ... }) - Create step with custom name
+ * - step(() -> { return value; }) - Create step and return value
  */
 @Slf4j
 public class BasePage {
 
     protected ReportClient reporter = ReportingManager.getReportClient();
-
     /**
-     * Tạo step - đơn giản như Allure.step()
-     * Tự động lấy tên method làm tên step.
-     * 
-     * Ví dụ:
-     * public void login() {
-     *     step(() -> {
-     *         enterUsername();
-     *         enterPassword(); // Tự động trở thành child step
-     *     });
-     * }
+     * Create step using calling method name as step name.
+     *
+     * Example:
+     * step(() -> {
+     *     performAction();
+     * });
      */
     protected void step(Runnable action) {
         String methodName = getCallingMethodName();
@@ -38,9 +31,9 @@ public class BasePage {
     }
 
     /**
-     * Tạo step với tên tùy chỉnh.
+     * Create step with custom name.
      * 
-     * Ví dụ:
+     * Example:
      * step("Login with username: " + username, () -> {
      *     enterUsername(username);
      * });
@@ -50,25 +43,89 @@ public class BasePage {
     }
 
     /**
-     * Tạo step với return value.
+     * Create step and return value.
+     * Automatically logs the return value to the report.
      */
     protected <T> T step(Supplier<T> supplier) {
         String methodName = getCallingMethodName();
         String stepName = formatMethodName(methodName);
-        return reporter.childStep(stepName, supplier);
+        return reporter.childStep(stepName, () -> {
+            T value = supplier.get();
+            if (value != null) {
+                reporter.info("Returned: " + formatReturnValue(value));
+            }
+            return value;
+        });
     }
 
     /**
-     * Tạo step với tên tùy chỉnh và return value.
+     * Create step with custom name and return value.
+     * Automatically logs the return value to the report.
      */
     protected <T> T step(String stepName, Supplier<T> supplier) {
-        return reporter.childStep(stepName, supplier);
+        return reporter.childStep(stepName, () -> {
+            T value = supplier.get();
+            if (value != null) {
+                reporter.info("Returned: " + formatReturnValue(value));
+            }
+            return value;
+        });
     }
 
     /**
-     * Log thông tin (không tạo step).
+     * Format return value for logging.
+     * Handles primitives, objects, collections, arrays, etc.
      */
-    protected void log(String message) {
+    private String formatReturnValue(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        // Handle collections (List, Set, etc.)
+        if (value instanceof Collection) {
+            Collection<?> collection = (Collection<?>) value;
+            if (collection.isEmpty()) {
+                return "empty collection (size: 0)";
+            }
+            // Show first item if it's a small collection, or just size if large
+            if (collection.size() <= 3) {
+                return String.format("collection (size: %d): %s", collection.size(), collection);
+            } else {
+                Object first = collection.iterator().next();
+                return String.format("collection (size: %d), first item: %s", 
+                        collection.size(), formatReturnValue(first));
+            }
+        }
+
+        // Handle arrays
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            if (length == 0) {
+                return "empty array (length: 0)";
+            }
+            // Format array content
+            StringBuilder sb = new StringBuilder();
+            sb.append("array (length: ").append(length).append("): [");
+            for (int i = 0; i < Math.min(length, 3); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(java.lang.reflect.Array.get(value, i));
+            }
+            if (length > 3) {
+                sb.append(", ...");
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+
+        // For objects, use toString() which should be overridden (like Hotel.toString())
+        // For primitives, toString() works fine
+        return value.toString();
+    }
+
+    /**
+     * log info
+     */
+    protected void logInfo(String message) {
         reporter.info(message);
     }
 
@@ -80,14 +137,14 @@ public class BasePage {
     }
 
     /**
-     * Lấy tên method đang gọi step() từ stack trace.
+     * Get method name of the caller of step()
      */
     private String getCallingMethodName() {
         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
         // stack[0] = getStackTrace
         // stack[1] = getCallingMethodName
         // stack[2] = step
-        // stack[3] = method đang gọi step (method của PageObject)
+        // stack[3] = method call step()
         if (stack.length > 3) {
             return stack[3].getMethodName();
         }
@@ -95,17 +152,16 @@ public class BasePage {
     }
 
     /**
-     * Format tên method thành tên step dễ đọc.
-     * Ví dụ: "enterDestination" -> "Enter Destination"
+     * Format following conventions:
+     * ExampleMethodName -> "Example Method Name"
      */
     private String formatMethodName(String methodName) {
         if (methodName == null || methodName.isEmpty()) {
             return "Unknown Step";
         }
         
-        // Chuyển camelCase thành "Camel Case"
+        // Insert space before capital letters and capitalize first letter
         String formatted = methodName.replaceAll("([a-z])([A-Z])", "$1 $2");
-        // Viết hoa chữ cái đầu
         return formatted.substring(0, 1).toUpperCase() + formatted.substring(1);
     }
 }

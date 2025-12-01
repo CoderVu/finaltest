@@ -1,8 +1,8 @@
 package org.example.core.testng;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.testng.listeners.TestNgReportingListener;
-import org.example.core.testng.retryTCs.RetryAnnotationTransformer;
+import org.example.core.testng.listeners.TestNGReporter;
+import org.example.core.testng.retry.TestNGRetryTransformer;
 import org.example.core.testng.suite.BrowserSuiteAlterer;
 import org.testng.IAnnotationTransformer;
 import org.testng.IAlterSuiteListener;
@@ -15,14 +15,14 @@ import java.util.List;
 
 /**
  * Composite TestNG listener that wires:
- * - reporting (via {@link TestNgReportingListener})
- * - retry injection (via {@link RetryAnnotationTransformer})
+ * - reporting (via {@link TestNGReporter})
+ * - retry injection (via {@link TestNGRetryTransformer})
  * - multi-browser suite alteration (via {@link BrowserSuiteAlterer})
  */
 @Slf4j
-public class TestListener extends TestNgReportingListener implements IAnnotationTransformer, IAlterSuiteListener {
+public class TestListener extends TestNGReporter implements IAnnotationTransformer, IAlterSuiteListener {
 
-    private final RetryAnnotationTransformer retryTransformer = new RetryAnnotationTransformer();
+    private final TestNGRetryTransformer retryTransformer = new TestNGRetryTransformer();
     private final BrowserSuiteAlterer suiteAlterer = new BrowserSuiteAlterer();
 
     @Override

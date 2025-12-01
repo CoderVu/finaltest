@@ -147,7 +147,7 @@ public class ExtentReportClient implements ReportClient {
             runnable.run();
             stepNode.pass("PASSED");
         } catch (Throwable e) {
-            attachScreenshotToNode(stepNode, "step_fail_" + name);
+            attachScreenshotToNode(stepNode, "step_fail_" + name.toLowerCase());
             stepNode.fail("FAILED: " + e.getMessage());
             throwRuntime(e);
         } finally {
@@ -179,7 +179,7 @@ public class ExtentReportClient implements ReportClient {
             attachScreenshotToNode(stepNode, "step_fail_" + name);
             stepNode.fail("FAILED: " + e.getMessage());
             throwRuntime(e);
-            return null; // unreachable
+            return null;
         } finally {
             stack.pop();
         }

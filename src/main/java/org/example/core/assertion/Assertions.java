@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.example.common.Constants.DEFAULT_TIMESTAMP_FORMAT;
+import static org.example.common.Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT;
 import static org.example.utils.DateUtils.getCurrentTimestamp;
 
 /**
@@ -227,7 +228,7 @@ public class Assertions {
         if (client != null) {
             client.logFail(stepName, error);
             try {
-                client.attachScreenshot("assert_fail_" + System.currentTimeMillis());
+                client.attachScreenshot("assert_fail_" +  getCurrentTimestamp(DEFAULT_TIMESTAMP_REPORT_FORMAT) + ".png");
             } catch (Exception e) {
                 log.debug("Unable to attach screenshot for assertion failure: {}", e.getMessage());
             }

@@ -19,7 +19,7 @@ import static org.example.core.element.util.DriverUtils.getWebDriver;
 public class ElementWrapper implements IElementWrapper {
     
     protected final By byLocator;
-    
+
     public ElementWrapper(By byLocator) {
         this.byLocator = byLocator;
     }
@@ -63,31 +63,13 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void click() {
         try {
-            if (!isVisible()) {
-                waitForDisplay(DriverUtils.getTimeOut());
-            }
-
-            scrollElementToCenterScreen();
-            waitForElementClickable(DriverUtils.getTimeOut());
-
-            new Actions(getWebDriver())
-                    .moveToElement(getElement())
-                    .pause(Duration.ofMillis(100))
-                    .click()
-                    .build()
-                    .perform();
+            log.debug("Click on {}", getLocator().toString());
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
+            element.click();
         } catch (Exception e) {
-            String msg = e.getMessage() == null ? "" : e.getMessage().split("\n")[0];
-
-            boolean intercepted = msg.contains("Other element would receive the click")
-                    || msg.contains("Element is not clickable at point")
-                    || msg.contains("element click intercepted");
-
-            if (intercepted) {
-                clickByJs();
-            } else {
-                throw new RuntimeException("Click failed on: " + getLocator(), e);
-            }
+            log.error("Has error with control '{}': {}", getLocator().toString(),
+                    e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
+            throw e;
         }
     }
     
@@ -106,7 +88,9 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void clickByJs() {
         try {
-            ((JavascriptExecutor) getWebDriver()).executeScript("arguments[0].click();", getElement());
+            // Wait for element to exist in DOM (may be hidden, that's OK for JS click)
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            ((JavascriptExecutor) getWebDriver()).executeScript("arguments[0].click();", element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -190,7 +174,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void focus() {
         try {
-            DriverUtils.execJavaScript("arguments[0].focus();", getElement());
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            DriverUtils.execJavaScript("arguments[0].focus();", element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -201,8 +186,9 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void dragAndDrop(int xOffset, int yOffset) {
         try {
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             Actions actions = new Actions(getWebDriver());
-            actions.dragAndDropBy(getElement(), xOffset, yOffset).build().perform();
+            actions.dragAndDropBy(element, xOffset, yOffset).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -213,8 +199,10 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void dragAndDrop(IElementWrapper target) {
         try {
+            WebElement sourceElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement targetElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(target.getLocator()));
             Actions actions = new Actions(getWebDriver());
-            actions.dragAndDrop(getElement(), target.getElement()).build().perform();
+            actions.dragAndDrop(sourceElement, targetElement).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -225,7 +213,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void moveTo() {
         try {
-            new Actions(getWebDriver()).moveToElement(getElement()).build().perform();
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            new Actions(getWebDriver()).moveToElement(element).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -236,7 +225,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void moveTo(int x, int y) {
         try {
-            new Actions(getWebDriver()).moveToElement(getElement(), x, y).build().perform();
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            new Actions(getWebDriver()).moveToElement(element, x, y).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -247,9 +237,10 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void moveToCenter() {
         try {
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
-            js.executeScript("arguments[0].scrollIntoView({block: 'center'});", getElement());
-            new Actions(getWebDriver()).moveToElement(getElement()).build().perform();
+            js.executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+            new Actions(getWebDriver()).moveToElement(element).build().perform();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -260,8 +251,9 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void mouseHoverJScript() {
         try {
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             String mouseOverScript = "if(document.createEvent){var evObj = document.createEvent('MouseEvents');evObj.initEvent('mouseover', true, false); arguments[0].dispatchEvent(evObj);} else if(document.createEventObject) { arguments[0].fireEvent('onmouseover');}";
-            ((JavascriptExecutor) getWebDriver()).executeScript(mouseOverScript, getElement());
+            ((JavascriptExecutor) getWebDriver()).executeScript(mouseOverScript, element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -273,9 +265,10 @@ public class ElementWrapper implements IElementWrapper {
     public void setAttributeJS(String attributeName, String value) {
         try {
             log.debug("Set attribute for {}", getLocator().toString());
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             ((JavascriptExecutor) getWebDriver())
                     .executeScript(String.format("arguments[0].setAttribute('%s','%s');", attributeName, value),
-                            getElement());
+                            element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -287,9 +280,10 @@ public class ElementWrapper implements IElementWrapper {
     public void checkCheckBoxByJs() {
         try {
             log.debug("Check checkbox by JS for {}", getLocator().toString());
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             ((JavascriptExecutor) getWebDriver())
                     .executeScript("arguments[0].checked=true; arguments[0].dispatchEvent(new Event('change'));", 
-                            getElement());
+                            element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -302,8 +296,9 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void scrollElementToCenterScreen() {
         try {
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
-            js.executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", getElement());
+            js.executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -314,8 +309,10 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void scrollToView() {
         try {
+            // Wait for element to exist in DOM (may be hidden, that's OK for scroll)
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
-            js.executeScript("arguments[0].scrollIntoView(true);", getElement());
+            js.executeScript("arguments[0].scrollIntoView(true);", element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -326,11 +323,13 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public void scrollToView(int offsetX, int offsetY) {
         try {
+            // Wait for element to exist in DOM (may be hidden, that's OK for scroll)
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             String script = String.format(
                     "arguments[0].scrollIntoView(true); window.scrollBy(%d, %d);", 
                     offsetX, offsetY);
-            js.executeScript(script, getElement());
+            js.executeScript(script, element);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -343,7 +342,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public String getText() {
         try {
-            return getElement().getText();
+          WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+          return element.getText();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -354,7 +354,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public String getValue() {
         try {
-            return getElement().getAttribute("value");
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.getAttribute("value");
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -365,7 +366,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public String getAttribute(String attributeName) {
         try {
-            return getElement().getAttribute(attributeName);
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.getAttribute(attributeName);
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -375,13 +377,21 @@ public class ElementWrapper implements IElementWrapper {
     
     @Override
     public String getClassName() {
-        return getAttribute("class");
+        try {
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.getAttribute("class");
+        } catch (Exception e) {
+            log.error("Has error with control '{}': {}", getLocator().toString(), 
+                    e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
+            throw e;
+        }
     }
     
     @Override
     public String getTagName() {
         try {
-            return getElement().getTagName();
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.getTagName();
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -392,7 +402,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public WebElement getChildElement(String xpath) {
         try {
-            return getElement().findElement(buildChildLocator(xpath));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.findElement(buildChildLocator(xpath));
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
@@ -408,7 +419,8 @@ public class ElementWrapper implements IElementWrapper {
     @Override
     public List<WebElement> getChildElements(String xpath) {
         try {
-            return getElement().findElements(buildChildLocator(xpath));
+            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), DriverUtils.getTimeOut());
+            return element.findElements(buildChildLocator(xpath));
         } catch (Exception e) {
             log.error("Has error with control '{}': {}", getLocator().toString(), 
                     e.getMessage() != null ? e.getMessage().split("\n")[0] : "");

@@ -20,7 +20,7 @@ Class này override `click()` với strategy:
 ```java
 // Trong AgodaHomePage.java
 // Element bình thường - dùng WebElementWrapper mặc định
-protected IElement searchButton = $("//button[@data-selenium='searchButton']");
+protected IElement searchButton = new ElementWrapper("//button[@data-selenium='searchButton']");
 
 // Element có vấn đề - dùng ClickElementOfVu
 protected IElement stickyButton = new CustomClickElement("//button[@id='sticky']");
@@ -63,7 +63,7 @@ public void click() {
 - Click mặc định hoạt động tốt
 - Element đơn giản, không có vấn đề
 
-**Lưu ý:** Chỉ tạo CustomClickElement cho element có vấn đề, các element khác vẫn dùng `$()` bình thường.
+**Lưu ý:** Chỉ tạo CustomClickElement cho element có vấn đề, các element khác vẫn dùng `new ElementWrapper(...)` bình thường.
 
 ## Tùy chỉnh thêm
 

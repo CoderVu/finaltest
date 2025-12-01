@@ -18,10 +18,10 @@ Khi một UI assertion fail, framework sẽ tự động retry 1 lần trước 
 ```java
 
 
-import static org.example.core.element.ElementFactory.$;
+import static org.example.core.element.ElementWrapper.$;
 
 // Assert text equals
-Element titleElement = $("//h1[@class='title']");
+Element titleElement = new ElementWrapper("//h1[@class='title']");
 AssertionHelper.
 
         assertTextEquals(
@@ -31,7 +31,7 @@ AssertionHelper.
         );
 
         // Assert text contains
-        Element messageElement = $("//div[@class='message']");
+        Element messageElement = new ElementWrapper("//div[@class='message']");
 AssertionHelper.
 
         assertTextContains(
@@ -41,7 +41,7 @@ AssertionHelper.
         );
 
         // Assert element visible
-        Element buttonElement = $("//button[@id='submit']");
+        Element buttonElement = new ElementWrapper("//button[@id='submit']");
 AssertionHelper.
 
         assertElementVisible(
@@ -50,7 +50,7 @@ AssertionHelper.
         );
 
         // Assert attribute
-        Element linkElement = $("//a[@id='home-link']");
+        Element linkElement = new ElementWrapper("//a[@id='home-link']");
 AssertionHelper.
 
         assertAttribute(
@@ -61,7 +61,7 @@ AssertionHelper.
         );
 
         // Assert has class
-        Element tabElement = $("//div[@data-tab='settings']");
+        Element tabElement = new ElementWrapper("//div[@data-tab='settings']");
 AssertionHelper.
 
         assertHasClass(
@@ -79,11 +79,11 @@ AssertionHelper.
 import org.example.core.assertion.MySoftAssert;
 import org.example.core.assertion.SoftAssertImpl;
 
-import static org.example.core.element.ElementFactory.$;
+import static org.example.core.element.ElementWrapper.$;
 
 MySoftAssert softAssert = MySoftAssert.get();
 
-Element element = $("//div[@id='status']");
+Element element = new ElementWrapper("//div[@id='status']");
 String actualText = element.getText();
 
 // Assertion này sẽ tự động retry 1 lần nếu fail
@@ -109,7 +109,7 @@ SoftAssertImpl.setAutoRetryEnabled(false);
 SoftAssertImpl.setRetryCount(2); // Retry 2 lần thay vì 1
 
 // Use assertions...
-Element element = $("//div[@class='content']");
+Element element = new ElementWrapper("//div[@class='content']");
 AssertionHelper.assertTextEquals(element, "Expected", "Message");
 
 // Reset về defaults
@@ -174,7 +174,7 @@ SoftAssertImpl.reset();
 @Step("Verify login success")
 public void verifyLoginSuccess() {
     // Assert page title
-    Element titleElement = $("//h1[@class='page-title']");
+    Element titleElement = new ElementWrapper("//h1[@class='page-title']");
     AssertionHelper.assertTextEquals(
         titleElement, 
         "Dashboard", 
@@ -182,7 +182,7 @@ public void verifyLoginSuccess() {
     );
     
     // Assert user menu visible
-    Element userMenu = $("//div[@class='user-menu']");
+    Element userMenu = new ElementWrapper("//div[@class='user-menu']");
     AssertionHelper.assertElementVisible(
         userMenu, 
         "User menu should be visible after login"
