@@ -6,7 +6,7 @@ import org.testng.annotations.Test;
 import config.TestBase;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.example.core.assertion.AssertionRetry.assertEquals;
+import static org.example.core.assertion.retry.FunctionAssertions.assertEquals;
 
 @Slf4j
 public class TC02 extends TestBase {

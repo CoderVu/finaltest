@@ -1,12 +1,12 @@
 package testCase;
 
 import org.example.pages.DynamicLoadPage;
+import org.openqa.selenium.By;
 import org.testng.annotations.Test;
 import config.TestBase;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.example.core.assertion.AssertionRetry.assertEquals;
-import static org.example.core.assertion.AssertionRetry.assertTrue;
+import static org.example.core.element.ElementWrapper.$;
 
 @Slf4j
 public class DynamicLoadTest extends TestBase {
@@ -17,18 +17,17 @@ public class DynamicLoadTest extends TestBase {
     public void testExample1() {
         // Navigate to dynamic loading page
         dynamicLoadPage.navigateToPage();
-        
+
         // Click Example 1 link
         dynamicLoadPage.clickExample1();
-        
+
         // Click Start button
         dynamicLoadPage.clickStartButton();
 
-        // Check Hello World text is correct
-        assertTrue(
-            () -> dynamicLoadPage.checkHelloWorldDisplay("Hello World!"),
-            "Hello World text should be correct"
-        );
+        $(By.cssSelector("#finish h4")).shouldHaveText("Hello World!1");
+
+
+
     }
 
 //    @Test(description = "Test Example 2: Element rendered after the fact")

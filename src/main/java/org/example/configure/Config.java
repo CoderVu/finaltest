@@ -136,4 +136,7 @@ public final class Config {
     private static String readEnvProperty(String key) {
         return EnvUtils.readProperty(ACTIVE_ENV, key);
     }
+    public static int getMaxActionRetries() {
+        return Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 3);
+    }
 }

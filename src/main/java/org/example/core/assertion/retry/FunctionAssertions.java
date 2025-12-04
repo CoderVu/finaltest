@@ -1,19 +1,16 @@
-package org.example.core.assertion;
+package org.example.core.assertion.retry;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.configure.Config;
-import org.example.core.element.ElementWrapper;
+import org.example.core.assertion.Assertions;
 import org.example.core.element.util.DriverUtils;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
-/**
- * Assertion helper using AssertJ-based assertions with optional retry logic.
- */
 @Slf4j
-public class AssertionRetry {
+public class FunctionAssertions {
 
     private static final Duration DEFAULT_RETRY_DELAY = Duration.ofMillis(500);
 
@@ -79,39 +76,6 @@ public class AssertionRetry {
         });
     }
 
-    // ===== Element-specific assertions with auto-retry =====
-
-    public static void assertElementVisible(ElementWrapper element, String message) {
-        assertTrue(element::isVisible, message);
-    }
-
-    public static void assertElementNotVisible(ElementWrapper element, String message) {
-        assertFalse(element::isVisible, message);
-    }
-
-    public static void assertElementEnabled(ElementWrapper element, String message) {
-        assertTrue(element::isEnabled, message);
-    }
-
-    public static void assertElementDisabled(ElementWrapper element, String message) {
-        assertFalse(element::isEnabled, message);
-    }
-
-    public static void assertElementTextEquals(ElementWrapper element, String expected, String message) {
-        assertEquals(element::getText, expected, message);
-    }
-
-    public static void assertElementContainsText(ElementWrapper element, String substring, String message) {
-        assertTrue(() -> {
-            String actual = element.getText();
-            return actual != null && actual.contains(substring);
-        }, message + " | expected to contain=" + substring);
-    }
-
-    public static void assertElementAttributeEquals(ElementWrapper element, String attribute, String expected, String message) {
-        assertEquals(() -> element.getAttribute(attribute), expected, message);
-    }
-
     private static void assertBoolean(Supplier<Boolean> actualSupplier, boolean expected, String message) {
         retryAssertion(message, () -> {
             Boolean actual = actualSupplier.get();
@@ -121,7 +85,7 @@ public class AssertionRetry {
 
     private static void retryAssertion(String message, Runnable assertion) {
         int attempts = Math.max(1,
-                Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_PROPERTY, 1));
+                Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_SORTASSERT_PROPERTY, 1));
         AssertionError last = null;
         for (int i = 1; i <= attempts; i++) {
             try {
@@ -139,3 +103,5 @@ public class AssertionRetry {
         }
     }
 }
+
+

@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.configure.Config;
 import org.example.core.driver.factory.DriverFactory;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,6 +103,7 @@ public class RetryService {
         return maxAttempts;
     }
 }
+
 
 
 

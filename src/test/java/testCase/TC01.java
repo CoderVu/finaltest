@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-import static org.example.core.assertion.AssertionRetry.*;
+import static org.example.core.assertion.retry.FunctionAssertions.*;
 
 @Slf4j
 public class TC01 extends TestBase {
