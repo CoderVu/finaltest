@@ -1,4 +1,4 @@
-package org.example.core.testng.suite;
+package org.example.testng.suite;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
@@ -16,7 +16,6 @@ import java.util.Map;
 /**
  * Alters TestNG suites to run tests across multiple browsers.
  */
-@Slf4j
 public class BrowserSuiteAlterer implements IAlterSuiteListener {
 
     @Override
@@ -53,5 +52,4 @@ public class BrowserSuiteAlterer implements IAlterSuiteListener {
         }
     }
 }
-
 

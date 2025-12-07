@@ -18,7 +18,7 @@ Khi một UI assertion fail, framework sẽ tự động retry 1 lần trước 
 ```java
 
 
-import static org.example.core.element.ElementWrapper.$;
+import static org.example.core.element.BaseElement.$;
 
 // Assert text equals
 Element titleElement = new ElementWrapper("//h1[@class='title']");
@@ -79,7 +79,7 @@ AssertionHelper.
 import org.example.core.assertion.MySoftAssert;
 import org.example.core.assertion.SoftAssertImpl;
 
-import static org.example.core.element.ElementWrapper.$;
+import static org.example.core.element.BaseElement.$;
 
 MySoftAssert softAssert = MySoftAssert.get();
 

@@ -7,7 +7,7 @@ import org.openqa.selenium.WebElement;
 import java.time.Duration;
 import java.util.List;
 
-public interface IElementWrapper {
+public interface IBaseElement {
     // Locator
     By getLocator();
     
@@ -30,7 +30,7 @@ public interface IElementWrapper {
     
     // Drag & Drop
     void dragAndDrop(int xOffset, int yOffset);
-    void dragAndDrop(IElementWrapper target);
+    void dragAndDrop(IBaseElement target);
     
     // Move/Hover
     void moveTo();

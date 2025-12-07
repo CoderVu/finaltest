@@ -1,10 +1,6 @@
 package org.example.core.reporting.listeners;
 
-/**
- * Framework-agnostic reporting callbacks.
- * Implementations should not import TestNG/JUnit/Cucumber types here.
- */
-public interface  CoreReportingListener {
+public interface ReportingListener {
 
     void onTestStart(String testName);
 

@@ -9,14 +9,14 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.io.FileHandler;
-import org.testng.ITestResult;
-import org.testng.Reporter;
+import org.example.core.context.TestContext;
+import org.example.core.context.TestContextRegistry;
 
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import static org.example.core.element.util.DriverUtils.getWebDriver;
+import static org.example.utils.DriverUtils.getWebDriver;
 
 @Slf4j
 public class ExtentReportClient implements ReportClient {
@@ -28,9 +28,9 @@ public class ExtentReportClient implements ReportClient {
 
     @Override
     public boolean isInStep() {
-        ITestResult current = currentResult();
-        Deque<ExtentTest> stack = getExistingStack(current);
-        return current != null && stack != null && !stack.isEmpty();
+        TestContext context = TestContextRegistry.getCurrentContext();
+        Deque<ExtentTest> stack = getExistingStack(context);
+        return context != null && stack != null && !stack.isEmpty();
     }
 
     @Override
@@ -55,11 +55,7 @@ public class ExtentReportClient implements ReportClient {
     public void logFail(String message, Throwable error) {
         ExtentTest test = getActiveTest();
         if (test != null) {
-            if (error != null) {
-                test.fail(message + " - " + error.getMessage());
-            } else {
-                test.fail(message);
-            }
+            test.fail(message);
         } else {
             log.error("FAIL: {} - {}", message, error != null ? error.getMessage() : "No error");
         }
@@ -127,19 +123,19 @@ public class ExtentReportClient implements ReportClient {
 
     @Override
     public void childStep(String name, Runnable runnable) {
-        ITestResult result = currentResult();
-        if (result == null) {
+        TestContext context = TestContextRegistry.getCurrentContext();
+        if (context == null) {
             runnable.run();
             return;
         }
 
-        ExtentTest parent = getActiveNode(result);
+        ExtentTest parent = getActiveNode(context);
         if (parent == null) {
             runnable.run();
             return;
         }
 
-        Deque<ExtentTest> stack = ensureStack(result);
+        Deque<ExtentTest> stack = ensureStack(context);
         ExtentTest stepNode = parent.createNode(name);
         stack.push(stepNode);
 
@@ -157,17 +153,17 @@ public class ExtentReportClient implements ReportClient {
 
     @Override
     public <T> T childStep(String name, java.util.function.Supplier<T> supplier) {
-        ITestResult result = currentResult();
-        if (result == null) {
+        TestContext context = TestContextRegistry.getCurrentContext();
+        if (context == null) {
             return supplier.get();
         }
 
-        ExtentTest parent = getActiveNode(result);
+        ExtentTest parent = getActiveNode(context);
         if (parent == null) {
             return supplier.get();
         }
 
-        Deque<ExtentTest> stack = ensureStack(result);
+        Deque<ExtentTest> stack = ensureStack(context);
         ExtentTest stepNode = parent.createNode(name);
         stack.push(stepNode);
 
@@ -186,58 +182,44 @@ public class ExtentReportClient implements ReportClient {
     }
 
     private ExtentTest getActiveNode() {
-        return getActiveNode(currentResult());
+        return getActiveNode(TestContextRegistry.getCurrentContext());
     }
 
-    private ExtentTest getActiveNode(ITestResult result) {
-        if (result == null) {
+    private ExtentTest getActiveNode(TestContext context) {
+        if (context == null) {
             return null;
         }
-        Deque<ExtentTest> stack = getExistingStack(result);
+        Deque<ExtentTest> stack = getExistingStack(context);
         if (stack != null && !stack.isEmpty()) {
             return stack.peek();
         }
-        // Try to get attempt node first, then fall back to test node
-        ExtentTest attemptNode = (ExtentTest) result.getAttribute(ExtentReportLifecycle.ATTEMPT_NODE_ATTRIBUTE);
-        if (attemptNode != null) {
-            return attemptNode;
-        }
-        return getActiveTest(result);
+        return getActiveTest(context);
     }
 
     private ExtentTest getActiveTest() {
-        return getActiveTest(currentResult());
+        return getActiveTest(TestContextRegistry.getCurrentContext());
     }
 
-    private ExtentTest getActiveTest(ITestResult result) {
-        if (result == null) {
+    private ExtentTest getActiveTest(TestContext context) {
+        if (context == null) {
             return null;
         }
-        // Try to get attempt node first, then fall back to test node
-        ExtentTest attemptNode = (ExtentTest) result.getAttribute(ExtentReportLifecycle.ATTEMPT_NODE_ATTRIBUTE);
-        if (attemptNode != null) {
-            return attemptNode;
-        }
-        return (ExtentTest) result.getAttribute(ExtentReportLifecycle.TEST_ATTRIBUTE);
-    }
-
-    private ITestResult currentResult() {
-        return Reporter.getCurrentTestResult();
+        return (ExtentTest) context.getAttribute(ExtentReportLifecycle.TEST_ATTRIBUTE);
     }
 
     @SuppressWarnings("unchecked")
-    private Deque<ExtentTest> getExistingStack(ITestResult result) {
-        if (result == null) {
+    private Deque<ExtentTest> getExistingStack(TestContext context) {
+        if (context == null) {
             return null;
         }
-        return (Deque<ExtentTest>) result.getAttribute(ExtentReportLifecycle.STEP_STACK_ATTRIBUTE);
+        return (Deque<ExtentTest>) context.getAttribute(ExtentReportLifecycle.STEP_STACK_ATTRIBUTE);
     }
 
-    private Deque<ExtentTest> ensureStack(ITestResult result) {
-        Deque<ExtentTest> stack = getExistingStack(result);
+    private Deque<ExtentTest> ensureStack(TestContext context) {
+        Deque<ExtentTest> stack = getExistingStack(context);
         if (stack == null) {
             stack = new ArrayDeque<>();
-            result.setAttribute(ExtentReportLifecycle.STEP_STACK_ATTRIBUTE, stack);
+            context.setAttribute(ExtentReportLifecycle.STEP_STACK_ATTRIBUTE, stack);
         }
         return stack;
     }

@@ -1,4 +1,4 @@
-package org.example.core.element.util;
+package org.example.utils;
 
 import org.example.configure.Config;
 import org.example.core.driver.factory.DriverFactory;

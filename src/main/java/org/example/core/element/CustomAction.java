@@ -4,20 +4,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 
 /**
- * DraftAction - Override actions of IElementWrapper as needed.
+ * CustomAction - Override actions of IBaseElement as needed.
  * 
  * Way to use:
- * IElementWrapper button = new DraftAction("//button[@id='test']");
+ * IBaseElement button = new CustomAction("//button[@id='test']");
  * button.click(); // Will use overridden click() logic
  */
 @Slf4j
-public class DraftAction extends ElementWrapper implements IElementWrapper {
+public class CustomAction extends BaseElement implements IBaseElement {
     
-    public DraftAction(By byLocator) {
+    public CustomAction(By byLocator) {
         super(byLocator);
     }
 
-    public DraftAction(String locator, Object... args) {
+    public CustomAction(String locator, Object... args) {
         super(locator, args);
     }
     

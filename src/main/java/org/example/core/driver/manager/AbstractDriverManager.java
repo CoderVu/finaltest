@@ -7,7 +7,6 @@ import org.example.enums.BrowserType;
 import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.testng.SkipException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -52,11 +51,9 @@ public abstract class AbstractDriverManager implements IDriverManager {
             } else {
                 initLocalDriver();
             }
-        } catch (SkipException se) {
-            throw se;
         } catch (Throwable t) {
             log.error("Failed to init driver for '{}': {}", this.browserType, t.getMessage(), t);
-            throw new SkipException("Failed to init driver for '" + this.browserType + "': " + t.getMessage());
+            throw new RuntimeException("Failed to init driver for '" + this.browserType + "': " + t.getMessage(), t);
         }
     }
 

@@ -1,0 +1,194 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip running tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  JAVA_VERSION: '17'
+  MAVEN_VERSION: '3.9.5'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build project
+        run: mvn clean compile -DskipTests
+
+      - name: Run tests
+        if: ${{ !inputs.skip_tests || github.event_name != 'workflow_dispatch' }}
+        run: |
+          mvn test -Dheadless=true -Dbrowser=chrome
+        continue-on-error: true
+
+      - name: Generate test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/**
+            target/extent-report/**
+          retention-days: 30
+
+      - name: Archive build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            target/classes/**
+            pom.xml
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment directory on server
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "mkdir -p ${{ secrets.DEPLOY_PATH }}/app && \
+             mkdir -p ${{ secrets.DEPLOY_PATH }}/backup && \
+             mkdir -p ${{ secrets.DEPLOY_PATH }}/logs"
+
+      - name: Backup current deployment
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "if [ -d '${{ secrets.DEPLOY_PATH }}/app' ]; then \
+               tar -czf ${{ secrets.DEPLOY_PATH }}/backup/backup-$(date +%Y%m%d-%H%M%S).tar.gz -C ${{ secrets.DEPLOY_PATH }}/app .; \
+             fi"
+
+      - name: Deploy application files
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='target' \
+            --exclude='.idea' \
+            --exclude='*.iml' \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.DEPLOY_PATH }}/app/
+
+      - name: Setup Docker network (if not exists)
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "docker network inspect dockervu >/dev/null 2>&1 || docker network create dockervu"
+
+      - name: Build Docker images (if needed)
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "cd ${{ secrets.DEPLOY_PATH }}/app && \
+             if [ -f Dockerfile ]; then \
+               docker build -t selenium_automation_runner:latest .; \
+             fi"
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "cd ${{ secrets.DEPLOY_PATH }}/app && \
+             docker-compose down && \
+             docker-compose up -d --build"
+
+      - name: Health check
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 10
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "docker-compose -f ${{ secrets.DEPLOY_PATH }}/app/docker-compose.yml ps"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
+
+  deploy-simple:
+    name: Simple Deploy (SSH only)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && false  # Set to true to use this instead of deploy job
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd ${{ secrets.DEPLOY_PATH }}
+            git pull origin main || git pull origin master
+            mvn clean package -DskipTests
+            # Restart services if needed
+            # sudo systemctl restart your-service
+          EOF
+

@@ -9,7 +9,7 @@ import org.example.core.reporting.ReportingManager;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
-import static org.example.core.element.util.DriverUtils.getWebDriver;
+import static org.example.utils.DriverUtils.getWebDriver;
 
 
 @Slf4j
@@ -41,13 +41,9 @@ public class TestBase {
     @BeforeMethod(alwaysRun = true)
     public void setUpMethod() {
         Assertions.reset();
-        
-        // Create driver if it doesn't exist (important for retries after driver was quit)
         try {
             getWebDriver();
         } catch (Exception e) {
-            // Driver doesn't exist - create it (e.g., after retry when driver was quit)
-            log.info("🔄 [DRIVER] Creating driver for test execution");
             DriverFactory.createDriver(browserType);
         }
     }

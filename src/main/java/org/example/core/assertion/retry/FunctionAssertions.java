@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.configure.Config;
 import org.example.core.assertion.Assertions;
-import org.example.core.element.util.DriverUtils;
+import org.example.utils.DriverUtils;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -86,20 +86,37 @@ public class FunctionAssertions {
     private static void retryAssertion(String message, Runnable assertion) {
         int attempts = Math.max(1,
                 Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_SORTASSERT_PROPERTY, 1));
-        AssertionError last = null;
-        for (int i = 1; i <= attempts; i++) {
+        int attempt = 1;
+        AssertionError lastError = null;
+
+        do {
+            if (attempt == attempts) {
+                Assertions.setCurrentAttempt(attempt);
+            } else {
+                Assertions.setCurrentAttempt(null);
+            }
             try {
                 assertion.run();
+                if (attempt > 1) {
+                    log.info("Assertion passed on attempt {}/{}: {}", attempt, attempts, message);
+                }
+                Assertions.setCurrentAttempt(null);
                 return;
             } catch (AssertionError error) {
-                last = error;
-                if (i < attempts) {
+                lastError = error;
+                if (attempt < attempts) {
+                    log.warn("Assertion failed on attempt {}/{}: {} - Retrying...", attempt, attempts, message);
                     DriverUtils.delay(DEFAULT_RETRY_DELAY.toMillis() / 1000.0);
+                } else {
+                    log.error("Assertion failed after {} attempts: {}", attempts, message);
                 }
+                attempt++;
             }
-        }
-        if (last != null) {
-            throw last;
+        } while (attempt <= attempts);
+
+        if (lastError != null) {
+            Assertions.setCurrentAttempt(null);
+            throw lastError;
         }
     }
 }

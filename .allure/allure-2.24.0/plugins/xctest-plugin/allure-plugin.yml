@@ -1,5 +1,5 @@
 id: xctest
 name: XCTest Plugin
-description: The plugin that adds support for results XCTest data format.
+description: The Plugin that adds support for results XCTest data format.
 extensions:
   - io.qameta.allure.xctest.XcTestPlugin

@@ -1,11 +1,11 @@
 package org.example.core.reporting.extent;
 
+import org.example.core.reporting.Plugin;
 import org.example.core.reporting.ReportClient;
-import org.example.core.reporting.listeners.CoreReportingListener;
-import org.example.core.reporting.plugin.ReportPlugin;
+import org.example.core.reporting.listeners.ReportingListener;
 import org.example.enums.ReportType;
 
-public class ExtentReportPlugin implements ReportPlugin {
+public class ExtentReportPlugin implements Plugin {
 
     @Override
     public ReportType getType() {
@@ -18,7 +18,7 @@ public class ExtentReportPlugin implements ReportPlugin {
     }
 
     @Override
-    public CoreReportingListener createLifecycleListener() {
+    public ReportingListener createLifecycleListener() {
         return new ExtentReportLifecycle();
     }
 }

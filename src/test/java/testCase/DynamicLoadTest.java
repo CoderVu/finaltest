@@ -1,12 +1,15 @@
 package testCase;
 
+import org.example.core.assertion.retry.ElementAssertions;
+import org.example.core.assertion.retry.FunctionAssertions;
+import org.example.core.element.BaseElement;
 import org.example.pages.DynamicLoadPage;
 import org.openqa.selenium.By;
 import org.testng.annotations.Test;
 import config.TestBase;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.example.core.element.ElementWrapper.$;
+import static org.example.core.element.BaseElement.$;
 
 @Slf4j
 public class DynamicLoadTest extends TestBase {
@@ -24,7 +27,21 @@ public class DynamicLoadTest extends TestBase {
         // Click Start button
         dynamicLoadPage.clickStartButton();
 
-        $(By.cssSelector("#finish h4")).shouldHaveText("Hello World!1");
+        // way 1: Using FunctionAssertions with built-in retry assertions
+        // FunctionAssertions.assertEquals(() ->
+        //     dynamicLoadPage.getFinishText(), "Hello World!!",
+        //     "Finish text should be 'Hello World!'"
+        // );
+        // way 2: Using BaseElement with built-in retry assertions
+        BaseElement finishText = $(By.xpath("//*[@id='finish']/h4"));
+        String classNew = finishText.shouldBeVisible().getText();
+        FunctionAssertions.assertEquals(() ->
+            classNew, "Hello World!",
+            "Finish text should be 'Hello World!'"
+        );
+
+
+
 
 
 

@@ -2,11 +2,7 @@ package org.example.core.assertion.retry;
 
 import org.openqa.selenium.By;
 
-/**
- * Base class providing assertion-with-retry helpers for elements.
- * Subclasses must provide locator and basic query methods.
- */
-public abstract class ElementAssertions {
+public abstract class ElementAssertions<T extends ElementAssertions<T>> {
 
     protected abstract By getLocator();
 
@@ -20,47 +16,57 @@ public abstract class ElementAssertions {
 
     protected abstract String getValue();
 
-    public void shouldBeVisible() {
+    protected abstract T self();
+
+    public T shouldBeVisible() {
         String message = "Element should be visible: " + getLocator();
         FunctionAssertions.assertTrue(this::isVisible, message);
+        return self();
     }
 
-    public void shouldNotBeVisible() {
+    public T shouldNotBeVisible() {
         String message = "Element should NOT be visible: " + getLocator();
         FunctionAssertions.assertFalse(this::isVisible, message);
+        return self();
     }
 
-    public void shouldBeEnabled() {
+    public T shouldBeEnabled() {
         String message = "Element should be enabled: " + getLocator();
         FunctionAssertions.assertTrue(this::isEnabled, message);
+        return self();
     }
 
-    public void shouldBeDisabled() {
+    public T shouldBeDisabled() {
         String message = "Element should be disabled: " + getLocator();
         FunctionAssertions.assertFalse(this::isEnabled, message);
+        return self();
     }
 
-    public void shouldHaveText(String expected) {
+    public T shouldHaveText(String expected) {
         String message = "Element should have exact text '" + expected + "': " + getLocator();
         FunctionAssertions.assertEquals(this::getText, expected, message);
+        return self();
     }
 
-    public void shouldContainText(String substring) {
+    public T shouldContainText(String substring) {
         String message = "Element text should contain '" + substring + "': " + getLocator();
         FunctionAssertions.assertTrue(() -> {
             String actual = getText();
             return actual != null && actual.contains(substring);
         }, message);
+        return self();
     }
 
-    public void shouldHaveAttribute(String attribute, String expected) {
+    public T shouldHaveAttribute(String attribute, String expected) {
         String message = "Element attribute '" + attribute + "' should equal '" + expected + "': " + getLocator();
         FunctionAssertions.assertEquals(() -> getAttribute(attribute), expected, message);
+        return self();
     }
 
-    public void shouldHaveValue(String expected) {
+    public T shouldHaveValue(String expected) {
         String message = "Element value should equal '" + expected + "': " + getLocator();
         FunctionAssertions.assertEquals(this::getValue, expected, message);
+        return self();
     }
 }
 

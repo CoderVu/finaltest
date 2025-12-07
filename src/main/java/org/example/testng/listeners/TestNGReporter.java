@@ -1,8 +1,10 @@
-package org.example.core.testng.listeners;
+package org.example.testng.listeners;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.reporting.ReportingManager;
-import org.example.core.reporting.listeners.CoreReportingListener;
+import org.example.core.context.TestContextRegistry;
+import org.example.core.reporting.listeners.ReportingListener;
+import org.example.testng.TestNGTestContextProvider;
 import org.testng.IConfigurationListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
@@ -13,29 +15,31 @@ import java.util.List;
 
 /**
  * TestNG-specific adapter that forwards TestNG events to the core reporting layer.
- *
- * This class should contain all TestNG dependencies, while the core reporting
- * contracts remain engine-agnostic.
  */
 @Slf4j
 public class TestNGReporter implements ITestListener, IConfigurationListener {
 
-    private volatile List<CoreReportingListener> delegates;
+    private volatile List<ReportingListener> delegates;
+
+    static {
+        // Register TestNG test context provider
+        TestContextRegistry.setProvider(new TestNGTestContextProvider());
+    }
 
     private void forEach(DelegateAction action) {
         if (delegates == null) {
-            CoreReportingListener lifecycleListener = (CoreReportingListener) ReportingManager.getLifecycleListener();
+            ReportingListener lifecycleListener = ReportingManager.getLifecycleListener();
             this.delegates = Collections.singletonList(lifecycleListener);
             log.info("TestNGReporter wired {}", lifecycleListener.getClass().getSimpleName());
         }
-        for (CoreReportingListener delegate : delegates) {
+        for (ReportingListener delegate : delegates) {
             action.apply(delegate);
         }
     }
 
     @FunctionalInterface
     private interface DelegateAction {
-        void apply(CoreReportingListener listener);
+        void apply(ReportingListener listener);
     }
 
     private String extractTestName(ITestResult result) {
@@ -110,3 +114,4 @@ public class TestNGReporter implements ITestListener, IConfigurationListener {
         forEach(d -> d.onConfigurationSkip(name));
     }
 }
+

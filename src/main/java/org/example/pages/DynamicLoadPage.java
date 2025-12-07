@@ -1,28 +1,28 @@
 package org.example.pages;
 
-import org.example.core.element.ElementWrapper;
+import org.example.core.element.BaseElement;
 import org.openqa.selenium.By;
 import java.time.Duration;
-import static org.example.core.element.util.DriverUtils.navigateTo;
+import static org.example.utils.DriverUtils.navigateTo;
 
 public class DynamicLoadPage extends BasePage {
 
     // Links to examples
-    private final ElementWrapper exampleLink1 =
-            ElementWrapper.$("//a[@href='/dynamic_loading/1']");
+    private final BaseElement exampleLink1 =
+            BaseElement.$("//a[@href='/dynamic_loading/1']");
 
-    private final ElementWrapper exampleLink2 =
-            ElementWrapper.$("//a[@href='/dynamic_loading/2']");
+    private final BaseElement exampleLink2 =
+            BaseElement.$("//a[@href='/dynamic_loading/2']");
 
     // Elements on the page
-    private final ElementWrapper startButton =
-            ElementWrapper.$(By.cssSelector("#start button"));
+    private final BaseElement startButton =
+            BaseElement.$(By.cssSelector("#start button"));
 
-    private final ElementWrapper loadingDiv =
-            ElementWrapper.$(By.cssSelector("#loading"));
+    private final BaseElement loadingDiv =
+            BaseElement.$(By.cssSelector("#loading"));
 
-    private final ElementWrapper finishText =
-            ElementWrapper.$(By.cssSelector("#finish h4"));
+    public final BaseElement finishText =
+            BaseElement.$(By.cssSelector("#finish h4"));
 
     public void navigateToPage() {
         step("Navigate to Dynamic Loading page", () -> {
@@ -74,6 +74,13 @@ public class DynamicLoadPage extends BasePage {
             String actualText = finishText.getText();
             logInfo("Finish text displayed: " + actualText);
             return actualText.equals(expectedText);
+        });
+    }
+    public String getFinishText() {
+        return step("Get finish text", () -> {
+            String actualText = finishText.getText();
+            logInfo("Finish text displayed: " + actualText);
+            return actualText;
         });
     }
 }

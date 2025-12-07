@@ -187,34 +187,30 @@ import org.example.core.reporting.BaseReportClient;
 import org.example.enums.ReportType;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
-import org.testng.ITestResult;
-import org.testng.Reporter;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
-import static org.example.core.element.util.DriverUtils.getWebDriver;
+import static org.example.utils.DriverUtils.getWebDriver;
 
 @Slf4j
 public class AllureReportClient extends BaseReportClient {
-    
+
     private static final String STEP_STACK_ATTRIBUTE = "reporting.allure.stepStack";
-    
+
     public AllureReportClient() {
         super(ReportType.ALLURE);
     }
-    
+
     @Override
     public void logStep(String message) {
         Allure.step("STEP: " + message);
     }
-    
+
     @Override
     public void info(String message) {
         Allure.step("INFO: " + message);
     }
-    
+
     @Override
     public void logFail(String message, Throwable error) {
         Allure.step("FAIL: " + message, () -> {
@@ -224,34 +220,34 @@ public class AllureReportClient extends BaseReportClient {
             throw new AssertionError(message);
         });
     }
-    
+
     @Override
     public void attachScreenshot(String name) {
         try {
             TakesScreenshot driver = (TakesScreenshot) getWebDriver();
             if (driver != null) {
                 byte[] screenshot = driver.getScreenshotAs(OutputType.BYTES);
-                String filename = (name == null || name.isEmpty()) 
-                    ? "screenshot_" + System.currentTimeMillis() + ".png" 
-                    : name;
-                Allure.addAttachment(filename, "image/png", 
-                    new ByteArrayInputStream(screenshot));
+                String filename = (name == null || name.isEmpty())
+                        ? "screenshot_" + System.currentTimeMillis() + ".png"
+                        : name;
+                Allure.addAttachment(filename, "image/png",
+                        new ByteArrayInputStream(screenshot));
             }
         } catch (Exception e) {
             log.warn("Failed to attach screenshot: {}", e.getMessage());
         }
     }
-    
+
     @Override
     public void childStep(String name, Runnable runnable) {
         Allure.step(name, runnable);
     }
-    
+
     @Override
     public <T> T childStep(String name, java.util.function.Supplier<T> supplier) {
         return Allure.step(name, supplier::get);
     }
-    
+
     @Override
     public boolean isInStep() {
         // Allure doesn't have explicit step stack tracking
@@ -374,22 +370,22 @@ public class AllureReportLifecycle implements ReportingLifecycleListener {
 package org.example.core.reporting.allure;
 
 import org.example.core.reporting.BaseReportClient;
+import org.example.core.reporting.Plugin;
 import org.example.core.reporting.lifecycle.ReportingLifecycleListener;
-import org.example.core.reporting.plugin.ReportPlugin;
 import org.example.enums.ReportType;
 
-public class AllureReportPlugin implements ReportPlugin {
-    
+public class AllureReportPlugin implements Plugin {
+
     @Override
     public ReportType getType() {
         return ReportType.ALLURE;
     }
-    
+
     @Override
     public BaseReportClient createReporter() {
         return new AllureReportClient();
     }
-    
+
     @Override
     public ReportingLifecycleListener createLifecycleListener() {
         return new AllureReportLifecycle();
@@ -399,7 +395,7 @@ public class AllureReportPlugin implements ReportPlugin {
 
 ### Step 6: Register Plugin
 
-**File:** `src/main/resources/META-INF/services/org.example.core.reporting.plugin.ReportPlugin`
+**File:** `src/main/resources/META-INF/services/org.example.core.reporting.Plugin`
 
 Add new line:
 
@@ -536,7 +532,7 @@ Test Name
    ```
    - Common TestNG listener, no need to modify when adding new report engine
 
-2. **`META-INF/services/org.example.core.reporting.plugin.ReportPlugin`**
+2. **`META-INF/services/org.example.core.reporting.Plugin`**
    ```
    org.example.core.reporting.extent.ExtentReportPlugin
    org.example.core.reporting.allure.AllureReportPlugin

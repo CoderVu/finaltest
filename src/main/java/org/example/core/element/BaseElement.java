@@ -3,8 +3,8 @@ package org.example.core.element;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.core.assertion.retry.ElementAssertions;
-import org.example.core.element.util.DriverUtils;
-import org.example.core.element.util.WaitUtils;
+import org.example.utils.DriverUtils;
+import org.example.utils.WaitUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
@@ -15,27 +15,26 @@ import org.openqa.selenium.support.ui.Select;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static org.example.core.element.util.DriverUtils.getWebDriver;
+import static org.example.configure.Config.getMaxActionRetries;
+import static org.example.utils.DriverUtils.getWebDriver;
 
 @Slf4j
-public class ElementWrapper extends ElementAssertions implements IElementWrapper {
+public class BaseElement extends ElementAssertions<BaseElement> implements IBaseElement {
 
     protected final By byLocator;
 
-    public static ElementWrapper $(By byLocator) {
-        return new ElementWrapper(byLocator);
-    }
-
-    public static ElementWrapper $(String xpathLocator, Object... args) {
-        return new ElementWrapper(xpathLocator, args);
-    }
-
-    public ElementWrapper(By byLocator) {
+    public BaseElement(By byLocator) {
         this.byLocator = byLocator;
     }
+    public static BaseElement $(By byLocator) {
+        return new BaseElement(byLocator);
+    }
 
-    public ElementWrapper(String xpathLocator, Object... args) {
+    public static BaseElement $(String xpathLocator, Object... args) {
+        return new BaseElement(xpathLocator, args);
+    }
+
+    public BaseElement(String xpathLocator, Object... args) {
         this(By.xpath(formatLocator(xpathLocator, args)));
     }
 
@@ -46,16 +45,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
         return String.format(locator, args);
     }
 
-    /**
-     * Reads max retry attempts for element actions from configuration.
-     */
-    private int getMaxActionRetries() {
-        return org.example.configure.Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 3);
-    }
-
-    /**
-     * Generic helper: execute an action with automatic retry on common Selenium errors.
-     */
     private <T> T doWithRetry(Supplier<T> action) {
         int maxAttempts = Math.max(1, getMaxActionRetries());
         int attempt = 1;
@@ -90,6 +79,12 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
         );
     }
 
+    private void doWithRetry(Runnable action) {
+        doWithRetry(() -> {
+            action.run();
+            return null;
+        });
+    }
 
     @Override
     public By getLocator() {
@@ -118,10 +113,8 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
     public void click() {
         doWithRetry(() -> {
             log.info("Click on {}", getLocator().toString());
-            log.debug("Click on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             element.click();
-            return null;
         });
     }
 
@@ -131,7 +124,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Click at offset ({}, {}) on {}", x, y, getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             new Actions(getWebDriver()).moveToElement(element, x, y).click().build().perform();
-            return null;
         });
     }
 
@@ -139,10 +131,8 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
     public void clickByJs() {
         doWithRetry(() -> {
             log.info("Click by JS on {}", getLocator().toString());
-            // Wait for element to exist in DOM (may be hidden, that's OK for JS click)
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             ((JavascriptExecutor) getWebDriver()).executeScript("arguments[0].click();", element);
-            return null;
         });
     }
 
@@ -152,7 +142,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Double click on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             new Actions(getWebDriver()).doubleClick(element).build().perform();
-            return null;
         });
     }
 
@@ -162,7 +151,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Set text '{}' on {}", text, getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(text);
-            return null;
         });
     }
 
@@ -172,7 +160,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Clear text on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.clear();
-            return null;
         });
     }
 
@@ -182,7 +169,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Enter value on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(value);
-            return null;
         });
     }
 
@@ -192,7 +178,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Send key '{}' on {}", key, getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.sendKeys(key);
-            return null;
         });
     }
 
@@ -202,7 +187,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Submit on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
             element.submit();
-            return null;
         });
     }
 
@@ -212,7 +196,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Focus on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             DriverUtils.execJavaScript("arguments[0].focus();", element);
-            return null;
         });
     }
 
@@ -223,19 +206,17 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             Actions actions = new Actions(getWebDriver());
             actions.dragAndDropBy(element, xOffset, yOffset).build().perform();
-            return null;
         });
     }
 
     @Override
-    public void dragAndDrop(IElementWrapper target) {
+    public void dragAndDrop(IBaseElement target) {
         doWithRetry(() -> {
             log.info("Drag element {} to target {}", getLocator().toString(), target.getLocator().toString());
             WebElement sourceElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             WebElement targetElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(target.getLocator()));
             Actions actions = new Actions(getWebDriver());
             actions.dragAndDrop(sourceElement, targetElement).build().perform();
-            return null;
         });
     }
 
@@ -245,7 +226,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Move to {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             new Actions(getWebDriver()).moveToElement(element).build().perform();
-            return null;
         });
     }
 
@@ -255,7 +235,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             log.info("Move to offset ({}, {}) on {}", x, y, getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             new Actions(getWebDriver()).moveToElement(element, x, y).build().perform();
-            return null;
         });
     }
 
@@ -267,7 +246,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
             new Actions(getWebDriver()).moveToElement(element).build().perform();
-            return null;
         });
     }
 
@@ -278,7 +256,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             String mouseOverScript = "if(document.createEvent){var evObj = document.createEvent('MouseEvents');evObj.initEvent('mouseover', true, false); arguments[0].dispatchEvent(evObj);} else if(document.createEventObject) { arguments[0].fireEvent('onmouseover');}";
             ((JavascriptExecutor) getWebDriver()).executeScript(mouseOverScript, element);
-            return null;
         });
     }
 
@@ -291,7 +268,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             ((JavascriptExecutor) getWebDriver())
                     .executeScript(String.format("arguments[0].setAttribute('%s','%s');", attributeName, value),
                             element);
-            return null;
         });
     }
 
@@ -304,7 +280,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             ((JavascriptExecutor) getWebDriver())
                     .executeScript("arguments[0].checked=true; arguments[0].dispatchEvent(new Event('change'));",
                             element);
-            return null;
         });
     }
 
@@ -317,7 +292,6 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", element);
-            return null;
         });
     }
 
@@ -325,11 +299,9 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
     public void scrollToView() {
         doWithRetry(() -> {
             log.info("Scroll element into view: {}", getLocator().toString());
-            // Wait for element to exist in DOM (may be hidden, that's OK for scroll)
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView(true);", element);
-            return null;
         });
     }
 
@@ -337,14 +309,12 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
     public void scrollToView(int offsetX, int offsetY) {
         doWithRetry(() -> {
             log.info("Scroll element into view with extra offset ({}, {}): {}", offsetX, offsetY, getLocator().toString());
-            // Wait for element to exist in DOM (may be hidden, that's OK for scroll)
             WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             String script = String.format(
                     "arguments[0].scrollIntoView(true); window.scrollBy(%d, %d);",
                     offsetX, offsetY);
             js.executeScript(script, element);
-            return null;
         });
     }
 
@@ -474,9 +444,8 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
         });
     }
 
-    // ========== ASSERTIONS ==========
-
     // ========== CHECKS ==========
+    // No doWithRetry here to avoid missing bugs due to retries
 
     @Override
     public boolean isVisible() {
@@ -808,15 +777,24 @@ public class ElementWrapper extends ElementAssertions implements IElementWrapper
         }
     }
 
-    // ========== OTHER ==========
+    // ========== SELECT ==========
 
     @Override
     public Select getSelect() {
         return new Select(getElement());
     }
 
+    // ========== HELPERS ==========
+
     private By buildChildLocator(String xpath) {
         return new ByChained(By.xpath("."), By.xpath(xpath));
+    }
+
+    // ========== ASSERTIONS ==========
+
+    @Override
+    protected BaseElement self() {
+        return this;
     }
 
 }
