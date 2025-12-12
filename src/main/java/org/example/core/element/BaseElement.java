@@ -6,6 +6,7 @@ import org.example.core.assertion.retry.ElementAssert;
 import org.example.utils.DriverUtils;
 import org.example.utils.WaitUtils;
 import org.openqa.selenium.*;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
 import org.openqa.selenium.support.pagefactory.ByChained;
@@ -15,6 +16,7 @@ import org.openqa.selenium.support.ui.Select;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
+
 import static org.example.configure.Config.getMaxActionRetries;
 import static org.example.utils.DriverUtils.getWebDriver;
 
@@ -26,6 +28,7 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
     public BaseElement(By byLocator) {
         this.byLocator = byLocator;
     }
+
     public static BaseElement $(By byLocator) {
         return new BaseElement(byLocator);
     }
@@ -53,8 +56,7 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
         do {
             try {
                 return action.get();
-            }
-            catch (
+            } catch (
                     StaleElementReferenceException |
                     NoSuchElementException |
                     ElementNotInteractableException |
@@ -154,30 +156,42 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
         });
     }
 
+    /**
+     * Set text in Froala editor (contenteditable div).
+     * Finds the .fr-element.fr-view element inside the current element and sets text using Actions.
+     *
+     * @param text The text to set in the editor
+     */
+    public void setTextInEditor(String text) {
+        doWithRetry(() -> {
+            log.info("Set text '{}' in Froala editor on {}", text, getLocator().toString());
+            WebElement editorContainer = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            
+            // Find the contenteditable div inside Froala editor
+            WebElement editableDiv = editorContainer.findElement(By.cssSelector(".fr-element.fr-view"));
+            WaitUtils.waitFor(ExpectedConditions.visibilityOf(editableDiv), Duration.ofSeconds(5));
+            
+            // Use Actions to interact with contenteditable div
+            Actions actions = new Actions(getWebDriver());
+            
+            // Click to focus on the editor
+            actions.click(editableDiv).perform();
+            
+            // Clear existing content: select all and delete
+            actions.keyDown(Keys.CONTROL).sendKeys("a").keyUp(Keys.CONTROL).perform();
+            actions.sendKeys(Keys.DELETE).perform();
+            
+            // Set new text
+            actions.sendKeys(editableDiv, text).perform();
+        });
+    }
+
     @Override
     public void clear() {
         doWithRetry(() -> {
             log.info("Clear text on {}", getLocator().toString());
             WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
             element.clear();
-        });
-    }
-
-    @Override
-    public void enter(CharSequence... value) {
-        doWithRetry(() -> {
-            log.info("Enter value on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
-            element.sendKeys(value);
-        });
-    }
-
-    @Override
-    public void sendKeys(Keys key) {
-        doWithRetry(() -> {
-            log.info("Send key '{}' on {}", key, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
-            element.sendKeys(key);
         });
     }
 
@@ -783,6 +797,89 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
     public Select getSelect() {
         return new Select(getElement());
     }
+
+
+    /**
+     * Find select element - supports multiple dropdown patterns:
+     * 1. Direct select element
+     * 2. Select inside div/span/other containers
+     * 3. Select with rel='items' attribute (common in modern web apps)
+     * 4. Any select element as fallback
+     */
+    private WebElement findSelectElement(WebElement root) {
+        // 1) If root is select → use it directly
+        if ("select".equalsIgnoreCase(root.getTagName())) {
+            return root;
+        }
+        
+        // 2) Try to find select with common patterns (priority order)
+        List<By> selectLocators = List.of(
+            By.xpath(".//select[@rel='items']"),           // Common in modern apps (TestRail, etc.)
+            By.xpath(".//select[contains(@class, 'select')]"), // Bootstrap, Material-UI patterns
+            By.xpath(".//select[@id]"),                    // Select with ID
+            By.xpath(".//select[@name]"),                 // Select with name attribute
+            By.xpath(".//select")                         // Any select element (fallback)
+        );
+        
+        for (By locator : selectLocators) {
+            List<WebElement> selects = root.findElements(locator);
+            if (!selects.isEmpty()) {
+                WebElement select = selects.get(0);
+                if (select.isDisplayed() && select.isEnabled()) {
+                    log.debug("Found select element using locator: {}", locator);
+                    return select;
+                }
+            }
+        }
+        
+        throw new NoSuchElementException("No <select> element found inside element: " + getLocator());
+    }
+
+    public void selectOptionByText(String text) {
+        doWithRetry(() -> {
+            log.info("Select option by text '{}' from {}", text, getLocator());
+            
+            // Wait for root element to be visible
+            WebElement root = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            
+            // Find select element (supports multiple patterns)
+            WebElement selectElement = findSelectElement(root);
+
+            // Wait for select to be clickable
+            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(selectElement), Duration.ofSeconds(5));
+            
+            // Perform selection
+            Select select = new Select(selectElement);
+            log.debug("Selecting option by text '{}' from select element", text);
+            select.selectByVisibleText(text);
+            
+            return null;
+        });
+    }
+
+    public void selectOptionByValue(String value) {
+        doWithRetry(() -> {
+            log.info("Select option by value '{}' from {}", value, getLocator());
+
+            // Wait for root element to be visible
+            WebElement root = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+
+            // Find select element (supports multiple patterns)
+            WebElement selectElement = findSelectElement(root);
+            
+            // Wait for select to be clickable
+            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(selectElement), Duration.ofSeconds(5));
+
+            // Perform selection
+            Select select = new Select(selectElement);
+            log.debug("Selecting option by value '{}' from select element", value);
+            select.selectByValue(value);
+
+            return null;
+        });
+    }
+
+
 
     // ========== HELPERS ==========
 

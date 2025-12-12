@@ -1,45 +1,48 @@
 package testCase;
 
 import config.TestBase;
+import org.example.models.Account;
+import org.example.enums.Query;
+import org.example.enums.TestStatus;
 import org.example.pages.TestRailPage;
+import org.example.utils.DriverUtils;
 import org.testng.annotations.Test;
 import lombok.extern.slf4j.Slf4j;
-import org.testng.SkipException;
 
-/**
- * TC03 - Set filtered TestRail results to "Retest"
- */
+import java.util.HashMap;
+import java.util.Map;
+
+
 @Slf4j
 public class TC03 extends TestBase {
 
+    String username = "vunguyen.170803@gmail.com";
+    String password = "Vunguyen_2901";
+    String runUrl = "https://dutudn.testrail.io/index.php?/runs/view/1";
+    Account account = new Account(username, password);
+    TestRailPage testRailPage = new TestRailPage();
+
     @Test(description = "TC03: Login to TestRail and set filtered run results to 'Retest'")
     public void tc03_setFilteredResultsToRetest() {
-        // 1) Get credentials from -Dtestrail.user / -Dtestrail.pass or env TESTRAIL_USER / TESTRAIL_PASS
-        String username = "";
-        String password = "";
 
-        if (username == null || password == null) {
-            String msg = "TestRail credentials not provided. Please set -Dtestrail.user / -Dtestrail.pass or env TESTRAIL_USER / TESTRAIL_PASS";
-            log.error(msg);
-            throw new SkipException(msg);
-        }
+        testRailPage.navigateToHomePage();
+        testRailPage.login(account);
+        testRailPage.openRun(runUrl);
 
-        // 2) Prepare TestRail page and perform actions
-        TestRailPage testRailPage = new TestRailPage();
-        try {
-            testRailPage.login(username, password);
+        Map<Query, String> filterOptions = new HashMap<>();
+        filterOptions.put(Query.STATUS, "Any");
+        filterOptions.put(Query.TESTED_BY, "Nguyễn Minh Vũ");
+        testRailPage.filterResultsBy(filterOptions, Query.STATUS, Query.TESTED_BY);
 
-            // use explicit run URL; adjust if you want to parametrize
-            final String runUrl = "https://sonos.testrail.com/index.php?/runs/view/144115";
-            testRailPage.openRun(runUrl);
+        String comment = """
+                iPhone 16 (iOS 26.2)
+               
+                """.stripIndent();
 
-            // 3) Process filtered rows and set to Retest
-            testRailPage.processFilteredResultsToRetest();
+        testRailPage.editResults(TestStatus.PASSED, comment);
 
-            log.info("TC03 completed: processed filtered results to 'Retest'");
-        } catch (Exception e) {
-            log.error("TC03 failed: {}", e.getMessage(), e);
-            throw e;
-        }
+
+
+
     }
 }

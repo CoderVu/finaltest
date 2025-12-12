@@ -1,0 +1,14 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Selenium Test Suite" parallel="tests" thread-count="2">
+    <listeners>
+        <listener class-name="org.example.testng.TestListener"/>
+    </listeners>
+    
+    <test name="Selenium Test - TC01">
+        <classes>
+            <class name="testCase.TC03"/>
+        </classes>
+    </test>
+
+
+</suite>

@@ -22,8 +22,6 @@ public interface IBaseElement {
     void doubleClick();
     void setText(String text);
     void clear();
-    void enter(CharSequence... value);
-    void sendKeys(Keys key);
     void submit();
     void focus();
     void checkCheckBoxByJs();
