@@ -16,14 +16,7 @@ import java.util.function.Supplier;
 public class BasePage {
 
     protected ReportClient reporter = ReportingManager.getReportClient();
-    /**
-     * Create step using calling method name as step name.
-     *
-     * Example:
-     * step(() -> {
-     *     performAction();
-     * });
-     */
+
     protected void step(Runnable action) {
         String methodName = getCallingMethodName();
         String stepName = formatMethodName(methodName);

@@ -27,7 +27,6 @@ public abstract class AbstractDriverManager implements IDriverManager {
         try {
             return new URL(remoteUrl);
         } catch (MalformedURLException e) {
-            log.error("Invalid remote URL configured: '{}'", remoteUrl, e);
             throw new IllegalArgumentException("Remote URL is malformed: " + remoteUrl, e);
         }
     }

@@ -1,7 +1,6 @@
 package testCase;
 
-import org.example.core.assertion.retry.ElementAssertions;
-import org.example.core.assertion.retry.FunctionAssertions;
+import org.example.core.assertion.retry.AwaitAssert;
 import org.example.core.element.BaseElement;
 import org.example.pages.DynamicLoadPage;
 import org.openqa.selenium.By;
@@ -35,7 +34,7 @@ public class DynamicLoadTest extends TestBase {
         // way 2: Using BaseElement with built-in retry assertions
         BaseElement finishText = $(By.xpath("//*[@id='finish']/h4"));
         String classNew = finishText.shouldBeVisible().getText();
-        FunctionAssertions.assertEquals(() ->
+        AwaitAssert.assertEquals(() ->
             classNew, "Hello World!",
             "Finish text should be 'Hello World!'"
         );

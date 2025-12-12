@@ -2,7 +2,7 @@ package org.example.core.element;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
-import org.example.core.assertion.retry.ElementAssertions;
+import org.example.core.assertion.retry.ElementAssert;
 import org.example.utils.DriverUtils;
 import org.example.utils.WaitUtils;
 import org.openqa.selenium.*;
@@ -19,7 +19,7 @@ import static org.example.configure.Config.getMaxActionRetries;
 import static org.example.utils.DriverUtils.getWebDriver;
 
 @Slf4j
-public class BaseElement extends ElementAssertions<BaseElement> implements IBaseElement {
+public class BaseElement extends ElementAssert<BaseElement> implements IBaseElement {
 
     protected final By byLocator;
 

@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.function.Supplier;
 
 @Slf4j
-public class FunctionAssertions {
+public class AwaitAssert {
 
     private static final Duration DEFAULT_RETRY_DELAY = Duration.ofMillis(500);
 
