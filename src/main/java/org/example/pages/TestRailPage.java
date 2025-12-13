@@ -31,19 +31,21 @@ public class TestRailPage extends BasePage {
     protected final BaseElement filterDropdownButton = $(By.id("filterByChange"));
     protected final BaseElement filterTestsContent = $(By.id("filterTestsContent"));
     protected final BaseElement applyButton = $(By.id("filterTestsApply"));
+    protected final BaseElement clearButton = $(By.id("filterByReset"));
     protected final BaseElement editLink = $(By.xpath("//span[@class='text-secondary editChange']/a"));
     protected final BaseElement statusSelectChosen = $(By.id("addResultStatus_chosen"));
-    protected final BaseElement statusSelect = $(By.id("addResultStatus")); 
+    protected final BaseElement statusSelect = $(By.id("addResultStatus"));
     protected final BaseElement commentTextarea = $(By.id("addResultComment_display")); // Hidden textarea for Froala editor
     protected final BaseElement submitButton = $(By.id("addResultSubmit"));
     protected final BaseElement chosenSingle = $(By.xpath("//div[@id='addResultStatus_chosen']//a[@class='chosen-single']"));
     protected final BaseElement tabsElement = $(By.xpath("//div[@class='tabs']"));
     protected final BaseElement qpaneClose = $(By.xpath("//div[@data-testid='qpaneCloseButton']"));
+    protected final BaseElement blockedUI = $(By.cssSelector(".ui-widget-overlay, .blockUI"));
 
     protected final String runRowXpath = "//td[@data-testid='runTestAction']";
     protected final String expandInRowXpath = "//a[.//div[@data-testid='runTestIconExpandRow']]";
     protected final String expandFallbackXpath = "//a[contains(@onclick,'App.QPane.toggleRow')]";
-    
+
     /**
      * Get expand button for a specific row index
      */
@@ -67,13 +69,13 @@ public class TestRailPage extends BasePage {
     }
 
     public void login(Account account) {
-        step("Login to TestRail", () -> {
+        step("Login to TestRail" + account.getUsername() + ", " + account.getPassword(), () -> {
             usernameInput.waitForVisibility(Duration.ofSeconds(10));
             usernameInput.clear();
             usernameInput.setText(account.getUsername());
             passwordInput.setText(account.getPassword());
             loginButton.click();
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ui-widget-overlay, .blockUI")), Duration.ofSeconds(10));
+            blockedUI.waitForInvisibility();
 
         });
     }
@@ -94,15 +96,15 @@ public class TestRailPage extends BasePage {
                 .map(Query::getDisplayName)
                 .collect(joining(", ")), () -> {
 
+            // clear existing filter
+            clearButton.click();
+
             // Click the filter dropdown button to open dropdown (only once)
             filterDropdownButton.click();
 
-            // Wait for filter bubble to appear
-            WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(By.id("filterTestsContent")), Duration.ofSeconds(10));
-
             for (Query query : queries) {
                 // Wait for overlays to clear
-                WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ui-widget-overlay, .blockUI")));
+                blockedUI.waitForInvisibility();
 
                 // Find filter group by displayName (text in the link) - more reliable than rel attribute
                 BaseElement filterGroup = $("//div[@id='filterTestsContent']//a[@class='link-noline' and contains(text(), '%s')]/ancestor::div[@class='filter-group filter']", query.getDisplayName());
@@ -120,10 +122,10 @@ public class TestRailPage extends BasePage {
             applyButton.click();
 
             // Wait for filter to complete - wait for loading overlays to disappear
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ui-widget-overlay, .blockUI")), Duration.ofSeconds(30));
+            blockedUI.waitForInvisibility();
 
             // Wait for filter dropdown to close (indicates filter is processing)
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(By.id("filterTestsContent")), Duration.ofSeconds(10));
+            filterTestsContent.waitForDisappear();
 
             // Wait for rows to be ready and stable
             BaseElement rowsElement = $(By.xpath(runRowXpath));
@@ -137,9 +139,9 @@ public class TestRailPage extends BasePage {
     }
 
     public void editResults(TestStatus status, String comment) {
-        step("Process filtered results -> " + status.getDisplayName(), () -> {
+        step("Process filtered results -> " + status.getDisplayName() + " - " + comment, () -> {
             // Wait for filter to complete and rows to be stable before starting
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ui-widget-overlay, .blockUI")), Duration.ofSeconds(10));
+            blockedUI.waitForInvisibility();
 
             // Wait for rows to appear and count total rows to process
             BaseElement rowsElement = $(By.xpath(runRowXpath));
@@ -148,7 +150,7 @@ public class TestRailPage extends BasePage {
             List<WebElement> rows = rowsElement.getElements();
             int totalRows = rows == null ? 0 : rows.size();
             log.info("Found {} run row(s) for processing", totalRows);
-            
+
             if (totalRows == 0) {
                 logInfo("No rows to process");
                 return;
@@ -198,7 +200,7 @@ public class TestRailPage extends BasePage {
                 if (expandBtn.isExist(Duration.ofSeconds(2))) {
                     expandBtn.click();
                 }
-                
+
                 // Wait before processing next row
                 DriverUtils.delay(1);
             }

@@ -852,8 +852,6 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
             Select select = new Select(selectElement);
             log.debug("Selecting option by text '{}' from select element", text);
             select.selectByVisibleText(text);
-            
-            return null;
         });
     }
 
@@ -874,8 +872,6 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
             Select select = new Select(selectElement);
             log.debug("Selecting option by value '{}' from select element", value);
             select.selectByValue(value);
-
-            return null;
         });
     }
 

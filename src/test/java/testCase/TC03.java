@@ -36,10 +36,16 @@ public class TC03 extends TestBase {
 
         String comment = """
                 iPhone 16 (iOS 26.2)
-               
+                - Test executed on iPhone 16 with iOS 26.2
+                - All functionalities work as expected
+                - No issues or bugs found during testing
+                - Performance is smooth and responsive
+                - UI elements are displayed correctly on the screen
+                - Verified compatibility with latest iOS features
+                - Overall, the application is stable and ready for release
                 """.stripIndent();
 
-        testRailPage.editResults(TestStatus.PASSED, comment);
+        testRailPage.editResults(TestStatus.BLOCKED, comment);
 
 
 
