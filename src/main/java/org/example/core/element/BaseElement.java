@@ -21,7 +21,7 @@ import static org.example.configure.Config.getMaxActionRetries;
 import static org.example.utils.DriverUtils.getWebDriver;
 
 @Slf4j
-public class BaseElement extends ElementAssert<BaseElement> implements IBaseElement {
+public class BaseElement extends ElementAssert implements IBaseElement {
 
     protected final By byLocator;
 
@@ -86,6 +86,11 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
             action.run();
             return null;
         });
+    }
+
+    @Override
+    protected BaseElement getBaseElement() {
+        return this;
     }
 
     @Override
@@ -881,13 +886,6 @@ public class BaseElement extends ElementAssert<BaseElement> implements IBaseElem
 
     private By buildChildLocator(String xpath) {
         return new ByChained(By.xpath("."), By.xpath(xpath));
-    }
-
-    // ========== ASSERTIONS ==========
-
-    @Override
-    protected BaseElement self() {
-        return this;
     }
 
 }

@@ -16,9 +16,11 @@ import java.util.Map;
 @Slf4j
 public class TC03 extends TestBase {
 
-    String username = "vunguyen.170803@gmail.com";
-    String password = "Vunguyen_2901";
-    String runUrl = "https://dutudn.testrail.io/index.php?/runs/view/1";
+    // String username = "vunguyen.170803@gmail.com";
+    // String password = "Vunguyen_2901";
+ 
+    // String runUrl = "https://dutudn.testrail.io/index.php?/runs/view/1";
+    String runUrl = "https://sonos.testrail.com/index.php?/runs/view/144189&group_by=cases:section_id&group_order=asc&display=tree";
     Account account = new Account(username, password);
     TestRailPage testRailPage = new TestRailPage();
 
@@ -31,21 +33,21 @@ public class TC03 extends TestBase {
 
         Map<Query, String> filterOptions = new HashMap<>();
         filterOptions.put(Query.STATUS, "Any");
-        filterOptions.put(Query.TESTED_BY, "Nguyễn Minh Vũ");
+        filterOptions.put(Query.TESTED_BY, "Vu Nguyen");
         testRailPage.filterResultsBy(filterOptions, Query.STATUS, Query.TESTED_BY);
 
-        String comment = """
-                iPhone 16 (iOS 26.2)
-                - Test executed on iPhone 16 with iOS 26.2
-                - All functionalities work as expected
-                - No issues or bugs found during testing
-                - Performance is smooth and responsive
-                - UI elements are displayed correctly on the screen
-                - Verified compatibility with latest iOS features
-                - Overall, the application is stable and ready for release
-                """.stripIndent();
+        // String comment = """
+        //         iPhone 16 (iOS 26.2)
+        //         - Test executed on iPhone 16 with iOS 26.2
+        //         - All functionalities work as expected
+        //         - No issues or bugs found during testing
+        //         - Performance is smooth and responsive
+        //         - UI elements are displayed correctly on the screen
+        //         - Verified compatibility with latest iOS features
+        //         - Overall, the application is stable and ready for release
+        //         """.stripIndent();
 
-        testRailPage.editResults(TestStatus.BLOCKED, comment);
+        // testRailPage.editResults(TestStatus.BLOCKED, comment);
 
 
 

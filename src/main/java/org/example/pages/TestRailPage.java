@@ -97,7 +97,13 @@ public class TestRailPage extends BasePage {
                 .collect(joining(", ")), () -> {
 
             // clear existing filter
-            clearButton.click();
+           if (clearButton.isExist()) {
+            // clearButton.click();
+            log.info("Clear button exists");
+           } else {
+            log.info("Clear button does not exist");
+           }
+
 
             // Click the filter dropdown button to open dropdown (only once)
             filterDropdownButton.click();
@@ -165,7 +171,6 @@ public class TestRailPage extends BasePage {
                 boolean isAlreadyExpanded = qpaneClose.isExist(Duration.ofSeconds(2));
                 if (!isAlreadyExpanded && expandBtn.isExist(Duration.ofSeconds(2))) {
                     expandBtn.scrollToView(0, -100); // Scroll with offset to avoid header overlap
-                    DriverUtils.delay(0.5); // Small delay after scroll (0.5 seconds)
                     expandBtn.clickByJs(); // Use JS click to avoid interception
                 }
 

@@ -2,7 +2,8 @@ package org.example.enums;
 
 import java.util.Locale;
 
-public enum Env {
+public enum
+Env {
     dev,
     prod,
     staging;
