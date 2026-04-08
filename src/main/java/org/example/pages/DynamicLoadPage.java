@@ -1,6 +1,7 @@
 package org.example.pages;
 
-import org.example.core.element.BaseElement;
+import org.example.core.assertion.AwaitAssert;
+import org.example.core.element.SelElement;
 import org.openqa.selenium.By;
 import java.time.Duration;
 import static org.example.utils.DriverUtils.navigateTo;
@@ -8,21 +9,21 @@ import static org.example.utils.DriverUtils.navigateTo;
 public class DynamicLoadPage extends BasePage {
 
     // Links to examples
-    private final BaseElement exampleLink1 =
-            BaseElement.$("//a[@href='/dynamic_loading/1']");
+    private final SelElement exampleLink1 =
+            SelElement.$("//a[@href='/dynamic_loading/1']");
 
-    private final BaseElement exampleLink2 =
-            BaseElement.$("//a[@href='/dynamic_loading/2']");
+    private final SelElement exampleLink2 =
+            SelElement.$("//a[@href='/dynamic_loading/2']");
 
     // Elements on the page
-    private final BaseElement startButton =
-            BaseElement.$(By.cssSelector("#start button"));
+    private final SelElement startButton =
+            SelElement.$(By.cssSelector("#start button"));
 
-    private final BaseElement loadingDiv =
-            BaseElement.$(By.cssSelector("#loading"));
+    private final SelElement loadingDiv =
+            SelElement.$(By.cssSelector("#loading"));
 
-    public final BaseElement finishText =
-            BaseElement.$(By.cssSelector("#finish h4"));
+    public final SelElement finishText =
+            SelElement.$(By.cssSelector("#finish h4"));
 
     public void navigateToPage() {
         step("Navigate to Dynamic Loading page", () -> {
@@ -46,6 +47,9 @@ public class DynamicLoadPage extends BasePage {
 
     public void clickStartButton() {
         step("Click Start button", () -> {
+            AwaitAssert.expect(startButton).not()
+                    .withTimeout(Duration.ofSeconds(10))
+                    .toBeVisible();
             startButton.click();
         });
     }
@@ -67,20 +71,13 @@ public class DynamicLoadPage extends BasePage {
         });
     }
 
-    public boolean checkHelloWorldDisplay(String expectedText) {
-        return step("Check if 'Hello World!' text is displayed", () -> {
+    public void shouldDisplayHelloWorld(String expectedText) {
+        step("Verify finish text is displayed", () -> {
             waitForLoadingToFinish();
-            // getText() already has wait built-in, no need to wait separately
-            String actualText = finishText.getText();
-            logInfo("Finish text displayed: " + actualText);
-            return actualText.equals(expectedText);
-        });
-    }
-    public String getFinishText() {
-        return step("Get finish text", () -> {
-            String actualText = finishText.getText();
-            logInfo("Finish text displayed: " + actualText);
-            return actualText;
+            AwaitAssert.expect(finishText)
+                    .withTimeout(Duration.ofSeconds(10))
+                    .toHaveText(expectedText);
+            logInfo("Finish text matched expected text: " + expectedText);
         });
     }
 }

@@ -15,7 +15,7 @@ public final class EnvUtils {
 
     private EnvUtils() {}
 
-    public static String readProperty(Env env, String propertyName) {
+        public static String readProperty(Env env, String propertyName) {
         Properties props = loadEnvProperties(env);
         return props.getProperty(propertyName);
     }

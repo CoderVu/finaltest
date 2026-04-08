@@ -2,7 +2,8 @@ package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
-import org.example.core.element.BaseElement;
+import org.example.core.assertion.AwaitAssert;
+import org.example.core.element.SelElement;
 import org.example.utils.DriverUtils;
 import org.example.utils.WaitUtils;
 import org.example.models.Hotel;
@@ -17,46 +18,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.time.LocalDate.parse;
-import static org.example.core.element.BaseElement.$;
+import static org.example.core.element.SelElement.$;
 import static org.example.utils.DriverUtils.getCurrentUrl;
 
 @Slf4j
 public class AgodaHomePage extends BasePage {
 
     // Element wrappers as fields (no helper methods)
-    protected final BaseElement destinationSearchInput = $("//input[@data-selenium='textInput' and @placeholder='Enter a destination or property']");
+    protected final SelElement destinationSearchInput = $("//input[@data-selenium='textInput' or @data-selenium='destination-autocomplete-input' or @role='combobox']");
 
-    protected final BaseElement autocompletePanel =
+    protected final SelElement autocompletePanel =
             $("//div[@data-selenium='autocompletePanel']");
 
-    protected final BaseElement checkInBox =
+    protected final SelElement checkInBox =
             $("//div[@data-element-name='check-in-box']");
 
-    protected final BaseElement checkOutBox =
+    protected final SelElement checkOutBox =
             $("//div[@data-element-name='check-out-box']");
 
-    protected final BaseElement calendarContainer =
+    protected final SelElement calendarContainer =
             $("//div[@id='DatePicker__AccessibleV2']");
 
-    protected final BaseElement occupancyBox =
+    protected final SelElement occupancyBox =
             $("//div[@data-element-name='occupancy-box']");
 
-    protected final BaseElement hotelListContainer =
+    protected final SelElement hotelListContainer =
             $("//ol[contains(@class,'hotel-list-container')]");
 
-    protected final BaseElement monthCaption =
+    protected final SelElement monthCaption =
             $("//div[contains(@class,'DayPicker-Caption')]");
 
-    protected final BaseElement searchButton =
+    protected final SelElement searchButton =
             $("//button[@data-selenium='searchButton']");
 
-    protected final BaseElement sortPriceButton =
+    protected final SelElement sortPriceButton =
             $("//button[@data-element-name='search-sort-price']");
 
-    protected final BaseElement nextMonthBtn =
-            $("//button[@data-selenium='calendar-next-month-button']");
+    protected final SelElement nextMonthBtn = $("//button[@data-selenium='calendar-next-month-button']");
 
-    protected final BaseElement prevMonthBtn =
+    protected final SelElement prevMonthBtn =
             $("//button[@data-selenium='calendar-previous-month-button']");
 
     protected String occupancyPopupXpath = "//div[@class='OccupancySelector OccupancySelector--travelWithKids']";
@@ -122,7 +122,7 @@ public class AgodaHomePage extends BasePage {
                 autocompletePanel.waitForVisibility(Duration.ofSeconds(10));
 
                 // Locator đại diện cho tất cả autosuggest items (bên trong Popup AutocompleteList)
-                BaseElement suggestionsLocator = $("//div[contains(@class,'Popup__content')]" +
+                SelElement suggestionsLocator = $("//div[contains(@class,'Popup__content')]" +
                         "//ul[contains(@class,'AutocompleteList')]//li[@data-selenium='autosuggest-item']");
 
                 // Đợi đến khi có ít nhất 1 autosuggest item trong DOM
@@ -227,7 +227,7 @@ public class AgodaHomePage extends BasePage {
                 DriverUtils.delay(0.5);
                 prevTries++;
             }
-            BaseElement checkInDateElement = $("//span[@data-selenium-date='" + checkInDate + "']");
+            SelElement checkInDateElement = $("//span[@data-selenium-date='" + checkInDate + "']");
             for (int i = 0; i < 3; i++) {
                 try {
                     checkInDateElement.waitForElementClickable(Duration.ofSeconds(10));
@@ -245,7 +245,7 @@ public class AgodaHomePage extends BasePage {
                 }
             }
             if (calendarContainer.isVisible()) {
-                BaseElement outsideArea = $("//body");
+                SelElement outsideArea = $("//body");
                 ((JavascriptExecutor) DriverUtils.getWebDriver()).executeScript("arguments[0].click();", outsideArea.getElement());
                 try {
                     calendarContainer.waitForInvisibility(Duration.ofSeconds(10));
@@ -272,7 +272,7 @@ public class AgodaHomePage extends BasePage {
             String targetMonth = parse(checkOutDate).getMonth().name();
             String targetYear = String.valueOf(parse(checkOutDate).getYear());
             for (int i = 0; i < 12; i++) {
-                BaseElement monthCaptionEl = $(monthStringXpath);
+                SelElement monthCaptionEl = $(monthStringXpath);
                 String captionText = monthCaptionEl.getText();
                 if (captionText.toLowerCase().contains(targetMonth.toLowerCase()) && captionText.contains(targetYear)) {
                     break;
@@ -289,7 +289,7 @@ public class AgodaHomePage extends BasePage {
                 }
                 DriverUtils.delay(0.5);
             }
-            BaseElement checkOutDateElement = $("//span[@data-selenium-date='" + checkOutDate + "']");
+            SelElement checkOutDateElement = $("//span[@data-selenium-date='" + checkOutDate + "']");
             for (int i = 0; i < 3; i++) {
                 try {
                     checkOutDateElement.waitForElementClickable(Duration.ofSeconds(10));
@@ -317,10 +317,11 @@ public class AgodaHomePage extends BasePage {
 
     public void clickSearchButton() {
         step(() -> {
-            searchButton.waitForElementClickable(Duration.ofSeconds(10));
-            searchButton.scrollToView();
-            // Use JS click to avoid stale / intercepted issues around dynamic DOM changes
-            searchButton.clickByJs();
+//            searchButton.scrollElementToCenterScreen();
+            AwaitAssert.expect(searchButton).withTimeout(Duration.ofSeconds(10)).toBeEnabled();
+            searchButton.click();
+
+
         });
     }
 
@@ -347,7 +348,7 @@ public class AgodaHomePage extends BasePage {
 
     public void SelectOccupancy(int rooms, int adults, int children) {
         step("Select occupancy: " + rooms + " rooms, " + adults + " adults, " + children + " children", () -> {
-            BaseElement occupancyPopup = $(occupancyPopupXpath);
+            SelElement occupancyPopup = $(occupancyPopupXpath);
 
             try {
                 occupancyPopup.waitForVisibility(Duration.ofSeconds(10));
@@ -368,14 +369,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectRooms(int targetRooms) {
         step("Select rooms: " + targetRooms, () -> {
-            BaseElement roomValueElement = $(roomValueXpath);
+            SelElement roomValueElement = $(roomValueXpath);
             roomValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentRooms = Integer.parseInt(roomValueElement.getText().trim());
             logInfo("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
 
-            BaseElement roomsPlusButton = $(roomsPlusButtonXpath);
-            BaseElement roomsMinusButton = $(roomsMinusButtonXpath);
+            SelElement roomsPlusButton = $(roomsPlusButtonXpath);
+            SelElement roomsMinusButton = $(roomsMinusButtonXpath);
 
             while (currentRooms < targetRooms) {
                 roomsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -399,14 +400,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectAdults(int targetAdults) {
         step("Select adults: " + targetAdults, () -> {
-            BaseElement adultValueElement = $(adultValueXpath);
+            SelElement adultValueElement = $(adultValueXpath);
             adultValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentAdults = Integer.parseInt(adultValueElement.getText().trim());
             logInfo("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
 
-            BaseElement adultsPlusButton = $(adultsPlusButtonXpath);
-            BaseElement adultsMinusButton = $(adultsMinusButtonXpath);
+            SelElement adultsPlusButton = $(adultsPlusButtonXpath);
+            SelElement adultsMinusButton = $(adultsMinusButtonXpath);
 
             while (currentAdults < targetAdults) {
                 adultsPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -430,14 +431,14 @@ public class AgodaHomePage extends BasePage {
 
     private void selectChildren(int targetChildren) {
         step("Select children: " + targetChildren, () -> {
-            BaseElement childrenValueElement = $(childrenValueXpath);
+            SelElement childrenValueElement = $(childrenValueXpath);
             childrenValueElement.waitForVisibility(Duration.ofSeconds(10));
 
             int currentChildren = Integer.parseInt(childrenValueElement.getText().trim());
             logInfo("Current children: " + currentChildren + ", Target children: " + targetChildren);
 
-            BaseElement childrenPlusButton = $(childrenPlusButtonXpath);
-            BaseElement childrenMinusButton = $(childrenMinusButtonXpath);
+            SelElement childrenPlusButton = $(childrenPlusButtonXpath);
+            SelElement childrenMinusButton = $(childrenMinusButtonXpath);
 
             while (currentChildren < targetChildren) {
                 childrenPlusButton.waitForElementClickable(Duration.ofSeconds(10));
@@ -464,7 +465,7 @@ public class AgodaHomePage extends BasePage {
             List<Hotel> hotels = new ArrayList<>();
             try {
                 // Locator đại diện cho tất cả hotel cards
-                BaseElement hotelCardsLocator = $(propertyCardXpath);
+                SelElement hotelCardsLocator = $(propertyCardXpath);
                 List<WebElement> hotelCardElements = hotelCardsLocator.getElements();
 
                 logInfo("Found " + hotelCardElements.size() + " hotel cards in search results");
@@ -474,7 +475,7 @@ public class AgodaHomePage extends BasePage {
                     try {
                         // Xây dựng indexed xpath để có locator ổn định cho từng card
                         String indexedCardXpath = String.format("(%s)[%d]", propertyCardXpath, i + 1);
-                        BaseElement cardElement = $(indexedCardXpath);
+                        SelElement cardElement = $(indexedCardXpath);
                         cardElement.scrollToView();
                         Hotel hotel = extractHotelFromCard(cardElement);
                         if (hotel != null) {
@@ -495,7 +496,7 @@ public class AgodaHomePage extends BasePage {
         });
     }
 
-    private Hotel extractHotelFromCard(BaseElement card) {
+    private Hotel extractHotelFromCard(SelElement card) {
         return step(() -> {
             try {
                 Hotel.HotelBuilder hotelBuilder = Hotel.builder();
@@ -634,7 +635,7 @@ public class AgodaHomePage extends BasePage {
     public void waitForSearchResultsToLoad() {
         step(() -> {
             try {
-                BaseElement firstPropertyCard = $(propertyCardXpath + "[1]");
+                SelElement firstPropertyCard = $(propertyCardXpath + "[1]");
                 firstPropertyCard.waitForVisibility(Duration.ofSeconds(10));
                 logInfo("Search results have loaded successfully");
             } catch (Exception e) {
@@ -786,7 +787,7 @@ public class AgodaHomePage extends BasePage {
 
                 boolean sortCompleted = wait.until(driver -> {
                     try {
-                        BaseElement cardsLocator = $(propertyCardXpath);
+                        SelElement cardsLocator = $(propertyCardXpath);
                         int currentSize = cardsLocator.getElements().size();
                         if (currentSize != beforeCount) {
                             logInfo("Property card count changed from " + beforeCount + " to " + currentSize);

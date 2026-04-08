@@ -1,8 +1,8 @@
 package org.example.core.assertion;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.reporting.ReportingManager;
-import org.example.core.reporting.ReportClient;
+import org.example.core.reporting.ReportManager;
+import org.example.core.reporting.Reporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.example.common.Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT;
@@ -17,8 +17,6 @@ import static org.example.utils.DateUtils.getCurrentTimestamp;
 public class Assertions {
 
     private static final ThreadLocal<Assertions> INSTANCE = ThreadLocal.withInitial(Assertions::new);
-    private static final ThreadLocal<Integer> CURRENT_ATTEMPT = new ThreadLocal<>();
-    private static final ThreadLocal<Boolean> ASSERTION_LOGGED = new ThreadLocal<>();
 
     public static Assertions get() {
         return INSTANCE.get();
@@ -27,33 +25,6 @@ public class Assertions {
     public static void reset() {
         INSTANCE.remove();
         INSTANCE.set(new Assertions());
-        CURRENT_ATTEMPT.remove();
-        ASSERTION_LOGGED.remove();
-    }
-
-    /**
-     * Sets the current attempt number for retry assertions.
-     * Used by FunctionAssertions to track retry attempts.
-     * Pass null to clear.
-     */
-    public static void setCurrentAttempt(Integer attempt) {
-        if (attempt == null) {
-            CURRENT_ATTEMPT.remove();
-        } else {
-            CURRENT_ATTEMPT.set(attempt);
-        }
-    }
-
-    private static Integer getCurrentAttempt() {
-        return CURRENT_ATTEMPT.get();
-    }
-
-    public static boolean isAssertionLogged() {
-        return Boolean.TRUE.equals(ASSERTION_LOGGED.get());
-    }
-
-    public static void markAssertionLogged() {
-        ASSERTION_LOGGED.set(true);
     }
 
     /**
@@ -111,32 +82,23 @@ public class Assertions {
 
 
     private void handleAssertionFailure(String message, Object expected, Object actual, AssertionError error) {
-        Integer attempt = getCurrentAttempt();
-        
-        if (attempt == null) {
-            return;
-        }
-        
-        String attemptInfo = (attempt > 1) ? " [Attempt " + attempt + "]" : "";
-        
         String reportMessage;
         if (error.getMessage() != null) {
-            reportMessage = error.getMessage() + attemptInfo;
+            reportMessage = error.getMessage();
         } else {
             String expectedStr = expected != null ? String.valueOf(expected) : "null";
             String actualStr = actual != null ? String.valueOf(actual) : "null";
-            reportMessage = message + attemptInfo + " | expected=" + expectedStr + " actual=" + actualStr;
+            reportMessage = message + " | expected=" + expectedStr + " actual=" + actualStr;
         }
 
-        ReportClient client = ReportingManager.getReportClient();
-        if (client != null) {
-            client.logFail(reportMessage, error);
+        Reporter reporter = ReportManager.getReporter();
+        if (reporter != null) {
+            reporter.logFail(reportMessage, error);
             try {
-                client.attachScreenshot("assert_fail_" +  getCurrentTimestamp(DEFAULT_TIMESTAMP_REPORT_FORMAT) + ".png");
+                reporter.attachScreenshot("assert_fail_" +  getCurrentTimestamp(DEFAULT_TIMESTAMP_REPORT_FORMAT) + ".png");
             } catch (Exception e) {
                 log.debug("Unable to attach screenshot for assertion failure: {}", e.getMessage());
             }
-            markAssertionLogged();
         }
     }
 }

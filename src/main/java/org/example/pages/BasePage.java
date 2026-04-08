@@ -1,8 +1,8 @@
 package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.core.reporting.ReportClient;
-import org.example.core.reporting.ReportingManager;
+import org.example.core.reporting.Reporter;
+import org.example.core.reporting.ReportManager;
 
 import java.util.Collection;
 import java.util.function.Supplier;
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 @Slf4j
 public class BasePage {
 
-    protected ReportClient reporter = ReportingManager.getReportClient();
+    protected Reporter reporter = ReportManager.getReporter();
 
     protected void step(Runnable action) {
         String methodName = getCallingMethodName();

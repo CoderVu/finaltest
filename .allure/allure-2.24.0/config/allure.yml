@@ -1,10 +1,10 @@
 plugins:
-  - junit-xml-Plugin
-  - xunit-xml-Plugin
-  - trx-Plugin
-  - behaviors-Plugin
-  - packages-Plugin
-  - screen-diff-Plugin
-  - xctest-Plugin
-  - jira-Plugin
-  - xray-Plugin
+  - junit-xml-IReportType
+  - xunit-xml-IReportType
+  - trx-IReportType
+  - behaviors-IReportType
+  - packages-IReportType
+  - screen-diff-IReportType
+  - xctest-IReportType
+  - jira-IReportType
+  - xray-IReportType

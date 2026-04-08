@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.enums.BrowserType;
 import org.example.enums.Env;
+import org.example.enums.TestEngine;
 import org.example.utils.EnvUtils;
 
 import java.time.Duration;
@@ -59,7 +60,7 @@ public final class Config {
      * If the property is missing or invalid, returns a single-element list with DEFAULT_BROWSER.
      */
     public static List<BrowserType> getBrowserTypes() {
-        String raw = getPropertyOrDefault(Constants.BROWSERS_PROPERTY, Constants.DEFAULT_BROWSER);
+        String raw = getProperty(Constants.BROWSERS_PROPERTY, Constants.DEFAULT_BROWSER);
         if (raw == null || raw.trim().isEmpty()) {
             return List.of(BrowserType.fromString(Constants.DEFAULT_BROWSER));
         }
@@ -82,13 +83,13 @@ public final class Config {
 
     public static Duration getTimeout() {
      return Duration.ofSeconds(Long.parseLong(
-             getPropertyOrDefault(Constants.TIMEOUT_PROPERTY,
+             getProperty(Constants.TIMEOUT_PROPERTY,
                      String.valueOf(Constants.DEFAULT_TIMEOUT.getSeconds()))
      ));
     }
     public static Duration getPageLoadTimeout() {
         return Duration.ofSeconds(Long.parseLong(
-                getPropertyOrDefault(Constants.PAGE_LOAD_TIMEOUT_PROPERTY,
+                getProperty(Constants.PAGE_LOAD_TIMEOUT_PROPERTY,
                         String.valueOf(Constants.DEFAULT_PAGE_LOAD_TIMEOUT.getSeconds()))
         ));
     }
@@ -102,12 +103,16 @@ public final class Config {
         return ACTIVE_ENV + ".properties";
     }
 
+    public static TestEngine getTestEngine() {
+        return TestEngine.from(Constants.DEFAULT_TEST_ENGINE);
+    }
+
     public static boolean getBooleanPropertyOrDefault(String key, boolean defaultValue) {
         String value = readEnvProperty(key);
         return value != null ? Boolean.parseBoolean(value.trim()) : defaultValue;
     }
 
-    public static int getIntPropertyOrDefault(String key, int defaultValue) {
+    public static int getIntProperty(String key, int defaultValue) {
         String value = readEnvProperty(key);
         if (value == null || value.trim().isEmpty()) {
             return defaultValue;
@@ -120,7 +125,7 @@ public final class Config {
         }
     }
 
-    public static String getPropertyOrDefault(String key, String defaultValue) {
+    public static String getProperty(String key, String defaultValue) {
         String value = readEnvProperty(key);
         return value != null ? value.trim() : defaultValue;
     }
@@ -137,6 +142,6 @@ public final class Config {
         return EnvUtils.readProperty(ACTIVE_ENV, key);
     }
     public static int getMaxActionRetries() {
-        return Config.getIntPropertyOrDefault(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 3);
+        return Config.getIntProperty(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 3);
     }
 }

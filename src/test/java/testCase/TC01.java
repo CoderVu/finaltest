@@ -1,6 +1,7 @@
 package testCase;
 
 import org.example.core.dataProvider.DataProvider;
+import org.example.core.assertion.Assertions;
 import org.example.models.Hotel;
 import org.example.pages.AgodaHomePage;
 import org.testng.annotations.Test;
@@ -8,8 +9,6 @@ import config.TestBase;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-
-import static org.example.core.assertion.retry.AwaitAssert.*;
 
 @Slf4j
 public class TC01 extends TestBase {
@@ -37,22 +36,18 @@ public class TC01 extends TestBase {
         homePage.switchToSearchResultsTab();
         homePage.waitForSearchResultsToLoad();
 
-        // Step 7: Verify search results with auto-retry assertions
-        // Assert with auto-retry: Verify at least expected number of hotels are displayed
-        assertTrue(
-            () -> homePage.checkSearchResults(expectedHotelCount),
-            String.format("Verify at least %d hotels are displayed", expectedHotelCount)
+        // Step 7: Verify search results (single evaluation, no assertion retry)
+        boolean hasExpectedResults = homePage.checkSearchResults(expectedHotelCount);
+        Assertions.get().assertTrue(
+                hasExpectedResults,
+                String.format("Verify at least %d hotels are displayed", expectedHotelCount)
         );
-        
-        // Assert with auto-retry: Verify hotel count is greater than or equal to expected
-        // actual is dynamic (Supplier) - re-fetches from UI on each retry
-        assertGreaterThanOrEqual(
-            () -> {
-                List<Hotel> hotels = homePage.getAllHotelsFromListViewSearch(expectedHotelCount);
-                return homePage.getTotalHotelsCount(hotels);
-            },
-            expectedHotelCount,
-            String.format("Hotel count should be at least %d", expectedHotelCount)
+
+        List<Hotel> hotels = homePage.getAllHotelsFromListViewSearch(expectedHotelCount);
+        int totalHotels = homePage.getTotalHotelsCount(hotels);
+        Assertions.get().assertTrue(
+                totalHotels >= expectedHotelCount,
+                String.format("Hotel count should be at least %d | actual=%d", expectedHotelCount, totalHotels)
         );
 
         // Step 8: Sort hotels by lowest price
@@ -63,13 +58,12 @@ public class TC01 extends TestBase {
         // Step 9: Verify sorting and destination with auto-retry
         int expectedCount = Math.min(5, expectedHotelCount);
         
-        // Assert: Verify hotels are sorted by lowest price
-        assertTrue(
-            () -> {
-                List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
-                return homePage.checkHotelsSortedByLowestPrice(hotelsAfterSort);
-            },
-            "Verify hotels are sorted by lowest price after sort operation"
+        // Assert: Verify hotels are sorted by lowest price (single evaluation, no assertion retry)
+        List<Hotel> hotelsAfterSort = homePage.getAllHotelsFromListViewSearch(expectedCount);
+        boolean sortedByLowestPrice = homePage.checkHotelsSortedByLowestPrice(hotelsAfterSort);
+        Assertions.get().assertTrue(
+                sortedByLowestPrice,
+                "Verify hotels are sorted by lowest price after sort operation"
         );
     }
 

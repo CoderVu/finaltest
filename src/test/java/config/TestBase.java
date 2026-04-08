@@ -5,7 +5,7 @@ import org.example.configure.Config;
 import org.example.enums.BrowserType;
 import org.example.core.assertion.Assertions;
 import org.example.core.driver.factory.DriverFactory;
-import org.example.core.reporting.ReportingManager;
+import org.example.core.reporting.ReportManager;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
@@ -16,7 +16,7 @@ import static org.example.utils.DriverUtils.getWebDriver;
 public class TestBase {
 
     static {
-        ReportingManager.initReporting();
+        ReportManager.getReporter();
     }
 
     private BrowserType browserType;

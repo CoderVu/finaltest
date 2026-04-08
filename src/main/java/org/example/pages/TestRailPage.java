@@ -2,15 +2,13 @@ package org.example.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
-import org.example.core.element.BaseElement;
+import org.example.core.element.SelElement;
 import org.example.models.Account;
 import org.example.enums.Query;
 import org.example.enums.TestStatus;
 import org.example.utils.DriverUtils;
-import org.example.utils.WaitUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.time.Duration;
 import java.util.List;
@@ -18,29 +16,29 @@ import java.util.Map;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
-import static org.example.core.element.BaseElement.$;
+import static org.example.core.element.SelElement.$;
 import static org.example.utils.DriverUtils.getCurrentUrl;
 
 @Slf4j
 public class TestRailPage extends BasePage {
 
     // Page elements (wrappers)
-    protected final BaseElement usernameInput = $(By.id("name"));
-    protected final BaseElement passwordInput = $(By.id("password"));
-    protected final BaseElement loginButton = $(By.id("button_primary"));
-    protected final BaseElement filterDropdownButton = $(By.id("filterByChange"));
-    protected final BaseElement filterTestsContent = $(By.id("filterTestsContent"));
-    protected final BaseElement applyButton = $(By.id("filterTestsApply"));
-    protected final BaseElement clearButton = $(By.id("filterByReset"));
-    protected final BaseElement editLink = $(By.xpath("//span[@class='text-secondary editChange']/a"));
-    protected final BaseElement statusSelectChosen = $(By.id("addResultStatus_chosen"));
-    protected final BaseElement statusSelect = $(By.id("addResultStatus"));
-    protected final BaseElement commentTextarea = $(By.id("addResultComment_display")); // Hidden textarea for Froala editor
-    protected final BaseElement submitButton = $(By.id("addResultSubmit"));
-    protected final BaseElement chosenSingle = $(By.xpath("//div[@id='addResultStatus_chosen']//a[@class='chosen-single']"));
-    protected final BaseElement tabsElement = $(By.xpath("//div[@class='tabs']"));
-    protected final BaseElement qpaneClose = $(By.xpath("//div[@data-testid='qpaneCloseButton']"));
-    protected final BaseElement blockedUI = $(By.cssSelector(".ui-widget-overlay, .blockUI"));
+    protected final SelElement usernameInput = $(By.id("name"));
+    protected final SelElement passwordInput = $(By.id("password"));
+    protected final SelElement loginButton = $(By.id("button_primary"));
+    protected final SelElement filterDropdownButton = $(By.id("filterByChange"));
+    protected final SelElement filterTestsContent = $(By.id("filterTestsContent"));
+    protected final SelElement applyButton = $(By.id("filterTestsApply"));
+    protected final SelElement clearButton = $(By.id("filterByReset"));
+    protected final SelElement editLink = $(By.xpath("//span[@class='text-secondary editChange']/a"));
+    protected final SelElement statusSelectChosen = $(By.id("addResultStatus_chosen"));
+    protected final SelElement statusSelect = $(By.id("addResultStatus"));
+    protected final SelElement commentTextarea = $(By.id("addResultComment_display")); // Hidden textarea for Froala editor
+    protected final SelElement submitButton = $(By.id("addResultSubmit"));
+    protected final SelElement chosenSingle = $(By.xpath("//div[@id='addResultStatus_chosen']//a[@class='chosen-single']"));
+    protected final SelElement tabsElement = $(By.xpath("//div[@class='tabs']"));
+    protected final SelElement qpaneClose = $(By.xpath("//div[@data-testid='qpaneCloseButton']"));
+    protected final SelElement blockedUI = $(By.cssSelector(".ui-widget-overlay, .blockUI"));
 
     protected final String runRowXpath = "//td[@data-testid='runTestAction']";
     protected final String expandInRowXpath = "//a[.//div[@data-testid='runTestIconExpandRow']]";
@@ -49,8 +47,8 @@ public class TestRailPage extends BasePage {
     /**
      * Get expand button for a specific row index
      */
-    private BaseElement getExpandButton(int rowIdx) {
-        BaseElement expandBtn = $("(%s)[%d]%s", runRowXpath, rowIdx, expandInRowXpath);
+    private SelElement getExpandButton(int rowIdx) {
+        SelElement expandBtn = $("(%s)[%d]%s", runRowXpath, rowIdx, expandInRowXpath);
         if (!expandBtn.isExist(Duration.ofSeconds(1))) {
             expandBtn = $("(%s)[%d]%s", runRowXpath, rowIdx, expandFallbackXpath);
         }
@@ -113,10 +111,10 @@ public class TestRailPage extends BasePage {
                 blockedUI.waitForInvisibility();
 
                 // Find filter group by displayName (text in the link) - more reliable than rel attribute
-                BaseElement filterGroup = $("//div[@id='filterTestsContent']//a[@class='link-noline' and contains(text(), '%s')]/ancestor::div[@class='filter-group filter']", query.getDisplayName());
+                SelElement filterGroup = $("//div[@id='filterTestsContent']//a[@class='link-noline' and contains(text(), '%s')]/ancestor::div[@class='filter-group filter']", query.getDisplayName());
 
                 // Click filter name link to expand
-                BaseElement filterNameLink = $("//div[@id='filterTestsContent']//a[@class='link-noline' and contains(text(), '%s')]/ancestor::div[@class='filter-group filter']//a[@class='link-noline']", query.getDisplayName());
+                SelElement filterNameLink = $("//div[@id='filterTestsContent']//a[@class='link-noline' and contains(text(), '%s')]/ancestor::div[@class='filter-group filter']//a[@class='link-noline']", query.getDisplayName());
                 filterNameLink.click();
 
                 // Get option to select
@@ -134,7 +132,7 @@ public class TestRailPage extends BasePage {
             filterTestsContent.waitForDisappear();
 
             // Wait for rows to be ready and stable
-            BaseElement rowsElement = $(By.xpath(runRowXpath));
+            SelElement rowsElement = $(By.xpath(runRowXpath));
             rowsElement.waitForDisplay(Duration.ofSeconds(30));
 
             // Additional wait to ensure filter results are fully loaded and stable
@@ -150,7 +148,7 @@ public class TestRailPage extends BasePage {
             blockedUI.waitForInvisibility();
 
             // Wait for rows to appear and count total rows to process
-            BaseElement rowsElement = $(By.xpath(runRowXpath));
+            SelElement rowsElement = $(By.xpath(runRowXpath));
             rowsElement.waitForDisplay(Duration.ofSeconds(30));
 
             List<WebElement> rows = rowsElement.getElements();
@@ -165,7 +163,7 @@ public class TestRailPage extends BasePage {
             // Process all rows found initially
             for (int idx = 1; idx <= totalRows; idx++) {
                 // Get expand button for this row
-                BaseElement expandBtn = getExpandButton(idx);
+                SelElement expandBtn = getExpandButton(idx);
 
                 // Expand row if not already expanded
                 boolean isAlreadyExpanded = qpaneClose.isExist(Duration.ofSeconds(2));
@@ -184,7 +182,7 @@ public class TestRailPage extends BasePage {
 
                 // Select status
                 chosenSingle.click();
-                BaseElement chosenOption = $("//div[@id='addResultStatus_chosen']//ul[@class='chosen-results']//li[contains(text(), '%s')]", status.getDisplayName());
+                SelElement chosenOption = $("//div[@id='addResultStatus_chosen']//ul[@class='chosen-results']//li[contains(text(), '%s')]", status.getDisplayName());
                 chosenOption.click();
 
                 // Set comment

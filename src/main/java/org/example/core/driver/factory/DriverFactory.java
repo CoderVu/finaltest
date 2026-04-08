@@ -26,7 +26,7 @@ public class DriverFactory {
 
     public static void createDriver(BrowserType type) {
         boolean useRemote = isUseRemote();
-        log.warn("Creating Driver for type {}, useRemote={}", type, useRemote);
+        log.info("Creating Driver for type {}, useRemote={}", type, useRemote);
         AbstractDriverManager manager = THREAD_LOCAL.get();
         if (manager == null || manager.getBrowserType() != type || manager.isRemoteSession() != useRemote) {
             if (manager != null) {
@@ -36,7 +36,7 @@ public class DriverFactory {
             THREAD_LOCAL.set(manager);
         }
         manager.initDriver();
-        log.debug("Driver initialized for browser: {}", type);
+        log.info("Driver initialized for browser: {}", type);
     }
 
     public static AbstractDriverManager getCurrentDriverManager() {

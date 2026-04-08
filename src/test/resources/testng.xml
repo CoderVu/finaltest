@@ -1,14 +1,22 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
-<suite name="Selenium Test Suite" parallel="tests" thread-count="1">
+<suite name="Selenium Test Suite" parallel="tests" thread-count="2">
     <listeners>
-        <listener class-name="org.example.testng.TestListener"/>
+        <listener class-name="org.example.engine.testng.listener.TestNGReporter"/>
     </listeners>
     
-    <test name="Selenium Test - TC01">
+    <test name="Selenium Test - Chrome">
+        <parameter name="browser" value="chrome"/>
         <classes>
-            <class name="testCase.TC03"/>
+            <class name="testCase.DynamicLoadTest"/>
         </classes>
     </test>
+
+<!--    <test name="Selenium Test - TC01 - Firefox">-->
+<!--        <parameter name="browser" value="firefox"/>-->
+<!--        <classes>-->
+<!--            <class name="testCase.TC01"/>-->
+<!--        </classes>-->
+<!--    </test>-->
 
 
 </suite>

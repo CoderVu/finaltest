@@ -16,8 +16,8 @@ import java.util.Map;
 @Slf4j
 public class TC03 extends TestBase {
 
-    // String username = "vunguyen.170803@gmail.com";
-    // String password = "Vunguyen_2901";
+     String username = "vunguyen.170803@gmail.com";
+     String password = "Vunguyen_2901";
  
     // String runUrl = "https://dutudn.testrail.io/index.php?/runs/view/1";
     String runUrl = "https://sonos.testrail.com/index.php?/runs/view/144189&group_by=cases:section_id&group_order=asc&display=tree";

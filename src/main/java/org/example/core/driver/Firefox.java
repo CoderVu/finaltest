@@ -16,7 +16,7 @@ public class Firefox extends AbstractDriverManager {
 
     @Override
     protected WebDriver createLocalDriver() {
-        WebDriverManager.firefoxdriver().setup();
+        WebDriverManager.firefoxdriver().driverVersion("0.36.0").setup();
         return new FirefoxDriver(buildFirefoxOptions());
     }
 

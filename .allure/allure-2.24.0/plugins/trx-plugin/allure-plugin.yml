@@ -1,5 +1,5 @@
 id: trx
-name: XUnit TRX Plugin
-description: The Plugin that adds support for results TRX data format.
+name: XUnit TRX IReportType
+description: The IReportType that adds support for results TRX data format.
 extensions:
   - io.qameta.allure.trx.TrxPlugin
