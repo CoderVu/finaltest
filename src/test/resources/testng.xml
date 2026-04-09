@@ -7,7 +7,7 @@
     <test name="Selenium Test - Chrome">
         <parameter name="browser" value="chrome"/>
         <classes>
-            <class name="testCase.DynamicLoadTest"/>
+            <class name="testCase.DynamicControlTest"/>
         </classes>
     </test>
 

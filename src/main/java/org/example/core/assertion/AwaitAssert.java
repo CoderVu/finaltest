@@ -1,6 +1,8 @@
 package org.example.core.assertion;
 
 import org.example.core.element.ISelElement;
+import org.example.core.reporting.ReportManager;
+import org.example.core.reporting.Reporter;
 import org.example.utils.DriverUtils;
 
 import java.time.Duration;
@@ -9,6 +11,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class AwaitAssert {
+
+    private static final Reporter REPORTER = ReportManager.getReporter();
 
     public static ElementExpectation expect(ISelElement element) {
         return new ElementExpectation(element);
@@ -96,42 +100,67 @@ public class AwaitAssert {
 
         public void toBeVisible() {
             String message = expectationMessage("Element should be visible: " + element.getLocator());
-            retryUntil(element::isVisible, Boolean.TRUE::equals, message, false);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::isVisible, Boolean.TRUE::equals, message, false));
         }
 
         public void toBeHidden() {
             String message = expectationMessage("Element should be hidden: " + element.getLocator());
-            retryUntil(element::isVisible, actual -> Boolean.FALSE.equals(actual), message, false);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::isVisible, actual -> Boolean.FALSE.equals(actual), message, false));
         }
 
         public void toBeEnabled() {
             String message = expectationMessage("Element should be enabled: " + element.getLocator());
-            retryUntil(element::isEnabled, Boolean.TRUE::equals, message, false);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::isEnabled, Boolean.TRUE::equals, message, false));
         }
 
         public void toBeDisabled() {
             String message = expectationMessage("Element should be disabled: " + element.getLocator());
-            retryUntil(element::isEnabled, actual -> Boolean.FALSE.equals(actual), message, false);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::isEnabled, actual -> Boolean.FALSE.equals(actual), message, false));
         }
 
         public void toHaveText(String expected) {
             String message = expectationMessage("Element should have exact text '" + expected + "': " + element.getLocator());
-            retryUntil(element::getText, actual -> expected != null && expected.equals(actual), message, true);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::getText, actual -> expected != null && expected.equals(actual), message, true));
         }
 
         public void toContainText(String substring) {
             String message = expectationMessage("Element text should contain '" + substring + "': " + element.getLocator());
-            retryUntil(element::getText, actual -> actual != null && substring != null && actual.contains(substring), message, true);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::getText, actual -> actual != null && substring != null && actual.contains(substring), message, true));
         }
 
         public void toHaveAttribute(String attribute, String expected) {
             String message = expectationMessage("Element attribute '" + attribute + "' should equal '" + expected + "': " + element.getLocator());
-            retryUntil(() -> element.getAttribute(attribute), actual -> expected != null && expected.equals(actual), message, true);
+            executeExpectationStep(message, () ->
+                    retryUntil(() -> element.getAttribute(attribute), actual -> expected != null && expected.equals(actual), message, true));
         }
 
         public void toHaveValue(String expected) {
             String message = expectationMessage("Element value should equal '" + expected + "': " + element.getLocator());
-            retryUntil(element::getValue, actual -> expected != null && expected.equals(actual), message, true);
+            executeExpectationStep(message, () ->
+                    retryUntil(element::getValue, actual -> expected != null && expected.equals(actual), message, true));
+        }
+
+        private void executeExpectationStep(String stepName, Runnable action) {
+            if (REPORTER == null) {
+                action.run();
+                return;
+            }
+
+            if (REPORTER.isInStep()) {
+                action.run();
+                return;
+            }
+
+            REPORTER.childStep(stepName, () -> {
+                action.run();
+                REPORTER.info("PASSED");
+            });
         }
 
         private <T> void retryUntil(Supplier<T> actualSupplier, Predicate<T> passCondition, String message, boolean includeLastActual) {
