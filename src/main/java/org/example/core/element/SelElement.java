@@ -350,9 +350,7 @@ public class SelElement implements ISelElement {
         return doWithRetry(() -> {
             log.debug("Get text of {}", getLocator().toString());
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.getText();
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -367,9 +365,7 @@ public class SelElement implements ISelElement {
         return doWithRetry(() -> {
             log.debug("Get value of {}", getLocator().toString());
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.getAttribute("value");
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -384,9 +380,7 @@ public class SelElement implements ISelElement {
         log.debug("Get attribute '{}' of {}", attributeName, getLocator().toString());
         return doWithRetry(() -> {
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.getAttribute(attributeName);
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -401,9 +395,7 @@ public class SelElement implements ISelElement {
         log.debug("Get class name of {}", getLocator().toString());
         return doWithRetry(() -> {
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.getAttribute("class");
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -418,9 +410,7 @@ public class SelElement implements ISelElement {
         log.debug("Get tag name of {}", getLocator().toString());
         return doWithRetry(() -> {
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.getTagName();
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -435,9 +425,7 @@ public class SelElement implements ISelElement {
         log.debug("Get child element '{}' of {}", xpath, getLocator().toString());
         return doWithRetry(() -> {
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.findElement(buildChildLocator(xpath));
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -457,9 +445,7 @@ public class SelElement implements ISelElement {
         log.debug("Get child elements '{}' of {}", xpath, getLocator().toString());
         return doWithRetry(() -> {
             try {
-                WebElement element = WaitUtils.waitFor(
-                        ExpectedConditions.visibilityOfElementLocated(getLocator()),
-                        DriverUtils.getTimeOut());
+                WebElement element = getWebDriver().findElement(getLocator());
                 return element.findElements(buildChildLocator(xpath));
             } catch (Exception e) {
                 log.error("Has error with control '{}': {}", getLocator().toString(),
@@ -479,13 +465,11 @@ public class SelElement implements ISelElement {
 
     @Override
     public boolean isVisible(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
-            return true;
-        } catch (TimeoutException e) {
-            log.debug("isVisible() timeout for locator '{}': {}", getLocator(), e.getMessage());
+            WebElement element = getWebDriver().findElement(getLocator());
+            return element.isDisplayed();
+        } catch (NoSuchElementException | StaleElementReferenceException e) {
+            log.debug("isVisible() single-shot false for locator '{}': {}", getLocator(), e.getMessage());
             return false;
         }
     }
@@ -516,13 +500,10 @@ public class SelElement implements ISelElement {
 
     @Override
     public boolean isClickable() {
-        Duration timeout = DriverUtils.getTimeOut();
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()), actualTimeout);
-            return true;
-        } catch (TimeoutException e) {
+            WebElement element = getWebDriver().findElement(getLocator());
+            return element.isDisplayed() && element.isEnabled();
+        } catch (NoSuchElementException | StaleElementReferenceException e) {
             return false;
         }
     }
