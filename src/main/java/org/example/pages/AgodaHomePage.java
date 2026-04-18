@@ -5,7 +5,6 @@ import org.example.configure.Config;
 import org.example.core.assertion.AwaitAssert;
 import org.example.core.element.SelElement;
 import org.example.utils.DriverUtils;
-import org.example.utils.WaitUtils;
 import org.example.models.Hotel;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
@@ -126,10 +125,13 @@ public class AgodaHomePage extends BasePage {
                         "//ul[contains(@class,'AutocompleteList')]//li[@data-selenium='autosuggest-item']");
 
                 // Đợi đến khi có ít nhất 1 autosuggest item trong DOM
-                WaitUtils.waitFor(driver -> {
-                    List<WebElement> found = suggestionsLocator.getElements();
-                    return found != null && !found.isEmpty();
-                }, Duration.ofSeconds(10));
+                AwaitAssert.assertTrue(
+                        () -> {
+                            List<WebElement> found = suggestionsLocator.getElements();
+                            return found != null && !found.isEmpty();
+                        },
+                        "Autosuggest items should appear for destination: " + destination
+                );
 
                 List<WebElement> rawSuggestions = suggestionsLocator.getElements();
 

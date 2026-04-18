@@ -29,6 +29,7 @@ public class DynamicControlTest extends TestBase {
         removeAddButton.click();
         AwaitAssert.expect(message).toHaveText("It's gone!");
         AwaitAssert.expect(checkbox).toBeHidden();
+        
 
         removeAddButton.click();
         AwaitAssert.expect(message).toHaveText("It's backk!");

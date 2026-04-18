@@ -1,6 +1,7 @@
 package org.example.utils;
 
 import org.example.configure.Config;
+import org.example.core.assertion.AwaitAssert;
 import org.example.core.driver.factory.DriverFactory;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -57,7 +58,10 @@ public final class DriverUtils {
 
     public static void waitForUrlContains(String expectedUrlPart, Duration timeout) {
         Duration effective = timeout == null ? getTimeOut() : timeout;
-        WaitUtils.waitFor(driver -> driver.getCurrentUrl().contains(expectedUrlPart), effective);
+        AwaitAssert.assertTrue(
+                () -> getWebDriver().getCurrentUrl().contains(expectedUrlPart),
+                "URL should contain: " + expectedUrlPart
+        );
     }
 
     public static void waitForUrlContains(String expectedUrlPart, int timeoutInSeconds) {
@@ -104,7 +108,10 @@ public final class DriverUtils {
     }
 
     public static void waitForNewWindowOpened(int expectedNumberOfWindows) {
-        WaitUtils.waitFor(driver -> driver.getWindowHandles().size() == expectedNumberOfWindows);
+        AwaitAssert.assertTrue(
+                () -> getWebDriver().getWindowHandles().size() == expectedNumberOfWindows,
+                "Expected " + expectedNumberOfWindows + " windows"
+        );
     }
 
     public static void moveMouseByOffset(int x, int y) {
@@ -145,25 +152,33 @@ public final class DriverUtils {
 
     public static void waitForJavaScriptIdle() {
         try {
-            WaitUtils.waitFor(driver -> {
-                JavascriptExecutor executor = (JavascriptExecutor) driver;
-                Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
-                return Boolean.TRUE.equals(domIsComplete);
-            });
-        } catch (TimeoutException ignored) {
+            AwaitAssert.assertTrue(
+                    () -> {
+                        JavascriptExecutor executor = (JavascriptExecutor) getWebDriver();
+                        Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
+                        return Boolean.TRUE.equals(domIsComplete);
+                    },
+                    "JavaScript should be idle"
+            );
+        } catch (AssertionError ignored) {
+            log.debug("JavaScript idle check timed out (non-blocking)");
         }
     }
 
     public static void waitForAjax() {
         try {
-            WaitUtils.waitFor(driver -> {
-                JavascriptExecutor executor = (JavascriptExecutor) driver;
-                Object ajaxIsComplete = executor.executeScript(
-                        "if (typeof jQuery != 'undefined') { return jQuery.active == 0; } else {  return true; }");
-                Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
-                return Boolean.TRUE.equals(ajaxIsComplete) && Boolean.TRUE.equals(domIsComplete);
-            });
-        } catch (TimeoutException ignored) {
+            AwaitAssert.assertTrue(
+                    () -> {
+                        JavascriptExecutor executor = (JavascriptExecutor) getWebDriver();
+                        Object ajaxIsComplete = executor.executeScript(
+                                "if (typeof jQuery != 'undefined') { return jQuery.active == 0; } else {  return true; }");
+                        Object domIsComplete = executor.executeScript("return document.readyState == 'complete';");
+                        return Boolean.TRUE.equals(ajaxIsComplete) && Boolean.TRUE.equals(domIsComplete);
+                    },
+                    "AJAX requests should complete"
+            );
+        } catch (AssertionError ignored) {
+            log.debug("AJAX wait timed out (non-blocking)");
         }
     }
 

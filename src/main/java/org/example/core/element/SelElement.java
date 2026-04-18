@@ -4,12 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.Constants;
 import org.example.core.assertion.AwaitAssert;
 import org.example.utils.DriverUtils;
-import org.example.utils.WaitUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.pagefactory.ByChained;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 
 import java.time.Duration;
@@ -106,7 +104,7 @@ public class SelElement implements ISelElement {
         return (JavascriptExecutor) getWebDriver();
     }
 
-    public AwaitAssert.ElementExpectation expect() {
+    public AwaitAssert.ElementExpected expect() {
         return AwaitAssert.expect(this);
     }
 
@@ -126,7 +124,7 @@ public class SelElement implements ISelElement {
     public void click() {
         doWithRetry(() -> {
             log.debug("Click on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             element.click();
         });
     }
@@ -135,7 +133,7 @@ public class SelElement implements ISelElement {
     public void click(int x, int y) {
         doWithRetry(() -> {
             log.debug("Click at offset ({}, {}) on {}", x, y, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element, x, y).click().build().perform();
         });
     }
@@ -144,7 +142,7 @@ public class SelElement implements ISelElement {
     public void clickByJs() {
         doWithRetry(() -> {
             log.debug("Click by JS on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             ((JavascriptExecutor) getWebDriver()).executeScript("arguments[0].click();", element);
         });
     }
@@ -153,7 +151,7 @@ public class SelElement implements ISelElement {
     public void doubleClick() {
         doWithRetry(() -> {
             log.debug("Double click on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).doubleClick(element).build().perform();
         });
     }
@@ -162,7 +160,7 @@ public class SelElement implements ISelElement {
     public void setText(String text) {
         doWithRetry(() -> {
             log.debug("Set text '{}' on {}", text, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             element.sendKeys(text);
         });
     }
@@ -176,11 +174,10 @@ public class SelElement implements ISelElement {
     public void setTextInEditor(String text) {
         doWithRetry(() -> {
             log.debug("Set text '{}' in Froala editor on {}", text, getLocator().toString());
-            WebElement editorContainer = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement editorContainer = getWebDriver().findElement(getLocator());
             
             // Find the contenteditable div inside Froala editor
             WebElement editableDiv = editorContainer.findElement(By.cssSelector(".fr-element.fr-view"));
-            WaitUtils.waitFor(ExpectedConditions.visibilityOf(editableDiv), Duration.ofSeconds(5));
             
             // Use Actions to interact with contenteditable div
             Actions actions = new Actions(getWebDriver());
@@ -201,7 +198,7 @@ public class SelElement implements ISelElement {
     public void clear() {
         doWithRetry(() -> {
             log.debug("Clear text on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             element.clear();
         });
     }
@@ -210,7 +207,7 @@ public class SelElement implements ISelElement {
     public void submit() {
         doWithRetry(() -> {
             log.debug("Submit on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             element.submit();
         });
     }
@@ -219,7 +216,7 @@ public class SelElement implements ISelElement {
     public void focus() {
         doWithRetry(() -> {
             log.debug("Focus on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             DriverUtils.execJavaScript("arguments[0].focus();", element);
         });
     }
@@ -228,7 +225,7 @@ public class SelElement implements ISelElement {
     public void dragAndDrop(int xOffset, int yOffset) {
         doWithRetry(() -> {
             log.debug("Drag and drop by offset ({}, {}) on {}", xOffset, yOffset, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             Actions actions = new Actions(getWebDriver());
             actions.dragAndDropBy(element, xOffset, yOffset).build().perform();
         });
@@ -238,8 +235,8 @@ public class SelElement implements ISelElement {
     public void dragAndDrop(ISelElement target) {
         doWithRetry(() -> {
             log.debug("Drag element {} to target {}", getLocator().toString(), target.getLocator().toString());
-            WebElement sourceElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
-            WebElement targetElement = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(target.getLocator()));
+            WebElement sourceElement = getWebDriver().findElement(getLocator());
+            WebElement targetElement = getWebDriver().findElement(target.getLocator());
             Actions actions = new Actions(getWebDriver());
             actions.dragAndDrop(sourceElement, targetElement).build().perform();
         });
@@ -249,7 +246,7 @@ public class SelElement implements ISelElement {
     public void moveTo() {
         doWithRetry(() -> {
             log.debug("Move to {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element).build().perform();
         });
     }
@@ -258,7 +255,7 @@ public class SelElement implements ISelElement {
     public void moveTo(int x, int y) {
         doWithRetry(() -> {
             log.debug("Move to offset ({}, {}) on {}", x, y, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element, x, y).build().perform();
         });
     }
@@ -267,7 +264,7 @@ public class SelElement implements ISelElement {
     public void moveToCenter() {
         doWithRetry(() -> {
             log.debug("Move to center of {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
             new Actions(getWebDriver()).moveToElement(element).build().perform();
@@ -278,7 +275,7 @@ public class SelElement implements ISelElement {
     public void mouseHoverJScript() {
         doWithRetry(() -> {
             log.debug("Mouse hover by JS on {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             String mouseOverScript = "if(document.createEvent){var evObj = document.createEvent('MouseEvents');evObj.initEvent('mouseover', true, false); arguments[0].dispatchEvent(evObj);} else if(document.createEventObject) { arguments[0].fireEvent('onmouseover');}";
             ((JavascriptExecutor) getWebDriver()).executeScript(mouseOverScript, element);
         });
@@ -288,8 +285,7 @@ public class SelElement implements ISelElement {
     public void setAttributeJS(String attributeName, String value) {
         doWithRetry(() -> {
             log.debug("Set attribute '{}'='{}' for {}", attributeName, value, getLocator().toString());
-            log.debug("Set attribute for {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             ((JavascriptExecutor) getWebDriver())
                     .executeScript(String.format("arguments[0].setAttribute('%s','%s');", attributeName, value),
                             element);
@@ -300,8 +296,7 @@ public class SelElement implements ISelElement {
     public void checkCheckBoxByJs() {
         doWithRetry(() -> {
             log.debug("Check checkbox by JS for {}", getLocator().toString());
-            log.debug("Check checkbox by JS for {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             ((JavascriptExecutor) getWebDriver())
                     .executeScript("arguments[0].checked=true; arguments[0].dispatchEvent(new Event('change'));",
                             element);
@@ -314,7 +309,7 @@ public class SelElement implements ISelElement {
     public void scrollElementToCenterScreen() {
         doWithRetry(() -> {
             log.debug("Scroll element to center of screen: {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", element);
         });
@@ -324,7 +319,7 @@ public class SelElement implements ISelElement {
     public void scrollToView() {
         doWithRetry(() -> {
             log.debug("Scroll element into view: {}", getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             js.executeScript("arguments[0].scrollIntoView(true);", element);
         });
@@ -334,7 +329,7 @@ public class SelElement implements ISelElement {
     public void scrollToView(int offsetX, int offsetY) {
         doWithRetry(() -> {
             log.debug("Scroll element into view with extra offset ({}, {}): {}", offsetX, offsetY, getLocator().toString());
-            WebElement element = WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()));
+            WebElement element = getWebDriver().findElement(getLocator());
             JavascriptExecutor js = (JavascriptExecutor) getWebDriver();
             String script = String.format(
                     "arguments[0].scrollIntoView(true); window.scrollBy(%d, %d);",
@@ -515,12 +510,10 @@ public class SelElement implements ISelElement {
 
     @Override
     public boolean isExist(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()), actualTimeout);
+            AwaitAssert.expect(this).withTimeout(timeout).toBeVisible();
             return true;
-        } catch (TimeoutException e) {
+        } catch (AssertionError e) {
             log.debug("isExist() - timeout for locator '{}'", getLocator());
             return false;
         }
@@ -535,15 +528,13 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForVisibility(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
-        } catch (TimeoutException e) {
+            AwaitAssert.expect(this).withTimeout(timeout).toBeVisible();
+        } catch (AssertionError e) {
             String msg = String.format("Element not visible after %d seconds: %s",
-                    actualTimeout.getSeconds(), getLocator().toString());
+                    timeout.getSeconds(), getLocator().toString());
             log.error("waitForVisibility timeout after {} seconds for control '{}': {}",
-                    actualTimeout.getSeconds(), getLocator().toString(), msg);
+                    timeout.getSeconds(), getLocator().toString(), msg);
             throw new RuntimeException(msg, e);
         }
     }
@@ -565,15 +556,13 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForElementClickable(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(getLocator()), actualTimeout);
-        } catch (TimeoutException e) {
+            AwaitAssert.expect(this).withTimeout(timeout).toBeEnabled();
+        } catch (AssertionError e) {
             String msg = String.format("Element not clickable after %d seconds: %s",
-                    actualTimeout.getSeconds(), getLocator().toString());
-            log.error("WaitForElementClickable timeout after {} seconds for control '{}': {}",
-                    actualTimeout.getSeconds(), getLocator().toString(), msg);
+                    timeout.getSeconds(), getLocator().toString());
+            log.error("waitForElementClickable timeout after {} seconds for control '{}': {}",
+                    timeout.getSeconds(), getLocator().toString(), msg);
             throw new RuntimeException(msg, e);
         }
     }
@@ -585,14 +574,12 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForDisplay(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "Element not displayed after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
+            AwaitAssert.expect(this).withTimeout(timeout).toBeVisible();
+        } catch (AssertionError e) {
+            String msg = "Element not displayed after " + timeout.getSeconds() + " seconds: " + getLocator().toString();
             log.error("waitForDisplay timeout after {} seconds for control '{}': {}",
-                    actualTimeout.getSeconds(), getLocator().toString(), msg);
+                    timeout.getSeconds(), getLocator().toString(), msg);
             throw new RuntimeException(msg, e);
         }
     }
@@ -604,14 +591,15 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForInvisibility(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(getLocator()), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForInvisibility timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.assertTrue(
+                    () -> !isVisible(),
+                    "Element should become invisible"
+            );
+        } catch (AssertionError e) {
+            String msg = "waitForInvisibility timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.warn("waitForInvisibility timeout after {} seconds for control '{}'. Throwing.",
-                    actualTimeout.getSeconds(), getLocator().toString());
+                    timeout.getSeconds(), getLocator().toString());
             throw new RuntimeException(msg, e);
         }
     }
@@ -623,13 +611,14 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForDisappear(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.invisibilityOfElementLocated(getLocator()), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "Element still visible after " + actualTimeout.getSeconds() + " seconds: " + getLocator().toString();
-            log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), actualTimeout.getSeconds());
+            AwaitAssert.assertTrue(
+                    () -> !isVisible(),
+                    "Element should disappear"
+            );
+        } catch (AssertionError e) {
+            String msg = "Element still visible after " + timeout.getSeconds() + " seconds: " + getLocator().toString();
+            log.warn("Element '{}' still visible after {} seconds", getLocator().toString(), timeout.getSeconds());
             throw new RuntimeException(msg, e);
         }
     }
@@ -641,21 +630,13 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForElementEnabled(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(driver -> {
-                try {
-                    return driver.findElement(getLocator()).isEnabled();
-                } catch (NoSuchElementException | StaleElementReferenceException ex) {
-                    return false;
-                }
-            }, actualTimeout);
-        } catch (TimeoutException e) {
+            AwaitAssert.expect(this).withTimeout(timeout).toBeEnabled();
+        } catch (AssertionError e) {
             String msg = String.format("Element not enabled after %d seconds: %s",
-                    actualTimeout.getSeconds(), getLocator().toString());
+                    timeout.getSeconds(), getLocator().toString());
             log.error("waitForElementEnabled timeout after {} seconds for control '{}': {}",
-                    actualTimeout.getSeconds(), getLocator().toString(), msg);
+                    timeout.getSeconds(), getLocator().toString(), msg);
             throw new RuntimeException(msg, e);
         }
     }
@@ -667,21 +648,13 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForElementDisabled(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(driver -> {
-                try {
-                    return !driver.findElement(getLocator()).isEnabled();
-                } catch (NoSuchElementException | StaleElementReferenceException ex) {
-                    return false;
-                }
-            }, actualTimeout);
-        } catch (TimeoutException e) {
+            AwaitAssert.expect(this).withTimeout(timeout).toBeDisabled();
+        } catch (AssertionError e) {
             String msg = String.format("Element not disabled after %d seconds: %s",
-                    actualTimeout.getSeconds(), getLocator().toString());
+                    timeout.getSeconds(), getLocator().toString());
             log.error("waitForElementDisabled timeout after {} seconds for control '{}': {}",
-                    actualTimeout.getSeconds(), getLocator().toString(), msg);
+                    timeout.getSeconds(), getLocator().toString(), msg);
             throw new RuntimeException(msg, e);
         }
     }
@@ -693,12 +666,10 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForTextToBePresent(String text, Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.textToBePresentInElementLocated(getLocator(), text), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForTextToBePresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.expect(this).withTimeout(timeout).toContainText(text);
+        } catch (AssertionError e) {
+            String msg = "waitForTextToBePresent timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForTextToBePresent: Has error with control '{}'", getLocator().toString());
             throw new RuntimeException(msg, e);
         }
@@ -711,12 +682,10 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForTextToBeNotPresent(String text, Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.not(ExpectedConditions.textToBePresentInElementLocated(getLocator(), text)), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForTextToBeNotPresent timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.expect(this).withTimeout(timeout).not().toContainText(text);
+        } catch (AssertionError e) {
+            String msg = "waitForTextToBeNotPresent timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForTextToBeNotPresent: Has error with control '{}'", getLocator().toString());
             throw new RuntimeException(msg, e);
         }
@@ -729,12 +698,16 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForValuePresentInAttribute(String attribute, String value, Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(ExpectedConditions.attributeContains(getLocator(), attribute, value), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForValuePresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.assertTrue(
+                    () -> {
+                        String attrValue = getAttribute(attribute);
+                        return attrValue != null && attrValue.contains(value);
+                    },
+                    "Attribute " + attribute + " should contain " + value
+            );
+        } catch (AssertionError e) {
+            String msg = "waitForValuePresentInAttribute timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForValuePresentInAttribute: Has error with control '{}'", getLocator().toString());
             throw new RuntimeException(msg, e);
         }
@@ -747,14 +720,16 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForValueNotPresentInAttribute(String attribute, String value, Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WaitUtils.waitFor(
-                    ExpectedConditions.not(ExpectedConditions.attributeContains(getLocator(), attribute, value)),
-                    actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForValueNotPresentInAttribute timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.assertTrue(
+                    () -> {
+                        String attrValue = getAttribute(attribute);
+                        return attrValue == null || !attrValue.contains(value);
+                    },
+                    "Attribute " + attribute + " should not contain " + value
+            );
+        } catch (AssertionError e) {
+            String msg = "waitForValueNotPresentInAttribute timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForValueNotPresentInAttribute: Has error with control '{}'", getLocator().toString());
             throw new RuntimeException(msg, e);
         }
@@ -767,13 +742,22 @@ public class SelElement implements ISelElement {
 
     @Override
     public void waitForStalenessOfElement(Duration timeout) {
-        Duration actualTimeout = timeout.compareTo(Constants.DEFAULT_TIMEOUT) < 0
-                ? timeout : Constants.DEFAULT_TIMEOUT;
         try {
-            WebElement element = getElement();
-            WaitUtils.waitFor(ExpectedConditions.stalenessOf(element), actualTimeout);
-        } catch (TimeoutException e) {
-            String msg = "waitForStalenessOfElement timeout after " + actualTimeout.getSeconds() + " seconds for control: " + getLocator().toString();
+            AwaitAssert.assertTrue(
+                    () -> {
+                        try {
+                            WebElement element = getElement();
+                            // Try to interact - if it fails, it's stale
+                            element.isDisplayed();
+                            return false; // Not stale yet
+                        } catch (StaleElementReferenceException e) {
+                            return true; // Element is stale
+                        }
+                    },
+                    "Element should become stale"
+            );
+        } catch (AssertionError e) {
+            String msg = "waitForStalenessOfElement timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
             log.error("waitForStalenessOfElement: Has error with control '{}'", getLocator().toString());
             throw new RuntimeException(msg, e);
         } catch (Exception e) {
@@ -832,13 +816,13 @@ public class SelElement implements ISelElement {
             log.debug("Select option by text '{}' from {}", text, getLocator());
             
             // Wait for root element to be visible
-            WebElement root = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement root = getWebDriver().findElement(getLocator());
             
             // Find select element (supports multiple patterns)
             WebElement selectElement = findSelectElement(root);
 
-            // Wait for select to be clickable
-            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(selectElement), Duration.ofSeconds(5));
+            // Wait for select to be clickable via AwaitAssert
+            AwaitAssert.expect(this).withTimeout(Duration.ofSeconds(5)).toBeEnabled();
             
             // Perform selection
             Select select = new Select(selectElement);
@@ -852,13 +836,13 @@ public class SelElement implements ISelElement {
             log.debug("Select option by value '{}' from {}", value, getLocator());
 
             // Wait for root element to be visible
-            WebElement root = WaitUtils.waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()));
+            WebElement root = getWebDriver().findElement(getLocator());
 
             // Find select element (supports multiple patterns)
             WebElement selectElement = findSelectElement(root);
             
-            // Wait for select to be clickable
-            WaitUtils.waitFor(ExpectedConditions.elementToBeClickable(selectElement), Duration.ofSeconds(5));
+            // Wait for select to be clickable via AwaitAssert
+            AwaitAssert.expect(this).withTimeout(Duration.ofSeconds(5)).toBeEnabled();
 
             // Perform selection
             Select select = new Select(selectElement);
