@@ -1,18 +1,17 @@
 package org.example.core.assertion;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.configure.Config;
 import org.example.core.element.ISelElement;
 import org.example.core.reporting.ReportManager;
 import org.example.core.reporting.Reporter;
-import org.example.utils.DateUtils;
 import org.example.utils.DriverUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static org.example.common.Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT;
 
 /**
  * Provides await-based assertions with automatic retry logic.
@@ -46,6 +45,10 @@ public final class AwaitAssert {
             retryUntil(conditionSupplier, Boolean.TRUE::equals, message, true);
         }
 
+        public static void assertTrue(Supplier<Boolean> conditionSupplier, String message, Duration timeout) {
+            retryUntil(conditionSupplier, Boolean.TRUE::equals, message, true, timeout, Duration.ofMillis(100));
+        }
+
         /**
          * Assert a boolean condition resolves to false within timeout.
          * @param conditionSupplier Supplies the condition to check
@@ -56,6 +59,10 @@ public final class AwaitAssert {
             retryUntil(conditionSupplier, value -> Boolean.FALSE.equals(value), message, true);
         }
 
+        public static void assertFalse(Supplier<Boolean> conditionSupplier, String message, Duration timeout) {
+            retryUntil(conditionSupplier, value -> Boolean.FALSE.equals(value), message, true, timeout, Duration.ofMillis(100));
+        }
+
         /**
          * Assert that a supplier value equals expected within timeout.
          * @param actualSupplier Supplies the actual value
@@ -64,7 +71,7 @@ public final class AwaitAssert {
          * @throws AssertionError if values don't match within timeout
          */
         public static <T> void assertEquals(Supplier<T> actualSupplier, T expected, String message) {
-            retryUntil(actualSupplier, actual -> expected != null && expected.equals(actual), message, true);
+            retryUntil(actualSupplier, actual -> Objects.equals(expected, actual), message, true);
         }
 
         /**
@@ -77,7 +84,7 @@ public final class AwaitAssert {
         public static <T> void assertEquals(Supplier<T> actualSupplier, Supplier<T> expectedSupplier, String message) {
             retryUntil(actualSupplier, actual -> {
                 T expected = expectedSupplier.get();
-                return actual != null && actual.equals(expected);
+                return Objects.equals(expected, actual);
             }, message, true);
         }
 
@@ -89,7 +96,7 @@ public final class AwaitAssert {
          * @throws AssertionError if value matches expected within timeout
          */
         public static <T> void assertNotEquals(Supplier<T> actualSupplier, T expected, String message) {
-            retryUntil(actualSupplier, actual -> !(expected != null && expected.equals(actual)), message, true);
+            retryUntil(actualSupplier, actual -> !Objects.equals(expected, actual), message, true);
         }
 
         /**
@@ -155,7 +162,7 @@ public final class AwaitAssert {
         private static <T> void retryUntil(Supplier<T> supplier, Predicate<T> passCondition,
                                             String message, boolean includeActual) {
             retryUntil(supplier, passCondition, message, includeActual,
-                    DriverUtils.getTimeOut(), Duration.ofMillis(200));
+                    DriverUtils.getTimeOut(), Duration.ofMillis(1500));
         }
 
         /**
@@ -172,13 +179,20 @@ public final class AwaitAssert {
         private static <T> void retryUntil(Supplier<T> supplier, Predicate<T> passCondition,
                                             String message, boolean includeActual,
                                             Duration timeout, Duration maxInterval) {
-            Instant startTime = Instant.now();
-            Instant deadline = startTime.plus(timeout);
+            Duration effectiveTimeout = timeout == null || timeout.isNegative() || timeout.isZero()
+                    ? DriverUtils.getTimeOut()
+                    : timeout;
+            Duration effectiveMaxInterval = maxInterval == null || maxInterval.isNegative() || maxInterval.isZero()
+                    ? Duration.ofMillis(1500)
+                    : maxInterval;
+
+            int maxAttempts = Math.max(1, Config.getMaxAttempts());
+            Instant deadline = Instant.now().plus(effectiveTimeout);
             T lastActual = null;
             Throwable lastError = null;
             int attempts = 0;
 
-            while (Instant.now().isBefore(deadline)) {
+            while (attempts < maxAttempts && Instant.now().isBefore(deadline)) {
                 attempts++;
                 try {
                     lastActual = supplier.get();
@@ -187,16 +201,21 @@ public final class AwaitAssert {
                         return;
                     }
                 } catch (Throwable t) {
+                    if (!isRetryable(t)) {
+                        throw new AssertionError(message + " | non-retryable exception: " + t.getClass().getSimpleName(), t);
+                    }
                     lastError = t;
-                    log.trace("Retry due to exception: {}", t.getClass().getSimpleName());
+                    log.trace("Retry due to transient exception: {}", t.getClass().getSimpleName());
                 }
 
-                if (Instant.now().isBefore(deadline)) {
-                    adaptiveSleep(attempts, maxInterval);
+                if (attempts < maxAttempts && Instant.now().isBefore(deadline)) {
+                    long delayMs = calculateDelay(attempts, effectiveMaxInterval);
+                    long remainingMs = Math.max(1L, Duration.between(Instant.now(), deadline).toMillis());
+                    adaptiveSleep(Duration.ofMillis(Math.min(delayMs, remainingMs)));
                 }
             }
 
-            throw buildAssertionError(message, lastActual, lastError, attempts, timeout, includeActual);
+            throw buildAssertionError(message, lastActual, lastError, attempts, effectiveTimeout, includeActual);
         }
 
         /**
@@ -222,30 +241,70 @@ public final class AwaitAssert {
             }
 
             String finalMessage = sb.toString();
+            AssertionError failure = new AssertionError(finalMessage);
             Reporter reporter = ReportManager.getReporter();
             if (reporter != null) {
-                reporter.logFail(finalMessage);
-                try {
-                    reporter.attachScreenshot("await_assert_fail_" + DateUtils.getCurrentTimestamp(DEFAULT_TIMESTAMP_REPORT_FORMAT) + ".png");
-                } catch (Exception ignored) {
-                    log.debug("Unable to attach screenshot for await assertion failure: {}", ignored.getMessage());
-                }
+                reporter.logFail(finalMessage, failure);
             }
 
-            return new AssertionError(finalMessage);
+            return failure;
         }
 
         /**
          * Adaptive sleep similar to Playwright polling.
          */
+        public static void adaptiveSleep(int attempt) {
+            adaptiveSleep(attempt, Duration.ofMillis(100));
+        }
+
         private static void adaptiveSleep(int attempt, Duration maxInterval) {
             try {
-                long delay = Math.min(maxInterval.toMillis(), 20L * attempt);
+                long fastRamp = 15L * attempt; // quick feedback early, then stabilize around 100ms
+                long delay = Math.min(maxInterval.toMillis(), Math.max(15L, fastRamp));
                 Thread.sleep(Math.max(1, delay));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Assertion wait interrupted", e);
             }
+        }
+
+        private static void adaptiveSleep(Duration delay) {
+            try {
+                Thread.sleep(Math.max(1, delay.toMillis()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Assertion wait interrupted", e);
+            }
+        }
+
+        private static long calculateDelay(int attempt, Duration maxInterval) {
+            long capMs = Math.max(50L, maxInterval.toMillis());
+            long delay;
+            if (attempt <= 2) {
+                delay = 50L;
+            } else if (attempt <= 4) {
+                delay = 100L;
+            } else {
+                long exponent = Math.max(0, attempt - 5);
+                delay = 200L * (1L << Math.min(exponent, 6));
+            }
+            return Math.min(Math.max(50L, delay), capMs);
+        }
+
+        public static boolean isRetryable(Throwable t) {
+            if (t == null) {
+                return false;
+            }
+            Throwable current = t;
+            while (current != null) {
+                String simpleName = current.getClass().getSimpleName();
+                if ("StaleElementReferenceException".equals(simpleName)
+                        || "NoSuchElementException".equals(simpleName)) {
+                    return true;
+                }
+                current = current.getCause();
+            }
+            return false;
         }
 
         /**
@@ -364,9 +423,10 @@ public final class AwaitAssert {
              */
             public void toHaveText(String expected) {
                 String message = expectationMessage("Element should have exact text '" + expected + "': " + element.getLocator());
+                final String normalizedExpected = normalizeText(expected);
                 executeExpectationStep(message, () ->
                         retryUntil(() -> element.getText(), actual -> {
-                            boolean match = expected != null && expected.equals(actual);
+                            boolean match = Objects.equals(normalizedExpected, normalizeText(actual));
                             return negated ? !match : match;
                         }, message, true, timeout, interval));
             }
@@ -376,10 +436,14 @@ public final class AwaitAssert {
              */
             public void toContainText(String substring) {
                 String message = expectationMessage("Element text should contain '" + substring + "': " + element.getLocator());
+                final String normalizedSubstring = normalizeText(substring);
                 executeExpectationStep(message, () ->
                         retryUntil(() -> element.getText(),
                                 actual -> {
-                                    boolean contains = actual != null && substring != null && actual.contains(substring);
+                                    String normalizedActual = normalizeText(actual);
+                                    boolean contains = normalizedActual != null
+                                            && normalizedSubstring != null
+                                            && normalizedActual.contains(normalizedSubstring);
                                     return negated ? !contains : contains;
                                 },
                                 message, true, timeout, interval));
@@ -455,6 +519,13 @@ public final class AwaitAssert {
                 if (value == null) return false;
                 boolean result = invert ? !value : value;
                 return negated ? !result : result;
+            }
+
+            private String normalizeText(String value) {
+                if (value == null) {
+                    return null;
+                }
+                return value.trim().replaceAll("\\s+", " ");
             }
         }
     }

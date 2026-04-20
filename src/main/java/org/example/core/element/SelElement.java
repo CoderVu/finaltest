@@ -1,7 +1,6 @@
 package org.example.core.element;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.Constants;
 import org.example.core.assertion.AwaitAssert;
 import org.example.utils.DriverUtils;
 import org.openqa.selenium.*;
@@ -83,6 +82,52 @@ public class SelElement implements ISelElement {
         });
     }
 
+    private <T> T doActionWithAutoWait(String actionName, Supplier<T> action) {
+        waitForActionable(actionName);
+        try {
+            return action.get();
+        } catch (RuntimeException e) {
+            if (AwaitAssert.isRetryable(e)) {
+                throw new RuntimeException("Action '" + actionName + "' failed after actionable wait for " + getLocator(), e);
+            }
+            throw e;
+        } catch (Throwable t) {
+            throw new RuntimeException("Action '" + actionName + "' failed for " + getLocator(), t);
+        }
+    }
+
+    private void doActionWithAutoWait(String actionName, Runnable action) {
+        doActionWithAutoWait(actionName, () -> {
+            action.run();
+            return null;
+        });
+    }
+
+    private void waitForActionable(String actionName) {
+        AwaitAssert.assertTrue(
+                this::isActionableNow,
+                "Element should be actionable before '" + actionName + "': " + getLocator(),
+                DriverUtils.getTimeOut()
+        );
+    }
+
+    private boolean isActionableNow() {
+        WebElement first = getWebDriver().findElement(getLocator());
+        if (!first.isDisplayed() || !first.isEnabled()) {
+            return false;
+        }
+
+        Rectangle firstRect = first.getRect();
+        DriverUtils.delay(0.05);
+
+        WebElement second = getWebDriver().findElement(getLocator());
+        if (!second.isDisplayed() || !second.isEnabled()) {
+            return false;
+        }
+        Rectangle secondRect = second.getRect();
+        return firstRect.equals(secondRect);
+    }
+
     @Override
     public By getLocator() {
         return this.byLocator;
@@ -122,7 +167,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void click() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("click", () -> {
             log.debug("Click on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             element.click();
@@ -131,7 +176,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void click(int x, int y) {
-        doWithRetry(() -> {
+        doActionWithAutoWait("click(offset)", () -> {
             log.debug("Click at offset ({}, {}) on {}", x, y, getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element, x, y).click().build().perform();
@@ -140,7 +185,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void clickByJs() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("clickByJs", () -> {
             log.debug("Click by JS on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             ((JavascriptExecutor) getWebDriver()).executeScript("arguments[0].click();", element);
@@ -149,7 +194,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void doubleClick() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("doubleClick", () -> {
             log.debug("Double click on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).doubleClick(element).build().perform();
@@ -158,9 +203,10 @@ public class SelElement implements ISelElement {
 
     @Override
     public void setText(String text) {
-        doWithRetry(() -> {
+        doActionWithAutoWait("type", () -> {
             log.debug("Set text '{}' on {}", text, getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
+            element.clear();
             element.sendKeys(text);
         });
     }
@@ -196,7 +242,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void clear() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("clear", () -> {
             log.debug("Clear text on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             element.clear();
@@ -205,7 +251,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void submit() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("submit", () -> {
             log.debug("Submit on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             element.submit();
@@ -214,7 +260,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void focus() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("focus", () -> {
             log.debug("Focus on {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             DriverUtils.execJavaScript("arguments[0].focus();", element);
@@ -223,7 +269,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void dragAndDrop(int xOffset, int yOffset) {
-        doWithRetry(() -> {
+        doActionWithAutoWait("dragAndDrop(offset)", () -> {
             log.debug("Drag and drop by offset ({}, {}) on {}", xOffset, yOffset, getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             Actions actions = new Actions(getWebDriver());
@@ -233,7 +279,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void dragAndDrop(ISelElement target) {
-        doWithRetry(() -> {
+        doActionWithAutoWait("dragAndDrop(target)", () -> {
             log.debug("Drag element {} to target {}", getLocator().toString(), target.getLocator().toString());
             WebElement sourceElement = getWebDriver().findElement(getLocator());
             WebElement targetElement = getWebDriver().findElement(target.getLocator());
@@ -244,7 +290,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void moveTo() {
-        doWithRetry(() -> {
+        doActionWithAutoWait("hover", () -> {
             log.debug("Move to {}", getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element).build().perform();
@@ -253,7 +299,7 @@ public class SelElement implements ISelElement {
 
     @Override
     public void moveTo(int x, int y) {
-        doWithRetry(() -> {
+        doActionWithAutoWait("moveTo(offset)", () -> {
             log.debug("Move to offset ({}, {}) on {}", x, y, getLocator().toString());
             WebElement element = getWebDriver().findElement(getLocator());
             new Actions(getWebDriver()).moveToElement(element, x, y).build().perform();
@@ -342,47 +388,23 @@ public class SelElement implements ISelElement {
 
     @Override
     public String getText() {
-        return doWithRetry(() -> {
-            log.debug("Get text of {}", getLocator().toString());
-            try {
-                WebElement element = getWebDriver().findElement(getLocator());
-                return element.getText();
-            } catch (Exception e) {
-                log.error("Has error with control '{}': {}", getLocator().toString(),
-                        e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
-                throw e;
-            }
-        });
+        log.debug("Get text of {}", getLocator().toString());
+        WebElement element = getWebDriver().findElement(getLocator());
+        return element.getText();
     }
 
     @Override
     public String getValue() {
-        return doWithRetry(() -> {
-            log.debug("Get value of {}", getLocator().toString());
-            try {
-                WebElement element = getWebDriver().findElement(getLocator());
-                return element.getAttribute("value");
-            } catch (Exception e) {
-                log.error("Has error with control '{}': {}", getLocator().toString(),
-                        e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
-                throw e;
-            }
-        });
+        log.debug("Get value of {}", getLocator().toString());
+        WebElement element = getWebDriver().findElement(getLocator());
+        return element.getAttribute("value");
     }
 
     @Override
     public String getAttribute(String attributeName) {
         log.debug("Get attribute '{}' of {}", attributeName, getLocator().toString());
-        return doWithRetry(() -> {
-            try {
-                WebElement element = getWebDriver().findElement(getLocator());
-                return element.getAttribute(attributeName);
-            } catch (Exception e) {
-                log.error("Has error with control '{}': {}", getLocator().toString(),
-                        e.getMessage() != null ? e.getMessage().split("\n")[0] : "");
-                throw e;
-            }
-        });
+        WebElement element = getWebDriver().findElement(getLocator());
+        return element.getAttribute(attributeName);
     }
 
     @Override
@@ -594,7 +616,8 @@ public class SelElement implements ISelElement {
         try {
             AwaitAssert.assertTrue(
                     () -> !isVisible(),
-                    "Element should become invisible"
+                    "Element should become invisible",
+                    timeout
             );
         } catch (AssertionError e) {
             String msg = "waitForInvisibility timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
@@ -614,7 +637,8 @@ public class SelElement implements ISelElement {
         try {
             AwaitAssert.assertTrue(
                     () -> !isVisible(),
-                    "Element should disappear"
+                    "Element should disappear",
+                    timeout
             );
         } catch (AssertionError e) {
             String msg = "Element still visible after " + timeout.getSeconds() + " seconds: " + getLocator().toString();
@@ -704,7 +728,8 @@ public class SelElement implements ISelElement {
                         String attrValue = getAttribute(attribute);
                         return attrValue != null && attrValue.contains(value);
                     },
-                    "Attribute " + attribute + " should contain " + value
+                    "Attribute " + attribute + " should contain " + value,
+                    timeout
             );
         } catch (AssertionError e) {
             String msg = "waitForValuePresentInAttribute timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
@@ -726,7 +751,8 @@ public class SelElement implements ISelElement {
                         String attrValue = getAttribute(attribute);
                         return attrValue == null || !attrValue.contains(value);
                     },
-                    "Attribute " + attribute + " should not contain " + value
+                    "Attribute " + attribute + " should not contain " + value,
+                    timeout
             );
         } catch (AssertionError e) {
             String msg = "waitForValueNotPresentInAttribute timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();
@@ -754,7 +780,8 @@ public class SelElement implements ISelElement {
                             return true; // Element is stale
                         }
                     },
-                    "Element should become stale"
+                    "Element should become stale",
+                    timeout
             );
         } catch (AssertionError e) {
             String msg = "waitForStalenessOfElement timeout after " + timeout.getSeconds() + " seconds for control: " + getLocator().toString();

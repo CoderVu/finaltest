@@ -14,7 +14,7 @@
 <!--    <test name="Selenium Test - TC01 - Firefox">-->
 <!--        <parameter name="browser" value="firefox"/>-->
 <!--        <classes>-->
-<!--            <class name="testCase.TC01"/>-->
+<!--            <class name="testCase.DynamicControlTest"/>-->
 <!--        </classes>-->
 <!--    </test>-->
 

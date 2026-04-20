@@ -2,6 +2,7 @@ package org.example.core.element;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Select;
 
 import java.time.Duration;
 import java.util.List;
@@ -20,6 +21,9 @@ public interface ISelElement {
     void clickByJs();
     void doubleClick();
     void setText(String text);
+    default void type(String text) {
+        setText(text);
+    }
     void clear();
     void submit();
     void focus();
@@ -31,6 +35,9 @@ public interface ISelElement {
     
     // Move/Hover
     void moveTo();
+    default void hover() {
+        moveTo();
+    }
     void moveTo(int x, int y);
     void moveToCenter();
     void mouseHoverJScript();
@@ -89,6 +96,6 @@ public interface ISelElement {
     
     // Other
     void setAttributeJS(String attributeName, String value);
-    org.openqa.selenium.support.ui.Select getSelect();
+    Select getSelect();
 }
 

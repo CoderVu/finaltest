@@ -3,7 +3,7 @@ package config;
 import lombok.extern.slf4j.Slf4j;
 import org.example.configure.Config;
 import org.example.enums.BrowserType;
-import org.example.core.assertion.Assertions;
+import org.example.core.assertion.Assert;
 import org.example.core.driver.factory.DriverFactory;
 import org.example.core.reporting.ReportManager;
 import org.testng.ITestResult;
@@ -40,7 +40,6 @@ public class TestBase {
 
     @BeforeMethod(alwaysRun = true)
     public void setUpMethod() {
-        Assertions.reset();
         try {
             getWebDriver();
         } catch (Exception e) {

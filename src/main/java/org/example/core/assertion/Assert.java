@@ -16,9 +16,9 @@ import static org.example.utils.DateUtils.getCurrentTimestamp;
  * Thread-safe as it contains no mutable state.
  */
 @Slf4j
-public final class Assertions {
+public final class Assert {
 
-    private Assertions() {}
+    private Assert() {}
 
     /**
      * Assert that a condition is true.
