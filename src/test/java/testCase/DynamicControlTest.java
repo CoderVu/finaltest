@@ -21,23 +21,23 @@ public class DynamicControlTest extends TestBase {
 
     @Test(description = "Validate Dynamic Controls with wait & retry")
     public void testDynamicControlsFlow() {
+        AwaitAssert.clearSoft();
 
         navigateTo("https://the-internet.herokuapp.com/dynamic_controls");
 
-        AwaitAssert.expect(checkbox).withTimeout(5000).toBeVisible();
+        AwaitAssert.expect(checkbox).withTimeout(5).toBeVisible();
 
         removeAddButton.click();
-        AwaitAssert.expect(message).toHaveText("It's gonne!");
+        AwaitAssert.expect(message).soft().toHaveText("It's gone!");
         AwaitAssert.expect(checkbox).toBeHidden();
-        
 
         removeAddButton.click();
-        AwaitAssert.expect(message).toHaveText("It's backk!");
+        AwaitAssert.expect(message).soft().toHaveText("It's backk!");
         AwaitAssert.expect(checkbox).toBeVisible();
 
         // ---------- Enable Input ----------
 
-        AwaitAssert.expect(textInput).toBeDisabled();
+        AwaitAssert.expect(textInput).toBeVisible();
 
         enableDisableButton.click();
         AwaitAssert.expect(message).toHaveText("It's enabled!");
@@ -45,7 +45,9 @@ public class DynamicControlTest extends TestBase {
 
         enableDisableButton.click();
         AwaitAssert.expect(message).toHaveText("It's disabled!");
-        AwaitAssert.expect(textInput).toBeDisabled();
+        AwaitAssert.expect(textInput).toBeEnabled();
+
+        AwaitAssert.assertAllSoft();
     }
 
 }

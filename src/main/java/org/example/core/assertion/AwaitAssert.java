@@ -1,533 +1,342 @@
 package org.example.core.assertion;
 
-import lombok.extern.slf4j.Slf4j;
-import org.example.configure.Config;
 import org.example.core.element.ISelElement;
-import org.example.core.reporting.ReportManager;
-import org.example.core.reporting.Reporter;
 import org.example.utils.DriverUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
+import org.example.core.reporting.ReportManager;
+import org.example.core.reporting.Reporter;
 
-/**
- * Provides await-based assertions with automatic retry logic.
- * <p>
- * All assertions support configurable timeout, polling interval, and retry tracking.
- * Failures include comprehensive debug information: timeout, attempts, last actual value.
- * <p>
- * Thread-safe: creates immutable ElementExpected instances for each expect() call.
- */
+import static org.example.common.Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT;
+import static org.example.utils.DateUtils.getCurrentTimestamp;
+
 @Slf4j
 public final class AwaitAssert {
+    private static final ThreadLocal<List<AssertionError>> SOFT_FAILURES =
+            ThreadLocal.withInitial(ArrayList::new);
 
     private AwaitAssert() {}
 
-        /**
-         * Create an expectation for an element with retry support.
-         * @param element The ISelElement to assert on
-         * @return An immutable ElementExpected instance
-         */
-        public static ElementExpected expect(ISelElement element) {
-            return new ElementExpected(element, false);
+    public static ElementExpected expect(ISelElement element) {
+        return new ElementExpected(element, false, false);
+    }
+
+    public static ElementExpected expectSoft(ISelElement element) {
+        return new ElementExpected(element, false, true);
+    }
+
+    public static void assertAllSoft() {
+        List<AssertionError> failures = SOFT_FAILURES.get();
+        if (failures.isEmpty()) {
+            return;
         }
 
-        /**
-         * Assert a boolean condition resolves to true within timeout.
-         * @param conditionSupplier Supplies the condition to check
-         * @param message           The assertion message
-         * @throws AssertionError if condition doesn't resolve to true within timeout
-         */
-        public static void assertTrue(Supplier<Boolean> conditionSupplier, String message) {
-            retryUntil(conditionSupplier, Boolean.TRUE::equals, message, true);
+        StringBuilder sb = new StringBuilder("Soft assertion failures (")
+                .append(failures.size())
+                .append("):");
+        for (int i = 0; i < failures.size(); i++) {
+            sb.append(System.lineSeparator())
+                    .append(i + 1)
+                    .append(") ")
+                    .append(failures.get(i).getMessage());
         }
 
-        public static void assertTrue(Supplier<Boolean> conditionSupplier, String message, Duration timeout) {
-            retryUntil(conditionSupplier, Boolean.TRUE::equals, message, true, timeout, Duration.ofMillis(100));
-        }
+        SOFT_FAILURES.remove();
+        throw new AssertionError(sb.toString());
+    }
 
-        /**
-         * Assert a boolean condition resolves to false within timeout.
-         * @param conditionSupplier Supplies the condition to check
-         * @param message           The assertion message
-         * @throws AssertionError if condition doesn't resolve to false within timeout
-         */
-        public static void assertFalse(Supplier<Boolean> conditionSupplier, String message) {
-            retryUntil(conditionSupplier, value -> Boolean.FALSE.equals(value), message, true);
-        }
+    public static void clearSoft() {
+        SOFT_FAILURES.remove();
+    }
 
-        public static void assertFalse(Supplier<Boolean> conditionSupplier, String message, Duration timeout) {
-            retryUntil(conditionSupplier, value -> Boolean.FALSE.equals(value), message, true, timeout, Duration.ofMillis(100));
-        }
+    public static void assertTrue(BooleanSupplier condition, String message) {
+        assertTrue(condition, message, DriverUtils.getTimeOut());
+    }
 
-        /**
-         * Assert that a supplier value equals expected within timeout.
-         * @param actualSupplier Supplies the actual value
-         * @param expected       The expected value
-         * @param message        The assertion message
-         * @throws AssertionError if values don't match within timeout
-         */
-        public static <T> void assertEquals(Supplier<T> actualSupplier, T expected, String message) {
-            retryUntil(actualSupplier, actual -> Objects.equals(expected, actual), message, true);
-        }
+    public static void assertTrue(BooleanSupplier condition, String message, Duration timeout) {
+        pollUntil(
+                condition::getAsBoolean,
+                Boolean.TRUE::equals,
+                normalizeTimeout(timeout),
+                ElementExpected.DEFAULT_INTERVAL,
+                message
+        );
+    }
 
-        /**
-         * Assert that two supplier values equal each other within timeout.
-         * @param actualSupplier    Supplies the actual value
-         * @param expectedSupplier  Supplies the expected value
-         * @param message           The assertion message
-         * @throws AssertionError if values don't match within timeout
-         */
-        public static <T> void assertEquals(Supplier<T> actualSupplier, Supplier<T> expectedSupplier, String message) {
-            retryUntil(actualSupplier, actual -> {
-                T expected = expectedSupplier.get();
-                return Objects.equals(expected, actual);
-            }, message, true);
-        }
+    public static void assertFalse(BooleanSupplier condition, String message) {
+        assertFalse(condition, message, DriverUtils.getTimeOut());
+    }
 
-        /**
-         * Assert that a supplier value does NOT equal expected within timeout.
-         * @param actualSupplier Supplies the actual value
-         * @param expected       The value to compare against
-         * @param message        The assertion message
-         * @throws AssertionError if value matches expected within timeout
-         */
-        public static <T> void assertNotEquals(Supplier<T> actualSupplier, T expected, String message) {
-            retryUntil(actualSupplier, actual -> !Objects.equals(expected, actual), message, true);
-        }
+    public static void assertFalse(BooleanSupplier condition, String message, Duration timeout) {
+        assertTrue(() -> !condition.getAsBoolean(), message, timeout);
+    }
 
-        /**
-         * Assert that a numeric value is greater than threshold within timeout.
-         * @param actualSupplier Supplies the numeric value
-         * @param expected       The threshold
-         * @param message        The assertion message
-         * @throws AssertionError if value is not greater than threshold within timeout
-         */
-        public static void assertGreaterThan(Supplier<Integer> actualSupplier, int expected, String message) {
-            retryUntil(actualSupplier, actual -> actual != null && actual > expected,
-                    message + " | Expected: > " + expected, true);
-        }
+    private static <T> void pollUntil(
+            Supplier<T> supplier,
+            Predicate<T> condition,
+            Duration timeout,
+            Duration interval,
+            String message
+    ) {
+        Instant end = Instant.now().plus(timeout);
+        T lastActual = null;
+        int attempt = 0;
 
-        /**
-         * Assert that a numeric value is less than threshold within timeout.
-         * @param actualSupplier Supplies the numeric value
-         * @param expected       The threshold
-         * @param message        The assertion message
-         * @throws AssertionError if value is not less than threshold within timeout
-         */
-        public static void assertLessThan(Supplier<Integer> actualSupplier, int expected, String message) {
-            retryUntil(actualSupplier, actual -> actual != null && actual < expected,
-                    message + " | Expected: < " + expected, true);
-        }
+        log.info("AwaitAssert start: {} | timeout={}s | interval={}ms",
+                message, timeout.toSeconds(), interval.toMillis());
 
-        /**
-         * Assert that a numeric value is greater than or equal to threshold within timeout.
-         * @param actualSupplier Supplies the numeric value
-         * @param expected       The threshold
-         * @param message        The assertion message
-         * @throws AssertionError if value is not >= threshold within timeout
-         */
-        public static void assertGreaterThanOrEqual(Supplier<Integer> actualSupplier, int expected, String message) {
-            retryUntil(actualSupplier, actual -> actual != null && actual >= expected,
-                    message + " | Expected: >= " + expected, true);
-        }
-
-        /**
-         * Assert that a numeric value is less than or equal to threshold within timeout.
-         * @param actualSupplier Supplies the numeric value
-         * @param expected       The threshold
-         * @param message        The assertion message
-         * @throws AssertionError if value is not <= threshold within timeout
-         */
-        public static void assertLessThanOrEqual(Supplier<Integer> actualSupplier, int expected, String message) {
-            retryUntil(actualSupplier, actual -> actual != null && actual <= expected,
-                    message + " | Expected: <= " + expected, true);
-        }
-
-        /**
-         * Core retry logic: polls a supplier until predicate passes or timeout.
-         * <p>
-         * Tracks: attempts, elapsed time, last actual value, last error.
-         * Reports comprehensive failure messages with all debug info.
-         *
-         * @param supplier        Provides the value to test
-         * @param passCondition   Predicate that returns true to pass assertion
-         * @param message         The assertion message
-         * @param includeActual   Whether to include last actual value in failure message
-         * @throws AssertionError if condition doesn't pass within default timeout
-         */
-        private static <T> void retryUntil(Supplier<T> supplier, Predicate<T> passCondition,
-                                            String message, boolean includeActual) {
-            retryUntil(supplier, passCondition, message, includeActual,
-                    DriverUtils.getTimeOut(), Duration.ofMillis(1500));
-        }
-
-        /**
-         * Core retry logic with custom timeout and interval.
-         *
-         * @param supplier        Provides the value to test
-         * @param passCondition   Predicate that returns true to pass assertion
-         * @param message         The assertion message
-         * @param includeActual   Whether to include last actual value in failure message
-         * @param timeout         Maximum time to retry
-         * @param interval        Time between retry attempts
-         * @throws AssertionError if condition doesn't pass within timeout
-         */
-        private static <T> void retryUntil(Supplier<T> supplier, Predicate<T> passCondition,
-                                            String message, boolean includeActual,
-                                            Duration timeout, Duration maxInterval) {
-            Duration effectiveTimeout = timeout == null || timeout.isNegative() || timeout.isZero()
-                    ? DriverUtils.getTimeOut()
-                    : timeout;
-            Duration effectiveMaxInterval = maxInterval == null || maxInterval.isNegative() || maxInterval.isZero()
-                    ? Duration.ofMillis(1500)
-                    : maxInterval;
-
-            int maxAttempts = Math.max(1, Config.getMaxAttempts());
-            Instant deadline = Instant.now().plus(effectiveTimeout);
-            T lastActual = null;
-            Throwable lastError = null;
-            int attempts = 0;
-
-            while (attempts < maxAttempts && Instant.now().isBefore(deadline)) {
-                attempts++;
-                try {
-                    lastActual = supplier.get();
-                    if (passCondition.test(lastActual)) {
-                        log.trace("Assertion passed after {} attempts", attempts);
-                        return;
-                    }
-                } catch (Throwable t) {
-                    if (!isRetryable(t)) {
-                        throw new AssertionError(message + " | non-retryable exception: " + t.getClass().getSimpleName(), t);
-                    }
-                    lastError = t;
-                    log.trace("Retry due to transient exception: {}", t.getClass().getSimpleName());
-                }
-
-                if (attempts < maxAttempts && Instant.now().isBefore(deadline)) {
-                    long delayMs = calculateDelay(attempts, effectiveMaxInterval);
-                    long remainingMs = Math.max(1L, Duration.between(Instant.now(), deadline).toMillis());
-                    adaptiveSleep(Duration.ofMillis(Math.min(delayMs, remainingMs)));
-                }
-            }
-
-            throw buildAssertionError(message, lastActual, lastError, attempts, effectiveTimeout, includeActual);
-        }
-
-        /**
-         * Build a comprehensive AssertionError for retry failures.
-         */
-        private static AssertionError buildAssertionError(
-                String message,
-                Object lastActual,
-                Throwable lastError,
-                int attempts,
-                Duration timeout,
-                boolean includeActual) {
-            StringBuilder sb = new StringBuilder(message);
-
-            if (includeActual) {
-                sb.append(" | lastActual=").append(lastActual);
-            }
-
-            sb.append(" | attempts=").append(attempts);
-            sb.append(", timeout=").append(timeout.toMillis()).append("ms");
-            if (lastError != null) {
-                sb.append(", lastError=").append(lastError.getClass().getSimpleName());
-            }
-
-            String finalMessage = sb.toString();
-            AssertionError failure = new AssertionError(finalMessage);
-            Reporter reporter = ReportManager.getReporter();
-            if (reporter != null) {
-                reporter.logFail(finalMessage, failure);
-            }
-
-            return failure;
-        }
-
-        /**
-         * Adaptive sleep similar to Playwright polling.
-         */
-        public static void adaptiveSleep(int attempt) {
-            adaptiveSleep(attempt, Duration.ofMillis(100));
-        }
-
-        private static void adaptiveSleep(int attempt, Duration maxInterval) {
+        while (Instant.now().isBefore(end)) {
+            attempt++;
             try {
-                long fastRamp = 15L * attempt; // quick feedback early, then stabilize around 100ms
-                long delay = Math.min(maxInterval.toMillis(), Math.max(15L, fastRamp));
-                Thread.sleep(Math.max(1, delay));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Assertion wait interrupted", e);
+                lastActual = supplier.get();
+                log.debug("AwaitAssert attempt #{} | actual={}", attempt, lastActual);
+                if (condition.test(lastActual)) {
+                    log.info("AwaitAssert passed after {} attempt(s): {}", attempt, message);
+                    return;
+                }
+            } catch (Exception e) {
+                log.debug("AwaitAssert attempt #{} threw: {}", attempt, e.toString());
             }
+
+            DriverUtils.delay(interval.toMillis() / 1000.0);
         }
 
-        private static void adaptiveSleep(Duration delay) {
+        String finalMessage = message + " | lastActual=" + lastActual;
+        log.error("AwaitAssert timeout after {} attempt(s): {}", attempt, finalMessage);
+        throw buildFailure(finalMessage);
+    }
+
+    public static final class ElementExpected {
+
+        private final ISelElement element;
+        private final Duration timeout;
+        private final Duration interval;
+        private final boolean negated;
+        private final boolean soft;
+
+        static final Duration DEFAULT_TIMEOUT = DriverUtils.getTimeOut();
+        static final Duration DEFAULT_INTERVAL = Duration.ofMillis(200);
+
+        private ElementExpected(ISelElement element, boolean negated, boolean soft) {
+            this(element, DEFAULT_TIMEOUT, DEFAULT_INTERVAL, negated, soft);
+        }
+
+        private ElementExpected(ISelElement element, Duration timeout, Duration interval, boolean negated, boolean soft) {
+            this.element = element;
+            this.timeout = timeout;
+            this.interval = interval;
+            this.negated = negated;
+            this.soft = soft;
+        }
+
+        public ElementExpected withTimeout(long seconds) {
+            return new ElementExpected(element, Duration.ofSeconds(seconds), interval, negated, soft);
+        }
+
+        public ElementExpected withTimeout(Duration timeout) {
+            return new ElementExpected(element, normalizeTimeout(timeout), interval, negated, soft);
+        }
+
+        public ElementExpected withInterval(long ms) {
+            return new ElementExpected(element, timeout, Duration.ofMillis(ms), negated, soft);
+        }
+
+        public ElementExpected withInterval(Duration interval) {
+            return new ElementExpected(element, timeout, normalizeInterval(interval), negated, soft);
+        }
+
+        public ElementExpected not() {
+            return new ElementExpected(element, timeout, interval, !negated, soft);
+        }
+
+        public ElementExpected soft() {
+            return new ElementExpected(element, timeout, interval, negated, true);
+        }
+
+        public ElementExpected hard() {
+            return new ElementExpected(element, timeout, interval, negated, false);
+        }
+
+        public boolean isVisible() {
+            return checkUntil(
+                    element::isVisible,
+                    actual -> applyNegation(actual, true),
+                    timeout,
+                    interval
+            );
+        }
+
+        public boolean isEnabled() {
+            return checkUntil(
+                    element::isEnabled,
+                    actual -> applyNegation(actual, true),
+                    timeout,
+                    interval
+            );
+        }
+
+        public void toBeVisible() {
+            execute(
+                    () -> pollUntil(
+                            element::isVisible,
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be visible")
+                    )
+            );
+        }
+
+        public void toBeHidden() {
+            execute(
+                    () -> pollUntil(
+                            element::isVisible,
+                            actual -> applyNegation(actual, false),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be hidden")
+                    )
+            );
+        }
+
+        public void toBeEnabled() {
+            execute(
+                    () -> pollUntil(
+                            element::isEnabled,
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be enabled")
+                    )
+            );
+        }
+
+        public void toHaveText(String expected) {
+            String expectedNorm = normalize(expected);
+
+            execute(
+                    () -> pollUntil(
+                            element::getText,
+                            actual -> {
+                                boolean match = Objects.equals(expectedNorm, normalize(actual));
+                                return applyNegation(match, true);
+                            },
+                            timeout,
+                            interval,
+                            buildMessage("Expected text: " + expected)
+                    )
+            );
+        }
+
+        public void toContainText(String text) {
+            String expectedNorm = normalize(text);
+
+            execute(
+                    () -> pollUntil(
+                            element::getText,
+                            actual -> {
+                                String actualNorm = normalize(actual);
+                                boolean contains = actualNorm != null && actualNorm.contains(expectedNorm);
+                                return applyNegation(contains, true);
+                            },
+                            timeout,
+                            interval,
+                            buildMessage("Expected text contains: " + text)
+                    )
+            );
+        }
+
+        private void execute(Runnable action) {
             try {
-                Thread.sleep(Math.max(1, delay.toMillis()));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Assertion wait interrupted", e);
+                action.run();
+            } catch (AssertionError e) {
+                if (!soft) {
+                    throw e;
+                }
+                SOFT_FAILURES.get().add(e);
+                log.warn("Soft assertion captured: {}", e.getMessage());
             }
         }
 
-        private static long calculateDelay(int attempt, Duration maxInterval) {
-            long capMs = Math.max(50L, maxInterval.toMillis());
-            long delay;
-            if (attempt <= 2) {
-                delay = 50L;
-            } else if (attempt <= 4) {
-                delay = 100L;
-            } else {
-                long exponent = Math.max(0, attempt - 5);
-                delay = 200L * (1L << Math.min(exponent, 6));
-            }
-            return Math.min(Math.max(50L, delay), capMs);
-        }
-
-        public static boolean isRetryable(Throwable t) {
-            if (t == null) {
+        private boolean applyNegation(Boolean actual, boolean expectedTrue) {
+            if (actual == null) {
                 return false;
             }
-            Throwable current = t;
-            while (current != null) {
-                String simpleName = current.getClass().getSimpleName();
-                if ("StaleElementReferenceException".equals(simpleName)
-                        || "NoSuchElementException".equals(simpleName)) {
-                    return true;
-                }
-                current = current.getCause();
-            }
-            return false;
+            boolean result = expectedTrue ? actual : !actual;
+            return negated ? !result : result;
         }
 
-        /**
-         * Immutable expectation builder for element-based assertions.
-         * <p>
-         * Supports fluent API: expect(element).withTimeout(...).not().toBeVisible()
-         * <p>
-         * NOT mutating - not() returns a new instance with negation set.
-         * <p>
-         * All terminal methods integrate with ReportManager for reporting.
-         */
-        public static final class ElementExpected {
-            private static final Duration DEFAULT_TIMEOUT = DriverUtils.getTimeOut();
-            private static final Duration DEFAULT_INTERVAL = Duration.ofMillis(200);
-
-            private final ISelElement element;
-            private final Duration timeout;
-            private final Duration interval;
-            private final boolean negated;
-
-            private ElementExpected(ISelElement element, boolean negated) {
-                this(element, DEFAULT_TIMEOUT, DEFAULT_INTERVAL, negated);
+        private String normalize(String text) {
+            if (text == null) {
+                return null;
             }
+            return text.trim().replaceAll("\\s+", " ");
+        }
 
-            private ElementExpected(ISelElement element, Duration timeout, Duration interval, boolean negated) {
-                this.element = element;
-                this.timeout = timeout == null || timeout.isNegative() || timeout.isZero()
-                        ? DEFAULT_TIMEOUT : timeout;
-                this.interval = interval == null || interval.isNegative() || interval.isZero()
-                        ? DEFAULT_INTERVAL : interval;
-                this.negated = negated;
-            }
+        private String buildMessage(String base) {
+            return (negated ? "NOT(" : "")
+                    + base
+                    + " | locator="
+                    + element.getLocator()
+                    + (negated ? ")" : "");
+        }
 
-            /**
-             * Set custom timeout for this expectation (immutable operation).
-             * @param timeoutMs Timeout in milliseconds
-             * @return New ElementExpected with updated timeout
-             */
-            public ElementExpected withTimeout(long timeoutMs) {
-                return new ElementExpected(element, Duration.ofMillis(Math.max(1, timeoutMs)), interval, negated);
-            }
+        private <T> boolean checkUntil(
+                Supplier<T> supplier,
+                Predicate<T> condition,
+                Duration timeout,
+                Duration interval
+        ) {
+            Instant end = Instant.now().plus(timeout);
 
-            /**
-             * Set custom timeout for this expectation (immutable operation).
-             * @param timeout Timeout duration
-             * @return New ElementExpected with updated timeout
-             */
-            public ElementExpected withTimeout(Duration timeout) {
-                return new ElementExpected(element, timeout, interval, negated);
-            }
-
-            /**
-             * Set custom polling interval for this expectation (immutable operation).
-             * @param intervalMs Interval in milliseconds
-             * @return New ElementExpected with updated interval
-             */
-            public ElementExpected withInterval(long intervalMs) {
-                return new ElementExpected(element, timeout, Duration.ofMillis(Math.max(1, intervalMs)), negated);
-            }
-
-            /**
-             * Set custom polling interval for this expectation (immutable operation).
-             * @param interval Interval duration
-             * @return New ElementExpected with updated interval
-             */
-            public ElementExpected withInterval(Duration interval) {
-                return new ElementExpected(element, timeout, interval, negated);
-            }
-
-            /**
-             * Negate the next assertion (immutable operation).
-             * @return New ElementExpected with negation toggled
-             */
-            public ElementExpected not() {
-                return new ElementExpected(element, timeout, interval, !negated);
-            }
-
-            /**
-             * Assert element is visible.
-             */
-            public void toBeVisible() {
-                String message = expectationMessage("Element should be visible: " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.isVisible(), this::testCondition, message, false, timeout, interval));
-            }
-
-            /**
-             * Assert element is hidden.
-             */
-            public void toBeHidden() {
-                String message = expectationMessage("Element should be hidden: " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.isVisible(), actual -> testCondition(actual, true), message, false, timeout, interval));
-            }
-
-            /**
-             * Assert element is enabled.
-             */
-            public void toBeEnabled() {
-                String message = expectationMessage("Element should be enabled: " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.isEnabled(), this::testCondition, message, false, timeout, interval));
-            }
-
-            /**
-             * Assert element is disabled.
-             */
-            public void toBeDisabled() {
-                String message = expectationMessage("Element should be disabled: " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.isEnabled(), actual -> testCondition(actual, true), message, false, timeout, interval));
-            }
-
-            /**
-             * Assert element has exact text.
-             */
-            public void toHaveText(String expected) {
-                String message = expectationMessage("Element should have exact text '" + expected + "': " + element.getLocator());
-                final String normalizedExpected = normalizeText(expected);
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.getText(), actual -> {
-                            boolean match = Objects.equals(normalizedExpected, normalizeText(actual));
-                            return negated ? !match : match;
-                        }, message, true, timeout, interval));
-            }
-
-            /**
-             * Assert element text contains substring.
-             */
-            public void toContainText(String substring) {
-                String message = expectationMessage("Element text should contain '" + substring + "': " + element.getLocator());
-                final String normalizedSubstring = normalizeText(substring);
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.getText(),
-                                actual -> {
-                                    String normalizedActual = normalizeText(actual);
-                                    boolean contains = normalizedActual != null
-                                            && normalizedSubstring != null
-                                            && normalizedActual.contains(normalizedSubstring);
-                                    return negated ? !contains : contains;
-                                },
-                                message, true, timeout, interval));
-            }
-
-            /**
-             * Assert element attribute equals expected value.
-             */
-            public void toHaveAttribute(String attribute, String expected) {
-                String message = expectationMessage("Element attribute '" + attribute + "' should equal '" + expected + "': " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.getAttribute(attribute),
-                                actual -> {
-                                    boolean match = expected != null && expected.equals(actual);
-                                    return negated ? !match : match;
-                                },
-                                message, true, timeout, interval));
-            }
-
-            /**
-             * Assert element value equals expected value.
-             */
-            public void toHaveValue(String expected) {
-                String message = expectationMessage("Element value should equal '" + expected + "': " + element.getLocator());
-                executeExpectationStep(message, () ->
-                        retryUntil(() -> element.getValue(),
-                                actual -> {
-                                    boolean matches = expected != null && expected.equals(actual);
-                                    return negated ? !matches : matches;
-                                },
-                                message, true, timeout, interval));
-            }
-
-            /**
-             * Execute assertion step with optional reporting.
-             */
-            private void executeExpectationStep(String stepName, Runnable action) {
-                Reporter reporter = ReportManager.getReporter();
-                if (reporter == null) {
-                    action.run();
-                    return;
+            while (Instant.now().isBefore(end)) {
+                try {
+                    T actual = supplier.get();
+                    if (condition.test(actual)) {
+                        return true;
+                    }
+                } catch (Exception ignored) {
                 }
-
-                if (reporter.isInStep()) {
-                    action.run();
-                    return;
-                }
-
-                reporter.childStep(stepName, () -> {
-                    action.run();
-                    reporter.info("PASSED");
-                });
+                DriverUtils.delay(interval.toMillis() / 1000.0);
             }
 
-            /**
-             * Format expectation message with negation if needed.
-             */
-            private String expectationMessage(String positiveMessage) {
-                return negated ? "NOT(" + positiveMessage + ")" : positiveMessage;
-            }
-
-            /**
-             * Test a boolean condition with negation applied.
-             */
-            private boolean testCondition(Boolean value) {
-                return testCondition(value, false);
-            }
-
-            /**
-             * Test a boolean condition with optional inversion and negation applied.
-             */
-            private boolean testCondition(Boolean value, boolean invert) {
-                if (value == null) return false;
-                boolean result = invert ? !value : value;
-                return negated ? !result : result;
-            }
-
-            private String normalizeText(String value) {
-                if (value == null) {
-                    return null;
-                }
-                return value.trim().replaceAll("\\s+", " ");
-            }
+            return false;
         }
     }
 
+    private static Duration normalizeTimeout(Duration timeout) {
+        if (timeout == null || timeout.isZero() || timeout.isNegative()) {
+            return DriverUtils.getTimeOut();
+        }
+        return timeout;
+    }
 
+    private static Duration normalizeInterval(Duration interval) {
+        if (interval == null || interval.isZero() || interval.isNegative()) {
+            return ElementExpected.DEFAULT_INTERVAL;
+        }
+        return interval;
+    }
+
+    private static AssertionError buildFailure(String finalMessage) {
+        AssertionError failure = new AssertionError(finalMessage);
+        Reporter reporter = ReportManager.getReporter();
+        if (reporter != null) {
+            reporter.logFail(finalMessage, failure);
+            try {
+                reporter.attachScreenshot("await_assert_fail_" + getCurrentTimestamp(DEFAULT_TIMESTAMP_REPORT_FORMAT) + ".png");
+            } catch (Exception e) {
+                log.debug("Unable to attach screenshot for await assertion failure: {}", e.getMessage());
+            }
+        }
+        return failure;
+    }
+}

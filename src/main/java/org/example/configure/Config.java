@@ -146,6 +146,6 @@ public final class Config {
     }
 
     public static int getMaxAttempts() {
-        return Config.getIntProperty(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 5);
+        return Config.getIntProperty(Constants.MAX_NUM_OF_ATTEMPTS_SORTASSERT_PROPERTY, 5);
     }
 }
