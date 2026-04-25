@@ -86,10 +86,6 @@ public class SelElement implements ISelElement {
         return new WebDriverWait(getWebDriver(), actualTimeout).until(condition);
     }
 
-    private WebElement findElementFast() {
-        return getWebDriver().findElement(getLocator());
-    }
-
     @Override
     public By getLocator() {
         return this.byLocator;
@@ -300,6 +296,61 @@ public class SelElement implements ISelElement {
     }
 
     @Override
+    public String waitForText(Duration timeout) {
+        log.info("Wait for text for locator: {}", getLocator());
+        return waitFor(driver -> {
+            WebElement element = driver.findElement(getLocator());
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            return element.getText();
+        }, timeout);
+    }
+
+    @Override
+    public String waitForValue(Duration timeout) {
+        return waitFor(driver -> {
+            WebElement element = driver.findElement(getLocator());
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            return element.getAttribute("value");
+        }, timeout);
+    }
+
+    @Override
+    public String waitForAttribute(String attributeName, Duration timeout) {
+        return waitFor(driver -> {
+            WebElement element = driver.findElement(getLocator());
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            return element.getAttribute(attributeName);
+        }, timeout);
+    }
+
+    @Override
+    public String waitForClassName(Duration timeout) {
+        return waitForAttribute("class", timeout);
+    }
+
+    @Override
+    public String waitForTagName(Duration timeout) {
+        return waitFor(driver -> {
+            WebElement element = driver.findElement(getLocator());
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            return element.getTagName();
+        }, timeout);
+    }
+
+    @Override
+    public int waitForCount(Duration timeout) {
+        return waitFor(driver -> driver.findElements(getLocator()).size(), timeout);
+    }
+
+    @Override
     public String getValue() {
         log.info("Get value for locator: {}", getLocator());
         return doWithRetry("getValue", () -> waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator())).getAttribute("value"));
@@ -339,46 +390,109 @@ public class SelElement implements ISelElement {
     // ========== CHECKS ==========
 
     @Override
-    public boolean isVisible() {
+    public boolean waitForVisible(Duration timeout) {
         try {
-            waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), Duration.ofMillis(300));
+            waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator()), timeout);
             return true;
-        } catch (TimeoutException | NoSuchElementException | StaleElementReferenceException e) {
+        } catch (RuntimeException e) {
             return false;
         }
+    }
+
+    @Override
+    public boolean waitForEnabled(Duration timeout) {
+        try {
+            return waitFor(driver -> {
+                WebElement element = driver.findElement(getLocator());
+                return (element.isDisplayed() && element.isEnabled()) ? Boolean.TRUE : null;
+            }, timeout);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean waitForExist(Duration timeout) {
+        try {
+            return waitFor(driver -> !driver.findElements(getLocator()).isEmpty() ? Boolean.TRUE : null, timeout);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean waitForSelected(Duration timeout) {
+        try {
+            return waitFor(driver -> {
+                WebElement element = driver.findElement(getLocator());
+                return element.isSelected() ? Boolean.TRUE : null;
+            }, timeout);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean waitForClickable(Duration timeout) {
+        try {
+            waitFor(ExpectedConditions.elementToBeClickable(getLocator()), timeout);
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean waitForEditable(Duration timeout) {
+        try {
+            return waitFor(driver -> {
+                WebElement element = driver.findElement(getLocator());
+                boolean readOnly = Boolean.parseBoolean(element.getAttribute("readonly"));
+                boolean disabled = Boolean.parseBoolean(element.getAttribute("disabled"));
+                return (element.isDisplayed() && element.isEnabled() && !readOnly && !disabled) ? Boolean.TRUE : null;
+            }, timeout);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean waitForReadOnly(Duration timeout) {
+        try {
+            return waitFor(driver -> {
+                WebElement element = driver.findElement(getLocator());
+                boolean readOnly = Boolean.parseBoolean(element.getAttribute("readonly"));
+                boolean disabled = Boolean.parseBoolean(element.getAttribute("disabled"));
+                return (readOnly || disabled) ? Boolean.TRUE : null;
+            }, timeout);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isVisible() {
+        return waitForVisible(Duration.ofMillis(300));
     }
 
     @Override
     public boolean isEnabled() {
-        try {
-            return findElementFast().isEnabled();
-        } catch (RuntimeException e) {
-            return false;
-        }
+        return waitForEnabled(Duration.ofMillis(300));
     }
 
     @Override
     public boolean isSelected() {
-        try {
-            return findElementFast().isSelected();
-        } catch (RuntimeException e) {
-            return false;
-        }
+        return waitForSelected(Duration.ofMillis(300));
     }
 
     @Override
     public boolean isClickable() {
-        try {
-            WebElement element = waitFor(ExpectedConditions.presenceOfElementLocated(getLocator()), Duration.ofMillis(300));
-            return element.isDisplayed() && element.isEnabled();
-        } catch (RuntimeException e) {
-            return false;
-        }
+        return waitForClickable(Duration.ofMillis(300));
     }
 
     @Override
     public boolean isExist() {
-        return !getWebDriver().findElements(getLocator()).isEmpty();
+        return waitForExist(Duration.ofMillis(300));
     }
 
     // ========== SELECT ==========

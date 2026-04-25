@@ -167,7 +167,7 @@ public final class AwaitAssert {
 
         public boolean isVisible() {
             return checkUntil(
-                    element::isVisible,
+                    () -> element.waitForVisible(interval),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -176,7 +176,34 @@ public final class AwaitAssert {
 
         public boolean isEnabled() {
             return checkUntil(
-                    element::isEnabled,
+                    () -> element.waitForEnabled(interval),
+                    actual -> applyNegation(actual, true),
+                    timeout,
+                    interval
+            );
+        }
+
+        public boolean isExist() {
+            return checkUntil(
+                    () -> element.waitForExist(interval),
+                    actual -> applyNegation(actual, true),
+                    timeout,
+                    interval
+            );
+        }
+
+        public boolean isSelected() {
+            return checkUntil(
+                    () -> element.waitForSelected(interval),
+                    actual -> applyNegation(actual, true),
+                    timeout,
+                    interval
+            );
+        }
+
+        public boolean isClickable() {
+            return checkUntil(
+                    () -> element.waitForClickable(interval),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -186,7 +213,7 @@ public final class AwaitAssert {
         public void toBeVisible() {
             execute(
                     () -> pollUntil(
-                            element::isVisible,
+                            () -> element.waitForVisible(interval),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -198,7 +225,7 @@ public final class AwaitAssert {
         public void toBeHidden() {
             execute(
                     () -> pollUntil(
-                            element::isVisible,
+                            () -> element.waitForVisible(interval),
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -210,7 +237,7 @@ public final class AwaitAssert {
         public void toBeEnabled() {
             execute(
                     () -> pollUntil(
-                            element::isEnabled,
+                            () -> element.waitForEnabled(interval),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -219,18 +246,105 @@ public final class AwaitAssert {
             );
         }
 
+        public void toBeDisabled() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForEnabled(interval),
+                            actual -> applyNegation(actual, false),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be disabled")
+                    )
+            );
+        }
+
+        public void toBeAttached() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForExist(interval),
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be attached")
+                    )
+            );
+        }
+
+        public void toBeDetached() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForExist(interval),
+                            actual -> applyNegation(actual, false),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be detached")
+                    )
+            );
+        }
+
+        public void toExist() {
+            toBeAttached();
+        }
+
+        public void toBeSelected() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForSelected(interval),
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be selected")
+                    )
+            );
+        }
+
+        public void toBeChecked() {
+            toBeSelected();
+        }
+
+        public void toBeClickable() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForClickable(interval),
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be clickable")
+                    )
+            );
+        }
+
+        public void toBeEditable() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForEditable(interval),
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be editable")
+                    )
+            );
+        }
+
+        public void toBeReadOnly() {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForReadOnly(interval),
+                            actual -> applyNegation(actual, true),
+                            timeout,
+                            interval,
+                            buildMessage("Element should be read-only")
+                    )
+            );
+        }
+
         public void toHaveText(String expected) {
             String expectedNorm = normalize(expected);
 
             execute(
-                    () -> pollUntil(
-                            element::getText,
-                            actual -> {
-                                boolean match = Objects.equals(expectedNorm, normalize(actual));
-                                return applyNegation(match, true);
-                            },
-                            timeout,
-                            interval,
+                    () -> assertTextCondition(
+                            expectedNorm,
+                            actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected text: " + expected)
                     )
             );
@@ -240,17 +354,141 @@ public final class AwaitAssert {
             String expectedNorm = normalize(text);
 
             execute(
-                    () -> pollUntil(
-                            element::getText,
+                    () -> assertTextCondition(
+                            expectedNorm,
                             actual -> {
                                 String actualNorm = normalize(actual);
-                                boolean contains = actualNorm != null && actualNorm.contains(expectedNorm);
-                                return applyNegation(contains, true);
+                                return actualNorm != null && actualNorm.contains(expectedNorm);
                             },
-                            timeout,
-                            interval,
                             buildMessage("Expected text contains: " + text)
                     )
+            );
+        }
+
+        public void toBeEmpty() {
+            execute(
+                    () -> assertTextCondition(
+                            "",
+                            actual -> {
+                                String actualNorm = normalize(actual);
+                                return actualNorm == null || actualNorm.isEmpty();
+                            },
+                            buildMessage("Element should be empty")
+                    )
+            );
+        }
+
+        public void toHaveValue(String expectedValue) {
+            String expectedNorm = normalize(expectedValue);
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForValue(interval),
+                            actual -> Objects.equals(expectedNorm, normalize(actual)),
+                            buildMessage("Expected value: " + expectedValue),
+                            expectedNorm
+                    )
+            );
+        }
+
+        public void toHaveAttribute(String attributeName) {
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForAttribute(attributeName, interval),
+                            Objects::nonNull,
+                            buildMessage("Expected attribute exists: " + attributeName),
+                            "<non-null>"
+                    )
+            );
+        }
+
+        public void toHaveAttribute(String attributeName, String expectedValue) {
+            String expectedNorm = normalize(expectedValue);
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForAttribute(attributeName, interval),
+                            actual -> Objects.equals(expectedNorm, normalize(actual)),
+                            buildMessage("Expected attribute " + attributeName + ": " + expectedValue),
+                            expectedNorm
+                    )
+            );
+        }
+
+        public void toHaveClass(String expectedClass) {
+            String expectedNorm = normalize(expectedClass);
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForClassName(interval),
+                            actual -> Objects.equals(expectedNorm, normalize(actual)),
+                            buildMessage("Expected class: " + expectedClass),
+                            expectedNorm
+                    )
+            );
+        }
+
+        public void toContainClass(String expectedClass) {
+            String expectedNorm = normalize(expectedClass);
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForClassName(interval),
+                            actual -> {
+                                String actualNorm = normalize(actual);
+                                return actualNorm != null && actualNorm.contains(expectedNorm);
+                            },
+                            buildMessage("Expected class contains: " + expectedClass),
+                            expectedNorm
+                    )
+            );
+        }
+
+        public void toHaveTagName(String expectedTag) {
+            String expectedNorm = normalize(expectedTag);
+            execute(
+                    () -> assertStringCondition(
+                            () -> element.waitForTagName(interval),
+                            actual -> Objects.equals(expectedNorm, normalize(actual)),
+                            buildMessage("Expected tag name: " + expectedTag),
+                            expectedNorm
+                    )
+            );
+        }
+
+        public void toHaveCount(int expectedCount) {
+            execute(
+                    () -> pollUntil(
+                            () -> element.waitForCount(interval),
+                            actual -> applyNegation(actual != null && actual == expectedCount, true),
+                            timeout,
+                            interval,
+                            buildMessage("Expected count: " + expectedCount)
+                    )
+            );
+        }
+
+        private void assertTextCondition(
+                String expectedNorm,
+                Predicate<String> matcher,
+                String message
+        ) {
+            assertStringCondition(
+                    () -> element.waitForText(interval),
+                    matcher,
+                    message,
+                    expectedNorm
+            );
+        }
+
+        private void assertStringCondition(
+                Supplier<String> actualSupplier,
+                Predicate<String> matcher,
+                String message,
+                String expectedNorm
+        ) {
+            pollUntil(
+                    actualSupplier,
+                    actual -> applyNegation(matcher.test(actual), true),
+                    timeout,
+                    interval,
+                    message + " | expected=" + expectedNorm
             );
         }
 
