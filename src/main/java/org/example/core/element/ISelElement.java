@@ -4,7 +4,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
-import java.time.Duration;
 import java.util.List;
 
 public interface ISelElement {
@@ -49,12 +48,12 @@ public interface ISelElement {
     
     // Getters
     String getText();
-    String waitForText(Duration timeout);
-    String waitForValue(Duration timeout);
-    String waitForAttribute(String attributeName, Duration timeout);
-    String waitForClassName(Duration timeout);
-    String waitForTagName(Duration timeout);
-    int waitForCount(Duration timeout);
+    String textNow();
+    String valueNow();
+    String attributeNow(String attributeName);
+    String classNow();
+    String tagNow();
+    int countNow();
     String getValue();
     String getAttribute(String attributeName);
     String getClassName();
@@ -64,13 +63,10 @@ public interface ISelElement {
     List<WebElement> getChildElements(String xpath);
     
     // Checks
-    boolean waitForVisible(Duration timeout);
-    boolean waitForEnabled(Duration timeout);
-    boolean waitForExist(Duration timeout);
-    boolean waitForSelected(Duration timeout);
-    boolean waitForClickable(Duration timeout);
-    boolean waitForEditable(Duration timeout);
-    boolean waitForReadOnly(Duration timeout);
+    boolean visibleNow();
+    boolean enabledNow();
+    boolean existsNow();
+    boolean selectedNow();
     boolean isVisible();
     boolean isEnabled();
     boolean isSelected();

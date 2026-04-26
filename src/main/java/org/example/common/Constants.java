@@ -21,8 +21,8 @@ public class Constants {
     public static final String PAGE_LOAD_TIMEOUT_PROPERTY = "page_load_timeout";
 
      // Separate retry configuration keys for assertions and element actions
-     public static final String MAX_NUM_OF_ATTEMPTS_SORTASSERT_PROPERTY = "max_num_of_attempts_sortassert";
-     public static final String MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY = "max_num_of_attempts_action";
+     public static final String MAX_ATTEMPTS_ASSERT = "max_attempts_assert";
+     public static final String MAX_ATTEMPTS_ACTION = "max_attempts_action";
     public static final String BROWSERS_PROPERTY = "browsers";
 
     // ==================== DEFAULT VALUES ====================

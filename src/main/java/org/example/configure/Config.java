@@ -142,10 +142,10 @@ public final class Config {
         return EnvUtils.readProperty(ACTIVE_ENV, key);
     }
     public static int getMaxActionRetries() {
-        return Config.getIntProperty(Constants.MAX_NUM_OF_ATTEMPTS_ACTION_PROPERTY, 3);
+        return Config.getIntProperty(Constants.MAX_ATTEMPTS_ACTION, 3);
     }
 
     public static int getMaxAttempts() {
-        return Config.getIntProperty(Constants.MAX_NUM_OF_ATTEMPTS_SORTASSERT_PROPERTY, 5);
+        return Config.getIntProperty(Constants.MAX_ATTEMPTS_ASSERT, 5);
     }
 }

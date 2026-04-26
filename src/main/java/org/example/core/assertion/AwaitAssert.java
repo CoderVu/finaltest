@@ -167,7 +167,7 @@ public final class AwaitAssert {
 
         public boolean isVisible() {
             return checkUntil(
-                    () -> element.waitForVisible(interval),
+                    element::visibleNow,
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -176,7 +176,7 @@ public final class AwaitAssert {
 
         public boolean isEnabled() {
             return checkUntil(
-                    () -> element.waitForEnabled(interval),
+                    element::enabledNow,
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -185,7 +185,7 @@ public final class AwaitAssert {
 
         public boolean isExist() {
             return checkUntil(
-                    () -> element.waitForExist(interval),
+                    element::existsNow,
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -194,7 +194,7 @@ public final class AwaitAssert {
 
         public boolean isSelected() {
             return checkUntil(
-                    () -> element.waitForSelected(interval),
+                    element::selectedNow,
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -203,7 +203,7 @@ public final class AwaitAssert {
 
         public boolean isClickable() {
             return checkUntil(
-                    () -> element.waitForClickable(interval),
+                    () -> element.visibleNow() && element.enabledNow(),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -213,7 +213,7 @@ public final class AwaitAssert {
         public void toBeVisible() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForVisible(interval),
+                            element::visibleNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -225,7 +225,7 @@ public final class AwaitAssert {
         public void toBeHidden() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForVisible(interval),
+                            element::visibleNow,
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -237,7 +237,7 @@ public final class AwaitAssert {
         public void toBeEnabled() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForEnabled(interval),
+                            element::enabledNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -249,7 +249,7 @@ public final class AwaitAssert {
         public void toBeDisabled() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForEnabled(interval),
+                            element::enabledNow,
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -261,7 +261,7 @@ public final class AwaitAssert {
         public void toBeAttached() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForExist(interval),
+                            element::existsNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -273,7 +273,7 @@ public final class AwaitAssert {
         public void toBeDetached() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForExist(interval),
+                            element::existsNow,
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -289,7 +289,7 @@ public final class AwaitAssert {
         public void toBeSelected() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForSelected(interval),
+                            element::selectedNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -305,7 +305,7 @@ public final class AwaitAssert {
         public void toBeClickable() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForClickable(interval),
+                            () -> element.visibleNow() && element.enabledNow(),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -317,7 +317,7 @@ public final class AwaitAssert {
         public void toBeEditable() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForEditable(interval),
+                            this::isEditableNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -329,7 +329,7 @@ public final class AwaitAssert {
         public void toBeReadOnly() {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForReadOnly(interval),
+                            this::isReadOnlyNow,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -382,7 +382,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedValue);
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForValue(interval),
+                            element::valueNow,
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected value: " + expectedValue),
                             expectedNorm
@@ -393,7 +393,7 @@ public final class AwaitAssert {
         public void toHaveAttribute(String attributeName) {
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForAttribute(attributeName, interval),
+                            () -> element.attributeNow(attributeName),
                             Objects::nonNull,
                             buildMessage("Expected attribute exists: " + attributeName),
                             "<non-null>"
@@ -405,7 +405,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedValue);
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForAttribute(attributeName, interval),
+                            () -> element.attributeNow(attributeName),
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected attribute " + attributeName + ": " + expectedValue),
                             expectedNorm
@@ -417,7 +417,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedClass);
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForClassName(interval),
+                            element::classNow,
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected class: " + expectedClass),
                             expectedNorm
@@ -429,7 +429,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedClass);
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForClassName(interval),
+                            element::classNow,
                             actual -> {
                                 String actualNorm = normalize(actual);
                                 return actualNorm != null && actualNorm.contains(expectedNorm);
@@ -444,7 +444,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedTag);
             execute(
                     () -> assertStringCondition(
-                            () -> element.waitForTagName(interval),
+                            element::tagNow,
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected tag name: " + expectedTag),
                             expectedNorm
@@ -455,7 +455,7 @@ public final class AwaitAssert {
         public void toHaveCount(int expectedCount) {
             execute(
                     () -> pollUntil(
-                            () -> element.waitForCount(interval),
+                            element::countNow,
                             actual -> applyNegation(actual != null && actual == expectedCount, true),
                             timeout,
                             interval,
@@ -470,7 +470,7 @@ public final class AwaitAssert {
                 String message
         ) {
             assertStringCondition(
-                    () -> element.waitForText(interval),
+                    element::textNow,
                     matcher,
                     message,
                     expectedNorm
@@ -525,6 +525,21 @@ public final class AwaitAssert {
                     + " | locator="
                     + element.getLocator()
                     + (negated ? ")" : "");
+        }
+
+        private boolean isEditableNow() {
+            if (!element.visibleNow() || !element.enabledNow()) {
+                return false;
+            }
+            boolean readOnly = Boolean.parseBoolean(element.attributeNow("readonly"));
+            boolean disabled = Boolean.parseBoolean(element.attributeNow("disabled"));
+            return !readOnly && !disabled;
+        }
+
+        private boolean isReadOnlyNow() {
+            boolean readOnly = Boolean.parseBoolean(element.attributeNow("readonly"));
+            boolean disabled = Boolean.parseBoolean(element.attributeNow("disabled"));
+            return readOnly || disabled;
         }
 
         private <T> boolean checkUntil(
