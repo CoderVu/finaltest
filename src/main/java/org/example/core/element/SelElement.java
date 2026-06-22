@@ -295,51 +295,6 @@ public class SelElement implements ISelElement {
         return doWithRetry("getText", () -> waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator())).getText());
     }
 
-    @Override
-    public String textNow() {
-        try {
-            return getWebDriver().findElement(getLocator()).getText();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public String valueNow() {
-        try {
-            return getWebDriver().findElement(getLocator()).getAttribute("value");
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public String attributeNow(String attributeName) {
-        try {
-            return getWebDriver().findElement(getLocator()).getAttribute(attributeName);
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public String classNow() {
-        return attributeNow("class");
-    }
-
-    @Override
-    public String tagNow() {
-        try {
-            return getWebDriver().findElement(getLocator()).getTagName();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public int countNow() {
-        return getWebDriver().findElements(getLocator()).size();
-    }
 
     @Override
     public String getValue() {
@@ -378,65 +333,6 @@ public class SelElement implements ISelElement {
         return doWithRetry("getChildElements", () -> waitFor(ExpectedConditions.visibilityOfElementLocated(getLocator())).findElements(buildChildLocator(xpath)));
     }
 
-    // ========== CHECKS ==========
-
-    @Override
-    public boolean visibleNow() {
-        try {
-            return getWebDriver().findElement(getLocator()).isDisplayed();
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean enabledNow() {
-        try {
-            WebElement element = getWebDriver().findElement(getLocator());
-            return element.isDisplayed() && element.isEnabled();
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean existsNow() {
-        return !getWebDriver().findElements(getLocator()).isEmpty();
-    }
-
-    @Override
-    public boolean selectedNow() {
-        try {
-            return getWebDriver().findElement(getLocator()).isSelected();
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isVisible() {
-        return visibleNow();
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabledNow();
-    }
-
-    @Override
-    public boolean isSelected() {
-        return selectedNow();
-    }
-
-    @Override
-    public boolean isClickable() {
-        return visibleNow() && enabledNow();
-    }
-
-    @Override
-    public boolean isExist() {
-        return existsNow();
-    }
 
     // ========== SELECT ==========
 

@@ -9,12 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.reporting.ReportManager;
 import org.example.core.reporting.Reporter;
-
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebElement;
 import static org.example.common.Constants.DEFAULT_TIMESTAMP_REPORT_FORMAT;
 import static org.example.utils.DateUtils.getCurrentTimestamp;
 
@@ -165,9 +168,27 @@ public final class AwaitAssert {
             return new ElementExpected(element, timeout, interval, negated, false);
         }
 
+        private <T> T queryRawDOM(Function<WebElement, T> extractor, T fallbackValue) {
+            try {
+               WebElement rawElement = DriverUtils.getWebDriver().findElement(element.getLocator());
+                return extractor.apply(rawElement);
+            } catch (org.openqa.selenium.NoSuchElementException | org.openqa.selenium.StaleElementReferenceException e) {
+                return fallbackValue;
+            }
+        }
+
+        private boolean queryRawDOMBoolean(java.util.function.Predicate<org.openqa.selenium.WebElement> condition) {
+            try {
+                org.openqa.selenium.WebElement rawElement = DriverUtils.getWebDriver().findElement(element.getLocator());
+                return condition.test(rawElement);
+            } catch (NoSuchElementException | StaleElementReferenceException e) {
+                return false;
+            }
+        }
+
         public boolean isVisible() {
             return checkUntil(
-                    element::visibleNow,
+                    () -> queryRawDOMBoolean(org.openqa.selenium.WebElement::isDisplayed),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -176,7 +197,7 @@ public final class AwaitAssert {
 
         public boolean isEnabled() {
             return checkUntil(
-                    element::enabledNow,
+                    () -> queryRawDOMBoolean(el -> el.isDisplayed() && el.isEnabled()),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -185,7 +206,7 @@ public final class AwaitAssert {
 
         public boolean isExist() {
             return checkUntil(
-                    element::existsNow,
+                    () -> !org.example.utils.DriverUtils.getWebDriver().findElements(element.getLocator()).isEmpty(),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -194,7 +215,7 @@ public final class AwaitAssert {
 
         public boolean isSelected() {
             return checkUntil(
-                    element::selectedNow,
+                    () -> queryRawDOMBoolean(org.openqa.selenium.WebElement::isSelected),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -203,7 +224,7 @@ public final class AwaitAssert {
 
         public boolean isClickable() {
             return checkUntil(
-                    () -> element.visibleNow() && element.enabledNow(),
+                    () -> queryRawDOMBoolean(el -> el.isDisplayed() && el.isEnabled()),
                     actual -> applyNegation(actual, true),
                     timeout,
                     interval
@@ -213,7 +234,7 @@ public final class AwaitAssert {
         public void toBeVisible() {
             execute(
                     () -> pollUntil(
-                            element::visibleNow,
+                            () -> queryRawDOMBoolean(org.openqa.selenium.WebElement::isDisplayed),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -225,7 +246,7 @@ public final class AwaitAssert {
         public void toBeHidden() {
             execute(
                     () -> pollUntil(
-                            element::visibleNow,
+                            () -> queryRawDOMBoolean(org.openqa.selenium.WebElement::isDisplayed),
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -237,7 +258,7 @@ public final class AwaitAssert {
         public void toBeEnabled() {
             execute(
                     () -> pollUntil(
-                            element::enabledNow,
+                            () -> queryRawDOMBoolean(el -> el.isDisplayed() && el.isEnabled()),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -249,7 +270,7 @@ public final class AwaitAssert {
         public void toBeDisabled() {
             execute(
                     () -> pollUntil(
-                            element::enabledNow,
+                            () -> queryRawDOMBoolean(el -> el.isDisplayed() && el.isEnabled()),
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -261,7 +282,7 @@ public final class AwaitAssert {
         public void toBeAttached() {
             execute(
                     () -> pollUntil(
-                            element::existsNow,
+                            () -> !org.example.utils.DriverUtils.getWebDriver().findElements(element.getLocator()).isEmpty(),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -273,7 +294,7 @@ public final class AwaitAssert {
         public void toBeDetached() {
             execute(
                     () -> pollUntil(
-                            element::existsNow,
+                            () -> !org.example.utils.DriverUtils.getWebDriver().findElements(element.getLocator()).isEmpty(),
                             actual -> applyNegation(actual, false),
                             timeout,
                             interval,
@@ -289,7 +310,7 @@ public final class AwaitAssert {
         public void toBeSelected() {
             execute(
                     () -> pollUntil(
-                            element::selectedNow,
+                            () -> queryRawDOMBoolean(org.openqa.selenium.WebElement::isSelected),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -305,7 +326,7 @@ public final class AwaitAssert {
         public void toBeClickable() {
             execute(
                     () -> pollUntil(
-                            () -> element.visibleNow() && element.enabledNow(),
+                            () -> queryRawDOMBoolean(el -> el.isDisplayed() && el.isEnabled()),
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -317,7 +338,7 @@ public final class AwaitAssert {
         public void toBeEditable() {
             execute(
                     () -> pollUntil(
-                            this::isEditableNow,
+                            this::isEditable,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -329,7 +350,7 @@ public final class AwaitAssert {
         public void toBeReadOnly() {
             execute(
                     () -> pollUntil(
-                            this::isReadOnlyNow,
+                            this::isReadOnly,
                             actual -> applyNegation(actual, true),
                             timeout,
                             interval,
@@ -382,7 +403,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedValue);
             execute(
                     () -> assertStringCondition(
-                            element::valueNow,
+                            () -> queryRawDOM(el -> el.getAttribute("value"), null),
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected value: " + expectedValue),
                             expectedNorm
@@ -393,7 +414,7 @@ public final class AwaitAssert {
         public void toHaveAttribute(String attributeName) {
             execute(
                     () -> assertStringCondition(
-                            () -> element.attributeNow(attributeName),
+                            () -> queryRawDOM(el -> el.getAttribute(attributeName), null),
                             Objects::nonNull,
                             buildMessage("Expected attribute exists: " + attributeName),
                             "<non-null>"
@@ -405,7 +426,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedValue);
             execute(
                     () -> assertStringCondition(
-                            () -> element.attributeNow(attributeName),
+                            () -> queryRawDOM(el -> el.getAttribute(attributeName), null),
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected attribute " + attributeName + ": " + expectedValue),
                             expectedNorm
@@ -417,7 +438,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedClass);
             execute(
                     () -> assertStringCondition(
-                            element::classNow,
+                            () -> queryRawDOM(el -> el.getAttribute("class"), null),
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected class: " + expectedClass),
                             expectedNorm
@@ -429,7 +450,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedClass);
             execute(
                     () -> assertStringCondition(
-                            element::classNow,
+                            () -> queryRawDOM(el -> el.getAttribute("class"), null),
                             actual -> {
                                 String actualNorm = normalize(actual);
                                 return actualNorm != null && actualNorm.contains(expectedNorm);
@@ -444,7 +465,7 @@ public final class AwaitAssert {
             String expectedNorm = normalize(expectedTag);
             execute(
                     () -> assertStringCondition(
-                            element::tagNow,
+                            () -> queryRawDOM(org.openqa.selenium.WebElement::getTagName, null),
                             actual -> Objects.equals(expectedNorm, normalize(actual)),
                             buildMessage("Expected tag name: " + expectedTag),
                             expectedNorm
@@ -455,7 +476,7 @@ public final class AwaitAssert {
         public void toHaveCount(int expectedCount) {
             execute(
                     () -> pollUntil(
-                            element::countNow,
+                            () -> org.example.utils.DriverUtils.getWebDriver().findElements(element.getLocator()).size(),
                             actual -> applyNegation(actual != null && actual == expectedCount, true),
                             timeout,
                             interval,
@@ -470,7 +491,7 @@ public final class AwaitAssert {
                 String message
         ) {
             assertStringCondition(
-                    element::textNow,
+                    () -> queryRawDOM(org.openqa.selenium.WebElement::getText, null),
                     matcher,
                     message,
                     expectedNorm
@@ -527,19 +548,21 @@ public final class AwaitAssert {
                     + (negated ? ")" : "");
         }
 
-        private boolean isEditableNow() {
-            if (!element.visibleNow() || !element.enabledNow()) {
-                return false;
-            }
-            boolean readOnly = Boolean.parseBoolean(element.attributeNow("readonly"));
-            boolean disabled = Boolean.parseBoolean(element.attributeNow("disabled"));
-            return !readOnly && !disabled;
+        private boolean isEditable() {
+            return queryRawDOMBoolean(el -> {
+                if (!el.isDisplayed() || !el.isEnabled()) return false;
+                boolean readOnly = Boolean.parseBoolean(el.getAttribute("readonly"));
+                boolean disabled = Boolean.parseBoolean(el.getAttribute("disabled"));
+                return !readOnly && !disabled;
+            });
         }
 
-        private boolean isReadOnlyNow() {
-            boolean readOnly = Boolean.parseBoolean(element.attributeNow("readonly"));
-            boolean disabled = Boolean.parseBoolean(element.attributeNow("disabled"));
-            return readOnly || disabled;
+        private boolean isReadOnly() {
+            return queryRawDOMBoolean(el -> {
+                boolean readOnly = Boolean.parseBoolean(el.getAttribute("readonly"));
+                boolean disabled = Boolean.parseBoolean(el.getAttribute("disabled"));
+                return readOnly || disabled;
+            });
         }
 
         private <T> boolean checkUntil(

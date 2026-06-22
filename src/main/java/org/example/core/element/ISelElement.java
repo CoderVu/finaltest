@@ -48,12 +48,6 @@ public interface ISelElement {
     
     // Getters
     String getText();
-    String textNow();
-    String valueNow();
-    String attributeNow(String attributeName);
-    String classNow();
-    String tagNow();
-    int countNow();
     String getValue();
     String getAttribute(String attributeName);
     String getClassName();
@@ -61,17 +55,6 @@ public interface ISelElement {
     WebElement getChildElement(String xpath);
     List<WebElement> getChildElements();
     List<WebElement> getChildElements(String xpath);
-    
-    // Checks
-    boolean visibleNow();
-    boolean enabledNow();
-    boolean existsNow();
-    boolean selectedNow();
-    boolean isVisible();
-    boolean isEnabled();
-    boolean isSelected();
-    boolean isClickable();
-    boolean isExist();
     
     // Other
     void setAttributeJS(String attributeName, String value);

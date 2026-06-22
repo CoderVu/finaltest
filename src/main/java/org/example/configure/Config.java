@@ -145,6 +145,8 @@ public final class Config {
         return Config.getIntProperty(Constants.MAX_ATTEMPTS_ACTION, 3);
     }
 
+
+    // Need use
     public static int getMaxAttempts() {
         return Config.getIntProperty(Constants.MAX_ATTEMPTS_ASSERT, 5);
     }

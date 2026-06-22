@@ -29,8 +29,8 @@ public class Constants {
     public static final String DEFAULT_BROWSER = BrowserType.CHROME.toString();
     public static final String DEFAULT_REPORT = "extent";
     public static final String DEFAULT_TEST_ENGINE = "testng";
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(20);
-    public static final Duration DEFAULT_PAGE_LOAD_TIMEOUT = Duration.ofSeconds(60);
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+    public static final Duration DEFAULT_PAGE_LOAD_TIMEOUT = Duration.ofSeconds(30);
     public static final boolean DEFAULT_HEADLESS = true;
     public static final boolean DEFAULT_REMOTE_ENABLED = false;
 

@@ -3,7 +3,7 @@
     <listeners>
         <listener class-name="org.example.engine.testng.listener.TestNGReporter"/>
     </listeners>
-    
+
     <test name="Selenium Test - Chrome">
         <parameter name="browser" value="chrome"/>
         <classes>
@@ -11,12 +11,12 @@
         </classes>
     </test>
 
-<!--    <test name="Selenium Test - TC01 - Firefox">-->
-<!--        <parameter name="browser" value="firefox"/>-->
-<!--        <classes>-->
-<!--            <class name="testCase.DynamicControlTest"/>-->
-<!--        </classes>-->
-<!--    </test>-->
+    <!--    <test name="Selenium Test - TC01 - Firefox">-->
+    <!--        <parameter name="browser" value="firefox"/>-->
+    <!--        <classes>-->
+    <!--            <class name="testCase.DynamicControlTest"/>-->
+    <!--        </classes>-->
+    <!--    </test>-->
 
 
 </suite>
